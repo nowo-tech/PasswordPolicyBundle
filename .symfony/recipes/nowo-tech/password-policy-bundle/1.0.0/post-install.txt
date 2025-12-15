@@ -1,0 +1,11 @@
+The default configuration file has been created at config/packages/nowo_password_policy.yaml
+
+You need to configure your entities in this file. Uncomment and customize the example
+configuration for your User entity (or other entities that need password policies).
+
+Required configuration:
+- Configure at least one entity with password_field, password_history_field, and reset_password_route_name
+- The reset_password_route_name must be a valid route in your application
+
+For more information, see the bundle documentation.
+

@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block styles %}
+    {{ parent() }}
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+        }
+        h1 {
+            display: block;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        li {
+            margin: 10px 0;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <h2>Features:</h2>
+    <ul>
+        {% for feature in features %}
+            <li>{{ feature }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h2>Try It Out:</h2>
+    <p>Use the CRUD interface to manage users and test password policies:</p>
+    <a href="{{ path('user_index') }}" class="btn" style="margin-top: 20px;">
+        Go to Users Management →
+    </a>
+{% endblock %}

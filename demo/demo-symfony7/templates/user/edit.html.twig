@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit User - Password Policy Demo{% endblock %}
+
+{% block styles %}
+    {{ parent() }}
+    <style>
+        .container {
+            max-width: 600px;
+        }
+        h1 {
+            display: block;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <h1>Edit User #{{ user.id }}</h1>
+
+    <a href="{{ path('user_index') }}" class="btn btn-secondary">← Back to List</a>
+    <a href="{{ path('user_show', {'id': user.id}) }}" class="btn btn-secondary">View</a>
+
+    {{ form_start(form) }}
+        <div class="form-group">
+            {{ form_label(form.email) }}
+            {{ form_widget(form.email) }}
+            {{ form_errors(form.email) }}
+        </div>
+
+        <div class="form-group">
+            {{ form_label(form.plainPassword) }}
+            {{ form_widget(form.plainPassword) }}
+            {{ form_errors(form.plainPassword) }}
+            <div class="help-text">Leave blank to keep current password</div>
+        </div>
+
+        <button type="submit" class="btn">Update User</button>
+    {{ form_end(form) }}
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Details - Password Policy Demo{% endblock %}
+
+{% block styles %}
+    {{ parent() }}
+    <style>
+        .container {
+            max-width: 1000px;
+        }
+        h1 {
+            display: block;
+        }
+        table th {
+            background: #e9ecef;
+        }
+        table th, table td {
+            padding: 8px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <h1>User Details</h1>
+
+    <a href="{{ path('user_index') }}" class="btn btn-secondary">← Back to List</a>
+    <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-warning">Edit</a>
+    <a href="{{ path('user_change_password', {'id': user.id}) }}" class="btn btn-success">Change Password</a>
+
+    <div class="info-box">
+        <h3>User Information</h3>
+        <p><strong>ID:</strong> {{ user.id }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Password Changed At:</strong>
+            {% if user.passwordChangedAt %}
+                {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}
+                <br>
+                <small>({{ user.passwordChangedAt|date('U')|date_diff('now')|date('%a days ago') }})</small>
+            {% else %}
+                <em>Never</em>
+            {% endif %}
+        </p>
+        <p><strong>Status:</strong>
+            {% if user.passwordChangedAt %}
+                {% set daysSince = (date().timestamp - user.passwordChangedAt.timestamp) / 86400 %}
+                {% if daysSince >= 90 %}
+                    <span class="badge badge-danger">Expired ({{ daysSince|round }} days old)</span>
+                {% elseif daysSince >= 85 %}
+                    <span class="badge badge-warning">Expiring Soon ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
+                {% else %}
+                    <span class="badge badge-success">Active ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
+                {% endif %}
+            {% else %}
+                <span class="badge badge-warning">No Password Set</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="info-box">
+        <h3>Password History ({{ user.passwordHistory|length }} entries)</h3>
+        {% if user.passwordHistory|length > 0 %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Created At</th>
+                        <th>Password Hash</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for history in user.passwordHistory %}
+                        <tr>
+                            <td>{{ history.createdAt|date('Y-m-d H:i:s') }}</td>
+                            <td><code>{{ history.password|slice(0, 20) }}...</code></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p><em>No password history available.</em></p>
+        {% endif %}
+    </div>
+{% endblock %}

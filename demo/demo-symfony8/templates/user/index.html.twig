@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Users - Password Policy Demo{% endblock %}
+
+{% block body %}
+    <h1>
+        <span>Users Management</span>
+        <a href="{{ path('user_new') }}" class="btn btn-success">+ New User</a>
+    </h1>
+
+    {% block flash_messages %}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endblock %}
+
+    <a href="{{ path('demo_home') }}" class="btn btn-secondary">← Back to Home</a>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Email</th>
+                <th>Password Changed At</th>
+                <th>Status</th>
+                <th>Password History</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.passwordChangedAt %}
+                            {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}
+                            <br>
+                            <small>({{ user.passwordChangedAt|date('U')|date_diff('now')|date('%a days ago') }})</small>
+                        {% else %}
+                            <em>Never</em>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% include 'user/_password_status.html.twig' with {'user': user} %}
+                    </td>
+                    <td>{{ user.passwordHistory|length }} entries</td>
+                    <td>
+                        {% include 'user/_user_actions.html.twig' with {'user': user} %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px;">
+                        <em>No users found. <a href="{{ path('user_new') }}">Create the first user</a></em>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

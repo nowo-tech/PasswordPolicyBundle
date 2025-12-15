@@ -1,0 +1,5 @@
+doctrine_migrations:
+    migrations_paths:
+        'App\Migrations': '%kernel.project_dir%/migrations'
+    enable_profiler: false
+
