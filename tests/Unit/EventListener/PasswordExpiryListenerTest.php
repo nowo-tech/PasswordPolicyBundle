@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
-
-use Mockery\Mock;
 use Mockery;
+use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
@@ -55,7 +54,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->passwordExpiryServiceMock,
             $this->sessionMock,
             'error',
-            'Your password expired. You need to change it'
+            'Your password expired. You need to change it',
         ])->makePartial();
     }
 

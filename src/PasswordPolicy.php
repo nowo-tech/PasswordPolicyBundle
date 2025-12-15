@@ -6,5 +6,4 @@ namespace Nowo\PasswordPolicyBundle;
 
 class PasswordPolicy
 {
-
 }

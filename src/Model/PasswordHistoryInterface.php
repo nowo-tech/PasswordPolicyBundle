@@ -9,19 +9,19 @@ use DateTimeInterface;
 
 interface PasswordHistoryInterface
 {
+    public function getPassword(): string;
 
-  public function getPassword(): string;
+    public function setPassword(string $password): self;
 
-  public function setPassword(string $password): self;
+    /**
+     * @return DateTime
+     */
+    public function getCreatedAt(): ?DateTimeInterface;
 
-  /**
-   * @return DateTime
-   */
-  public function getCreatedAt(): ?DateTimeInterface;
-
-  /**
-   * @param DateTime $dateTime
-   * @return DateTime|null
-   */
-  public function setCreatedAt(DateTimeInterface $createdAt): self;
+    /**
+     * @param DateTime $dateTime
+     *
+     * @return DateTime|null
+     */
+    public function setCreatedAt(DateTimeInterface $createdAt): self;
 }

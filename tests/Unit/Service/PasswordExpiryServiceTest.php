@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 
-
 use Carbon\Carbon;
+use Mockery;
 use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
-use Mockery;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
@@ -100,5 +99,4 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
         $this->assertEquals('lock/1', $route);
     }
-
 }

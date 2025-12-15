@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Traits;
 
-
-use DateTimeInterface;
 use Carbon\Carbon;
 use DateTime;
+use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 trait PasswordHistoryTrait
 {
-
     /**
      * @ORM\Column(type="string")
+     *
      * @ORM\Id()
      */
     private ?string $password = null;
@@ -26,6 +25,7 @@ trait PasswordHistoryTrait
 
     /**
      * @var DateTime|null
+     *
      * @ORM\Column(type="datetime")
      */
     private ?DateTimeInterface $createdAt = null;
@@ -70,5 +70,4 @@ trait PasswordHistoryTrait
     {
         $this->salt = $salt;
     }
-
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
-
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -12,9 +11,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 class PasswordPolicyService implements PasswordPolicyServiceInterface
 {
-
     /**
      * PasswordPolicyEnforcerService constructor.
+     *
      * @param UserPasswordHasherInterface $userPasswordHasher
      */
     public function __construct(public UserPasswordHasherInterface $userPasswordHasher)
@@ -43,9 +42,10 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
      * Check if a password matches a hashed password.
      *
      * @param HasPasswordPolicyInterface $hasPasswordPolicy
-     * @param string $hashedPassword
-     * @param string $plainPassword
-     * @param string|null $salt
+     * @param string                     $hashedPassword
+     * @param string                     $plainPassword
+     * @param string|null                $salt
+     *
      * @return bool
      */
     private function isPasswordValid(
@@ -61,7 +61,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
             if (method_exists($tempUser, 'setPassword')) {
                 $tempUser->setPassword($hashedPassword);
             }
-            
+
             // Verify using isPasswordValid method
             return $this->userPasswordHasher->isPasswordValid($tempUser, $plainPassword);
         }
@@ -69,5 +69,4 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         // Fallback: simple comparison if not a UserInterface
         return $hashedPassword === $plainPassword;
     }
-
 }

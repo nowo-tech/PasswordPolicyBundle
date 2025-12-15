@@ -129,10 +129,10 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithMultipleEntities(): void
     {
         $container = new ContainerBuilder();
-        
+
         // Create a mock entity class that implements the interface
         $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
-        
+
         $configs = [
             [
                 'entities' => [
@@ -148,4 +148,3 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
     }
 }
-

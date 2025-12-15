@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Validator;
 
-
-use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Carbon\Carbon;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class PasswordPolicyValidator extends ConstraintValidator
 {
-
     public function __construct(private readonly PasswordPolicyServiceInterface $passwordPolicyService, private TranslatorInterface $translator)
     {
     }
@@ -24,10 +22,12 @@ class PasswordPolicyValidator extends ConstraintValidator
     /**
      * Checks if the passed value is valid.
      *
-     * @param mixed $value The value that should be validated
+     * @param mixed      $value      The value that should be validated
      * @param Constraint $constraint The constraint for the validation
-     * @return bool
+     *
      * @throws ValidationException
+     *
+     * @return bool
      */
     public function validate($value, Constraint $constraint)
     {
@@ -38,8 +38,10 @@ class PasswordPolicyValidator extends ConstraintValidator
         $entity = $this->context->getObject();
 
         if (!$entity instanceof HasPasswordPolicyInterface) {
-            throw new ValidationException(message: sprintf('Expected validation entity to implements %s',
-                HasPasswordPolicyInterface::class));
+            throw new ValidationException(message: sprintf(
+                'Expected validation entity to implements %s',
+                HasPasswordPolicyInterface::class
+            ));
         }
 
         Carbon::setLocale($this->translator->getLocale());

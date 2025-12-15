@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
-
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 
 class PasswordHistoryService implements PasswordHistoryServiceInterface
 {
     /**
-     *
      * @return array Removed items
      */
     public function getHistoryItemsForCleanup(HasPasswordPolicyInterface $hasPasswordPolicy, int $historyLimit): array
@@ -40,5 +38,4 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
 
         return $removedItems;
     }
-
 }

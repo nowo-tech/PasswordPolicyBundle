@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 
-use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
-use Mockery\Mock;
+use Doctrine\Common\Collections\ArrayCollection;
 use Mockery;
+use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
 use Nowo\PasswordPolicyBundle\Tests\Unit\Mocks\PasswordHistoryMock;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
-use Doctrine\Common\Collections\ArrayCollection;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -55,7 +54,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $tempUser = Mockery::mock(UserInterface::class);
         $this->entityMock->shouldReceive('__clone')
                          ->andReturn($tempUser);
-        
+
         $this->userPasswordHasherMock->shouldReceive('isPasswordValid')
                                       ->with($tempUser, 'pwd')
                                       ->twice()

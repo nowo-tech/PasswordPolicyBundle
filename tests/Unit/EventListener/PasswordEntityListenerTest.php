@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
-
 use DateTime;
-use Mockery\Mock;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Event\OnFlushEventArgs;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\UnitOfWork;
 use Mockery;
+use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -15,14 +18,9 @@ use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\Unit\Mocks\PasswordHistoryMock;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Event\OnFlushEventArgs;
-use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\UnitOfWork;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-
     /**
      * @var PasswordHistoryServiceInterface|Mock
      */
@@ -34,7 +32,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
     private $passwordEntityListener;
 
     /**
-     * @var \Doctrine\ORM\EntityManagerInterface|Mock
+     * @var EntityManagerInterface|Mock
      */
     private $emMock;
 
@@ -44,7 +42,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
     private $entityMock;
 
     /**
-     * @var \Doctrine\ORM\UnitOfWork|Mock
+     * @var UnitOfWork|Mock
      */
     private $uowMock;
 
@@ -148,7 +146,6 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $this->uowMock->shouldReceive('computeChangeSet')
                       ->once();
 
-
         $this->entityMock->shouldReceive('setPasswordChangedAt')
                          ->once();
 
@@ -240,7 +237,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->andReturn($classMetadata);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(self::class.' must implement '.PasswordHistoryInterface::class);
+        $this->expectExceptionMessage(self::class . ' must implement ' . PasswordHistoryInterface::class);
 
         $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
     }
@@ -265,9 +262,12 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            sprintf("Cannot set user relation in password history class %s because method %s is missing",
-                PasswordHistoryMock::class, 'setFoo'
-            ));
+            sprintf(
+                'Cannot set user relation in password history class %s because method %s is missing',
+                PasswordHistoryMock::class,
+                'setFoo'
+            )
+        );
 
         $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
     }
