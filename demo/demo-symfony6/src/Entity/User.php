@@ -105,6 +105,14 @@ class User implements HasPasswordPolicyInterface, UserInterface, PasswordAuthent
         return $this;
     }
 
+    public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
+    {
+        if ($this->passwordHistory->contains($passwordHistory)) {
+            $this->passwordHistory->removeElement($passwordHistory);
+        }
+        return $this;
+    }
+
     // UserInterface methods
     public function getUserIdentifier(): string
     {

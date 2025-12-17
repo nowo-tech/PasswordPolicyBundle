@@ -55,6 +55,15 @@ interface HasPasswordPolicyInterface
     public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static;
 
     /**
+     * Removes a password history entry.
+     *
+     * @param PasswordHistoryInterface $passwordHistory The password history entry to remove
+     *
+     * @return static
+     */
+    public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static;
+
+    /**
      * Gets the current hashed password.
      *
      * @return string The hashed password

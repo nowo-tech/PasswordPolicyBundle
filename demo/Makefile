@@ -109,8 +109,7 @@ up-$(1):
 	docker-compose restart php && \
 	sleep 2 && \
 	echo "🗄️  Setting up database..." && \
-	(docker-compose exec -T php bin/console doctrine:database:create --if-not-exists 2>&1 || true) && \
-	(docker-compose exec -T php bin/console doctrine:migrations:migrate --no-interaction 2>&1 || echo "⚠️  Migrations may have already been executed") && \
+	(docker-compose exec -T php composer database 2>&1 || echo "⚠️  Database setup may have failed or already been executed") && \
 	echo "⏳ Waiting for demo to be ready..." && \
 	sleep 3 && \
 	MAX_ATTEMPTS=12 && \

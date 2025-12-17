@@ -121,6 +121,12 @@ nowo_password_policy:
             
             # Route name for password reset (required)
             reset_password_route_name: user_reset_password
+            
+            # Enable detection of password extensions (optional, default: false)
+            # Detects when users add numbers or characters to old passwords
+            # Example: If user had "password" and tries "password123", it will be detected
+            detect_password_extensions: false
+            extension_min_length: 4  # Minimum length of base password for extension detection
     expiry_listener:
         # You can change the expiry listener priority
         priority: 0
@@ -158,6 +164,26 @@ Expiry works by checking the last password change on every request made to the a
 
 **Important**: The library uses Doctrine lifecycle events (`onFlush`) to create password history and set last password change. You must be aware that any entity changes after the recalculation will not be persisted to the database.
 
+### Password Reuse and Extension Detection
+
+The bundle prevents users from reusing old passwords and can optionally detect password extensions:
+
+1. **Exact Match Detection**: Checks if the new password exactly matches any password in history
+   - Uses `password_verify()` for reliable hash comparison
+   - Works with bcrypt, argon2, and Symfony's password hashers
+   - Always enabled by default
+
+2. **Extension Detection** (optional): Detects when a new password is an extension of an old password
+   - Detects common patterns: adding numbers (0-999) or special characters (!, @, #, $, %) to the beginning or end
+   - Example: If user had "password" and tries "password123", it will be detected and rejected
+   - Can be enabled per entity in YAML configuration or per field using constraint attributes
+   - Configurable minimum length for the base password (default: 4 characters)
+
+**How Extension Detection Works**:
+- The bundle tries removing common suffixes/prefixes from the new password
+- It then verifies if the resulting base password matches any password in history
+- This prevents users from simply adding numbers or characters to their old passwords
+
 ## Configuration Options
 
 | Option | Type | Default | Description |
@@ -169,6 +195,8 @@ Expiry works by checking the last password change on every request made to the a
 | `reset_password_route_name` | `string` | **required** | Route name for password reset |
 | `notified_routes` | `array` | `[]` | Routes where users will be notified of expiry |
 | `excluded_notified_routes` | `array` | `[]` | Routes excluded from expiry check |
+| `detect_password_extensions` | `bool` | `false` | Enable detection of password extensions (e.g., "password123" is extension of "password") |
+| `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
 | `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
 | `expiry_listener.lock_route` | `string` | - | Route to redirect when password is expired |
 | `expiry_listener.error_msg.text.title` | `string` | - | Error message title |
@@ -203,7 +231,11 @@ class User implements HasPasswordPolicyInterface
     private Collection $passwordHistory;
     
     /**
-     * @PasswordPolicy()
+     * @PasswordPolicy(
+     *     detectExtensions=true,
+     *     extensionMinLength=4,
+     *     extensionMessage="Cannot use an extension of an old password"
+     * )
      */
     private ?string $plainPassword = null;
     
@@ -243,6 +275,14 @@ class User implements HasPasswordPolicyInterface
     {
         if (!$this->passwordHistory->contains($passwordHistory)) {
             $this->passwordHistory->add($passwordHistory);
+        }
+        return $this;
+    }
+    
+    public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
+    {
+        if ($this->passwordHistory->contains($passwordHistory)) {
+            $this->passwordHistory->removeElement($passwordHistory);
         }
         return $this;
     }

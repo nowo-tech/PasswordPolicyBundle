@@ -75,7 +75,7 @@ class PasswordExpiryListener
         }
 
         $request = $requestEvent->getRequest();
-        $route = $request->get('_route');
+        $route = $request->attributes->get('_route');
 
         // Skip if route is null (anonymous routes or routes without names)
         if ($route === null) {

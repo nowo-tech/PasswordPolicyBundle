@@ -13,6 +13,107 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
+### Upgrading to 0.0.5 (Unreleased)
+
+**Release Date**: TBD
+
+#### What's New
+
+- **Enhanced Password Reuse Detection**: Completely rewritten password verification logic for better reliability
+  - More robust handling of different hash algorithms
+  - Better error handling and fallback mechanisms
+  - Improved compatibility with Symfony's password hashers
+- **Password Extension Detection**: New feature to prevent users from using extensions of old passwords
+  - Detects when users add numbers or characters to their old passwords
+  - Configurable per entity or per field
+  - Separate error messages for exact matches vs extensions
+- **Improved Demo Projects**: Fixed structure issues in demo projects
+  - Controllers and forms now in correct locations
+  - Updated constraint syntax for Symfony 7/8 compatibility
+
+#### Breaking Changes
+
+None. This is a backward-compatible enhancement release.
+
+#### Configuration Changes
+
+**New Optional Configuration Options**:
+
+You can now enable password extension detection per entity:
+
+```yaml
+nowo_password_policy:
+    entities:
+        App\Entity\User:
+            # ... existing configuration ...
+            detect_password_extensions: true  # NEW: Enable extension detection
+            extension_min_length: 4           # NEW: Minimum length for extension detection (default: 4)
+```
+
+**Default Behavior**: 
+- `detect_password_extensions` defaults to `false` (disabled by default)
+- `extension_min_length` defaults to `4`
+- If not specified, extension detection is disabled, maintaining backward compatibility
+
+#### Code Changes Required
+
+**Optional**: If you want to enable extension detection for specific fields, you can use constraint attributes:
+
+```php
+use Nowo\PasswordPolicyBundle\Validator\PasswordPolicy;
+
+class User
+{
+    /**
+     * @PasswordPolicy(
+     *     detectExtensions=true,
+     *     extensionMinLength=4,
+     *     extensionMessage="Cannot use an extension of an old password"
+     * )
+     */
+    private ?string $plainPassword = null;
+}
+```
+
+**No code changes required** if you don't want to use extension detection.
+
+#### Upgrade Steps
+
+1. **Update composer.json**:
+   ```bash
+   composer require nowo-tech/password-policy-bundle:^0.0.5
+   ```
+
+2. **Update your configuration** (optional):
+   If you want to enable password extension detection, add the new options to your configuration:
+   ```yaml
+   nowo_password_policy:
+       entities:
+           App\Entity\User:
+               detect_password_extensions: true
+               extension_min_length: 4
+   ```
+
+3. **Clear cache**:
+   ```bash
+   php bin/console cache:clear
+   ```
+
+4. **Verify installation**:
+   Check that your configuration is valid:
+   ```bash
+   php bin/console debug:config nowo_password_policy
+   ```
+
+#### Migration Notes
+
+- **No database changes required**: This version does not require any database migrations
+- **No code changes required**: Existing code will continue to work without modifications
+- **Optional feature**: Extension detection is disabled by default, so existing behavior is preserved
+- **Improved reliability**: Password reuse detection is now more reliable and should work better with different hash algorithms
+
+---
+
 ### Upgrading to 0.0.4
 
 **Release Date**: 2025-12-17
@@ -22,14 +123,35 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 - **PHP 8 Attribute Fix**: Fixed `PasswordPolicy` constraint to properly work as PHP 8 attribute
 - **Demo Route Fixes**: Fixed route name references in demo templates
 - **Improved Demo Styling**: Enhanced visual styling for use cases pages
+- **Password Reuse Detection**: Improved password reuse detection with better algorithm support
+- **Symfony Compatibility**: Fixed Request API usage for Symfony 6, 7, and 8 compatibility
+- **Password History Management**: Added `removePasswordHistory()` method to interface
 
 #### Breaking Changes
 
-None. This is a bug fix release.
+None. This is a bug fix and enhancement release.
 
 #### Configuration Changes
 
 No configuration changes required.
+
+#### Code Changes Required
+
+**Important**: If you have entities implementing `HasPasswordPolicyInterface`, you must add the `removePasswordHistory()` method:
+
+```php
+use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+
+public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
+{
+    if ($this->passwordHistory->contains($passwordHistory)) {
+        $this->passwordHistory->removeElement($passwordHistory);
+    }
+    return $this;
+}
+```
+
+This method is required for the bundle to properly manage password history limits.
 
 #### Upgrade Steps
 

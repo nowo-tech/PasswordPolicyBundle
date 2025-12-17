@@ -5,7 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.5] - 2025-12-17
+
+### Fixed
+- **Password Reuse Detection**: Significantly improved password reuse detection mechanism
+  - Completely rewrote `PasswordPolicyService::isPasswordValid()` for better reliability
+  - Now uses `password_verify()` as the primary method (most reliable for bcrypt/argon2 hashes)
+  - Improved fallback to `UserPasswordHasherInterface` for Symfony-specific hashers
+  - Better error handling when cloning entities fails
+  - Handles non-cloneable entities by temporarily setting password and restoring it
+  - Better compatibility with different password hashing algorithms
+  - Resolves issues where password reuse was not being detected correctly
+- **Request Route Access**: Fixed compatibility with Symfony 6, 7, and 8
+  - Changed `$request->get('_route')` to `$request->attributes->get('_route')` in `PasswordExpiryListener`
+  - Uses the correct API for accessing request attributes in modern Symfony versions
+  - Maintains full compatibility with Symfony 6, 7, and 8
+  - Resolves "Attempted to call an undefined method named 'get'" error
+- **Demo Projects Structure**: Fixed controller and form locations
+  - Moved `UserController` from root to `src/Controller/` in demo-symfony7 and demo-symfony8
+  - Moved form classes (`ChangePasswordType`, `UserType`) to `src/Form/` in demo-symfony7 and demo-symfony8
+  - Resolves "Unable to generate a URL for the named route" and "class does not exist" errors
+- **Form Constraints Syntax**: Updated constraint syntax for Symfony 7 and 8 compatibility
+  - Changed `NotBlank` and `Length` constraints to use named arguments instead of arrays
+  - Compatible with Symfony 6, 7, and 8 (all require PHP 8.1+)
+  - Resolves "Passing an array of options to configure constraint is no longer supported" errors
+
+### Added
+- **Password Extension Detection**: New feature to detect when a new password is an extension of an old password
+  - Detects common extension patterns: adding numbers (0-999) or special characters (!, @, #, $, %) to the beginning or end
+  - Example: If user had "password" and tries "password123", it will be detected and rejected
+  - Configurable per entity via `detect_password_extensions` option
+  - Configurable minimum length via `extension_min_length` option (default: 4)
+  - Can be enabled globally in YAML configuration or per-field using constraint attributes
+  - Separate error message for extensions vs exact matches
+  - Logs extension detection attempts with match type information
+- **Password History Interface Enhancement**: Added `removePasswordHistory()` method to `HasPasswordPolicyInterface`
+  - New method allows proper removal of password history entries from collections
+  - Required for `PasswordHistoryService` to maintain history limits correctly
+  - All demo entities now implement this method
+  - Updated README.md with example implementation
+- **Password Policy Configuration Service**: New service for managing entity-specific configurations
+  - `PasswordPolicyConfigurationService` stores and retrieves configuration per entity
+  - Allows validators to access YAML configuration settings
+  - Enables per-entity configuration for extension detection
+- **Demo Projects Improvements**: Enhanced demo projects consistency
+  - Added `UserRepository` to demo-symfony7 and demo-symfony8
+  - All demo projects now have consistent structure and dependencies
+  - Fixed missing repository classes that caused autowiring errors
+
+### Changed
+- **Doctrine Configuration**: Updated Doctrine configuration for Symfony 8 compatibility
+  - Removed deprecated `auto_generate_proxy_classes` option (not needed in ORM 3.0)
+  - Removed deprecated `enable_lazy_ghost_objects` option (enabled by default in ORM 3.0)
+  - Updated `doctrine/orm` to `^3.0` for Symfony 8 demo
+  - Updated `doctrine/doctrine-bundle` to `^3.0` for Symfony 8 demo
+  - Updated `doctrine/doctrine-migrations-bundle` configuration for Symfony 8 compatibility
+- **PasswordPolicy Constraint**: Enhanced with new options
+  - Added `detectExtensions` property to enable extension detection per field
+  - Added `extensionMinLength` property to configure minimum length for extension detection
+  - Added `extensionMessage` property for custom error message when extension is detected
+  - Added new error code `PASSWORD_EXTENSION` for extension violations
 
 ## [0.0.4] - 2025-12-17
 

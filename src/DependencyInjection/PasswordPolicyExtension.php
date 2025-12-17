@@ -12,6 +12,7 @@ use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
+use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -51,6 +52,9 @@ class PasswordPolicyExtension extends Extension
 
         $this->addExpiryListener($containerBuilder, $config);
         $this->configureValidator($containerBuilder, $config);
+
+        // Register configuration service and populate it with entity configurations
+        $this->registerConfigurationService($containerBuilder, $config);
 
         // Validate duplicate routes across entities
         $this->validateDuplicateRoutes($config['entities']);
@@ -285,6 +289,32 @@ class PasswordPolicyExtension extends Extension
         $definition->setArgument('$enableLogging', $config['enable_logging'] ?? true);
         $definition->setArgument('$logLevel', $config['log_level'] ?? 'info');
         $definition->setArgument('$eventDispatcher', $containerBuilder->has('event_dispatcher') ? new Reference('event_dispatcher') : null);
+        $definition->setArgument('$configService', new Reference(PasswordPolicyConfigurationService::class));
+    }
+
+    /**
+     * Registers the password policy configuration service and populates it with entity configurations.
+     *
+     * @param ContainerBuilder $containerBuilder The container builder
+     * @param array            $config           The configuration array
+     *
+     * @return void
+     */
+    private function registerConfigurationService(ContainerBuilder $containerBuilder, array $config): void
+    {
+        $definition = $containerBuilder->register(
+            PasswordPolicyConfigurationService::class,
+            PasswordPolicyConfigurationService::class
+        );
+
+        // Populate the service with entity configurations
+        foreach ($config['entities'] as $entityClass => $settings) {
+            $entityConfig = [
+                'detect_password_extensions' => $settings['detect_password_extensions'] ?? false,
+                'extension_min_length' => $settings['extension_min_length'] ?? 4,
+            ];
+            $definition->addMethodCall('setEntityConfiguration', [$entityClass, $entityConfig]);
+        }
     }
 
     /**

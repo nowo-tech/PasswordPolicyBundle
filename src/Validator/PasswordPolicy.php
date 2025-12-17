@@ -21,9 +21,35 @@ class PasswordPolicy extends Constraint
     public const PASSWORD_IN_HISTORY = 'PASSWORD_IN_HISTORY';
 
     /**
-     * The error message template.
+     * Error code for when a password is an extension of an old password.
+     */
+    public const PASSWORD_EXTENSION = 'PASSWORD_EXTENSION';
+
+    /**
+     * The error message template for exact password matches.
      *
      * @var string
      */
     public $message = 'Cannot change your password to an old one. You used this password {{ days }}';
+
+    /**
+     * The error message template for password extensions.
+     *
+     * @var string
+     */
+    public $extensionMessage = 'Cannot change your password to an extension of an old one. You used a similar password {{ days }}';
+
+    /**
+     * Whether to detect password extensions (e.g., "password123" is an extension of "password").
+     *
+     * @var bool
+     */
+    public $detectExtensions = false;
+
+    /**
+     * Minimum length of the base password to consider for extension detection.
+     *
+     * @var int
+     */
+    public $extensionMinLength = 4;
 }

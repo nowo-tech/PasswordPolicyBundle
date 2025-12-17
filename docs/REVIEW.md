@@ -61,7 +61,7 @@ public function isPasswordExpired(): bool
 
 **Problem**:
 ```php
-$route = $request->get('_route');
+$route = $request->attributes->get('_route');
 // ...
 $isLockedRoute = $this->passwordExpiryService->isLockedRoute($route);
 ```
@@ -71,47 +71,37 @@ $isLockedRoute = $this->passwordExpiryService->isLockedRoute($route);
 
 **Solution**:
 ```php
-$route = $request->get('_route');
+$route = $request->attributes->get('_route');
 if ($route === null) {
     return;
 }
 $isLockedRoute = $this->passwordExpiryService->isLockedRoute($route);
 ```
 
+**Note**: This issue has been fixed. The code now uses `$request->attributes->get('_route')` which is the correct API for Symfony 6, 7, and 8, and includes null checking.
+
 **Priority**: Medium - Can cause errors on unnamed routes.
 
 ---
 
-### 4. Bug in `PasswordHistoryService::getHistoryItemsForCleanup()`
+### 4. Bug in `PasswordHistoryService::getHistoryItemsForCleanup()` - ✅ FIXED
 
 **Location**: `src/Service/PasswordHistoryService.php`, lines 29-54
 
-**Problem**: The method always returns an empty array `[]`, even though it processes and removes history items.
+**Status**: ✅ **RESOLVED** - This issue has been fixed.
 
-**Current Code**:
+**Previous Problem**: The method always returned an empty array `[]`, even though it processed and removed history items.
+
+**Solution Applied**: The method now correctly adds items to `$removedItems` array before returning:
 ```php
-$removedItems = [];
-// ... processing ...
 foreach ($historyForCleanup as $item) {
     $hasPasswordPolicy->removePasswordHistory($item);
-}
-return $removedItems; // Always returns []
-```
-
-**Impact**: The method doesn't return the items that were removed, which can be useful for logging or auditing.
-
-**Solution**:
-```php
-$removedItems = [];
-// ... processing ...
-foreach ($historyForCleanup as $item) {
-    $hasPasswordPolicy->removePasswordHistory($item);
-    $removedItems[] = $item; // Add to return array
+    $removedItems[] = $item; // ✅ Now correctly added to return array
 }
 return $removedItems;
 ```
 
-**Priority**: Low - Functionality works, but return is incorrect.
+**Note**: The `removePasswordHistory()` method has also been added to `HasPasswordPolicyInterface` to ensure all entities implement this required method.
 
 ---
 

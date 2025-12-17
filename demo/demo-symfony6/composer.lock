@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "733cb737f0404401c060b38372c681b5",
+    "content-hash": "6f4969813a65f7e5e0e56188b6a8924d",
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -1674,16 +1674,16 @@
         },
         {
             "name": "nowo-tech/password-policy-bundle",
-            "version": "v0.0.3",
+            "version": "v0.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/PasswordPolicyBundle.git",
-                "reference": "81697e3d70bc20501921706d0ffeedeef2f6b1cc"
+                "reference": "a1ab3f4360fbe216ccc91d1936e39e009a0c6e64"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/PasswordPolicyBundle/zipball/81697e3d70bc20501921706d0ffeedeef2f6b1cc",
-                "reference": "81697e3d70bc20501921706d0ffeedeef2f6b1cc",
+                "url": "https://api.github.com/repos/nowo-tech/PasswordPolicyBundle/zipball/a1ab3f4360fbe216ccc91d1936e39e009a0c6e64",
+                "reference": "a1ab3f4360fbe216ccc91d1936e39e009a0c6e64",
                 "shasum": ""
             },
             "require": {
@@ -1738,7 +1738,7 @@
                 "issues": "https://github.com/nowo-tech/password-policy-bundle/issues",
                 "source": "https://github.com/nowo-tech/password-policy-bundle"
             },
-            "time": "2025-12-17T10:20:08+00:00"
+            "time": "2025-12-17T12:22:16+00:00"
         },
         {
             "name": "psr/cache",

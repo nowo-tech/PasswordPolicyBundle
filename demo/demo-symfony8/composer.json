@@ -5,11 +5,11 @@
     "license": "MIT",
     "require": {
         "php": ">=8.2,<8.6",
-        "nowo-tech/password-policy-bundle": "^0.0.3",
+        "nowo-tech/password-policy-bundle": "^0.0.4",
         "doctrine/doctrine-bundle": "^3.0",
-        "doctrine/orm": "^2.15",
+        "doctrine/orm": "^3.0",
         "doctrine/migrations": "^3.6",
-        "doctrine/doctrine-migrations-bundle": "^3.2",
+        "doctrine/doctrine-migrations-bundle": "^3.2@dev",
         "doctrine/doctrine-fixtures-bundle": "^4.0",
         "symfony/console": "^8.0",
         "symfony/dotenv": "^8.0",
@@ -36,7 +36,9 @@
         "sort-packages": true,
         "audit": {
             "block-insecure": false
-        }
+        },
+        "minimum-stability": "stable",
+        "prefer-stable": true
     },
     "autoload": {
         "psr-4": {
@@ -73,7 +75,7 @@
         ],
         "database": [
             "@php bin/console doctrine:database:create --if-not-exists",
-            "@php bin/console doctrine:migrations:migrate --no-interaction",
+            "bash -c 'php bin/console doctrine:migrations:migrate --no-interaction 2>/dev/null || php bin/console doctrine:schema:update --force --no-interaction'",
             "@php bin/console doctrine:fixtures:load --no-interaction"
         ]
     },
@@ -96,4 +98,3 @@
         }
     ]
 }
-
