@@ -21,7 +21,7 @@
     {% endfor %}
 
     {% if expiredUsers|length > 0 %}
-        <div class="password-expiry-banner alert-danger">
+        <div class="alert alert-danger">
             <span>⚠️ <strong>{{ expiredUsers|length }}</strong> user{{ expiredUsers|length != 1 ? 's have' : ' has' }} expired password{{ expiredUsers|length != 1 ? 's' : '' }}. They need to change it immediately!</span>
         </div>
     {% elseif expiringSoonUsers|length > 0 %}

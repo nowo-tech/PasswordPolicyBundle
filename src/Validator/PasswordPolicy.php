@@ -12,10 +12,8 @@ use Symfony\Component\Validator\Constraint;
  *
  * This constraint ensures that users cannot reuse passwords that are stored
  * in their password history.
- *
- * @Annotation
- * @Target({"PROPERTY", "METHOD", "ANNOTATION"})
  */
+#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]
 class PasswordPolicy extends Constraint
 {
     /**

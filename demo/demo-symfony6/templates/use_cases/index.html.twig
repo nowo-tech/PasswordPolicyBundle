@@ -47,6 +47,40 @@
         .btn-primary:hover {
             background: #0056b3;
         }
+        .additional-resources {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+        .additional-resources ul {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0 0 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .additional-resources li {
+            margin: 0;
+        }
+        .additional-resources a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .additional-resources a:hover {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,123,255,0.3);
+        }
     </style>
 {% endblock %}
 
@@ -57,7 +91,7 @@
     
     <div class="info-box" style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin-bottom: 30px;">
         <strong>💡 Note:</strong> To fully test these use cases, you should be authenticated. 
-        <a href="{{ path('app_login') }}">Login here</a> with one of the demo users:
+        <a href="{{ path('login') }}">Login here</a> with one of the demo users:
         <ul style="margin: 10px 0 0 20px;">
             <li><strong>expired@example.com</strong> / <strong>expired123</strong> - Password expired</li>
             <li><strong>demo@example.com</strong> / <strong>demo123</strong> - Expiring soon</li>
@@ -83,12 +117,12 @@
         </div>
     {% endfor %}
     
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
+    <div class="additional-resources">
         <h2>Additional Resources</h2>
         <ul>
             <li><a href="{{ path('demo_home') }}">← Back to Home</a></li>
             <li><a href="{{ path('user_index') }}">Users Management</a></li>
-            <li><a href="{{ path('app_login') }}">Login / Logout</a></li>
+            <li><a href="{{ path('login') }}">Login / Logout</a></li>
         </ul>
     </div>
 {% endblock %}

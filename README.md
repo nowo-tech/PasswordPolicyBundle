@@ -462,6 +462,7 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 ## Documentation
 
 - **[Configuration Guide](docs/CONFIGURATION.md)** - Detailed configuration options and examples
+- **[Upgrade Guide](docs/UPGRADE.md)** - Step-by-step instructions for upgrading between versions
 - **[Events Documentation](docs/EVENTS.md)** - Complete guide to custom events and event listeners
 - **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
 - **[Changelog](docs/CHANGELOG.md)** - Version history and changes

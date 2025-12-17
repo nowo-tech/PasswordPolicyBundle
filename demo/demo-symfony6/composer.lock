@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9f8ec21821c5329088508ad05be7d228",
+    "content-hash": "733cb737f0404401c060b38372c681b5",
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -1674,16 +1674,16 @@
         },
         {
             "name": "nowo-tech/password-policy-bundle",
-            "version": "v0.0.1",
+            "version": "v0.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/PasswordPolicyBundle.git",
-                "reference": "eecd2b4aa50016969417d66cf79e462aa5369cfe"
+                "reference": "81697e3d70bc20501921706d0ffeedeef2f6b1cc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/PasswordPolicyBundle/zipball/eecd2b4aa50016969417d66cf79e462aa5369cfe",
-                "reference": "eecd2b4aa50016969417d66cf79e462aa5369cfe",
+                "url": "https://api.github.com/repos/nowo-tech/PasswordPolicyBundle/zipball/81697e3d70bc20501921706d0ffeedeef2f6b1cc",
+                "reference": "81697e3d70bc20501921706d0ffeedeef2f6b1cc",
                 "shasum": ""
             },
             "require": {
@@ -1693,7 +1693,10 @@
                 "symfony/validator": "^6.0 || ^7.0 || ^8.0"
             },
             "require-dev": {
+                "doctrine/collections": "^2.4",
+                "doctrine/orm": "^3.5",
                 "friendsofphp/php-cs-fixer": "^3.0",
+                "mockery/mockery": "^1.6",
                 "phpunit/phpunit": "^10.0",
                 "symfony/yaml": "^6.0 || ^7.0 || ^8.0"
             },
@@ -1735,7 +1738,7 @@
                 "issues": "https://github.com/nowo-tech/password-policy-bundle/issues",
                 "source": "https://github.com/nowo-tech/password-policy-bundle"
             },
-            "time": "2025-12-15T18:51:47+00:00"
+            "time": "2025-12-17T10:20:08+00:00"
         },
         {
             "name": "psr/cache",

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2025-12-17
+
+### Fixed
+- **PasswordPolicy Attribute Support**: Fixed PHP 8 attribute support for `PasswordPolicy` constraint
+  - Removed `@Annotation` and `@Target` PHPDoc annotations that caused Symfony to use `AnnotationLoader` instead of `AttributeLoader`
+  - Now properly uses PHP 8 `#[\Attribute]` attribute for Symfony 6, 7, and 8 compatibility
+  - Resolves "Attempting to use non-attribute class as attribute" error
+- **Demo Route References**: Fixed incorrect route name references in use cases templates
+  - Changed `app_login` to `login` in all use case templates
+  - Updated all three demo projects (Symfony 6.4, 7.0, and 8.0)
+  - Resolves "Unable to generate a URL for the named route" errors
+
+### Changed
+- **Demo Template Styling**: Improved styling for "Additional Resources" section in use cases
+  - Added button-style links with hover effects
+  - Improved visual consistency and user experience
+  - Better responsive layout with flexbox
+
 ## [0.0.3] - 2025-12-17
 
 ### Added
