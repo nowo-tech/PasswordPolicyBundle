@@ -47,4 +47,3 @@ final class PasswordPolicyBundleTest extends TestCase
         $this->assertSame('nowo_password_policy', $extension->getAlias());
     }
 }
-

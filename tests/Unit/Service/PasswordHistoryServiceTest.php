@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 
-
 use Carbon\Carbon;
-use Mockery\Mock;
+use Doctrine\Common\Collections\ArrayCollection;
 use Mockery;
+use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
-use Doctrine\Common\Collections\ArrayCollection;
 
 final class PasswordHistoryServiceTest extends UnitTestCase
 {
@@ -47,14 +46,13 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
         $this->assertCount(7, $deletedItems);
 
-        $actualTimestamps = array_map(fn(PasswordHistoryInterface $passwordHistory) => $passwordHistory->getCreatedAt()->format('U'), $deletedItems);
+        $actualTimestamps = array_map(fn (PasswordHistoryInterface $passwordHistory) => $passwordHistory->getCreatedAt()->format('U'), $deletedItems);
 
         $expectedTimestamps = [];
 
         for ($i = 6; $i >= 0; --$i) {
             $expectedTimestamps[] = $arrayCollection->offsetGet($i)->getCreatedAt()->format('U');
         }
-
 
         $this->assertEquals($expectedTimestamps, $actualTimestamps);
     }
@@ -88,6 +86,4 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
         return $arrayCollection;
     }
-
-
 }

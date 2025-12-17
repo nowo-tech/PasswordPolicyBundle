@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Validator;
 
-
 use Symfony\Component\Validator\Constraint;
 
 /**
@@ -19,7 +18,7 @@ class PasswordPolicy extends Constraint
     /**
      * Error code for when a password is found in the history.
      */
-    const PASSWORD_IN_HISTORY = 'PASSWORD_IN_HISTORY';
+    public const PASSWORD_IN_HISTORY = 'PASSWORD_IN_HISTORY';
 
     /**
      * The error message template.

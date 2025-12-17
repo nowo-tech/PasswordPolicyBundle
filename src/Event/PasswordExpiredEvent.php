@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Event;
 
-use Symfony\Contracts\EventDispatcher\Event;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Event dispatched when a password expiry is detected.
@@ -18,16 +18,15 @@ class PasswordExpiredEvent extends Event
     /**
      * PasswordExpiredEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user The user whose password has expired
-     * @param string $route The route that triggered the expiry check
-     * @param bool $willRedirect Whether the user will be redirected to reset password route
+     * @param HasPasswordPolicyInterface $user         The user whose password has expired
+     * @param string                     $route        The route that triggered the expiry check
+     * @param bool                       $willRedirect Whether the user will be redirected to reset password route
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,
         private readonly string $route,
         private readonly bool $willRedirect = false
-    )
-    {
+    ) {
     }
 
     /**
@@ -60,4 +59,3 @@ class PasswordExpiredEvent extends Event
         return $this->willRedirect;
     }
 }
-

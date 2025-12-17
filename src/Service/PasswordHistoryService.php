@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
-
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 
@@ -23,7 +22,8 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
      * items beyond the specified limit for removal.
      *
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
-     * @param int $historyLimit The maximum number of password history entries to keep
+     * @param int                        $historyLimit      The maximum number of password history entries to keep
+     *
      * @return array Array of password history items that should be removed
      */
     public function getHistoryItemsForCleanup(HasPasswordPolicyInterface $hasPasswordPolicy, int $historyLimit): array
@@ -53,5 +53,4 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
 
         return $removedItems;
     }
-
 }

@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests;
 
-
 use Carbon\Carbon;
-use Mockery;
 use DateTime;
+use Mockery;
 use PHPUnit\Framework\TestCase;
 
 class UnitTestCase extends TestCase
 {
-
     protected function tearDown(): void
     {
         Mockery::close();
@@ -22,7 +20,6 @@ class UnitTestCase extends TestCase
     {
         $timestamp = random_int($startDate, $endDate);
 
-        return (Carbon::now())->setTimestamp($timestamp);
+        return Carbon::now()->setTimestamp($timestamp);
     }
-
 }

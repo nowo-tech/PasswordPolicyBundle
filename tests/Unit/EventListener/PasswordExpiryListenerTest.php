@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
-
-use Mockery\Mock;
 use Mockery;
+use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
@@ -17,10 +16,9 @@ use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
@@ -79,7 +77,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->urlGeneratorMock,
             $this->translatorMock,
             'error',
-            'Your password expired. You need to change it'
+            'Your password expired. You need to change it',
         ])->makePartial();
     }
 
@@ -125,7 +123,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($flashBagMock);
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
-        
+
         // Verify that flash message was added
         $this->assertTrue(true);
     }
@@ -321,7 +319,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->with(Mockery::type(RedirectResponse::class));
 
         $listener->onKernelRequest($responseEventMock);
-        
+
         // Verify that redirect was set
         $this->assertTrue(true);
     }
@@ -389,7 +387,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldNotReceive('setResponse');
 
         $listener->onKernelRequest($responseEventMock);
-        
+
         // Verify that flash message was shown even though redirect failed
         $this->assertTrue(true);
     }
@@ -397,14 +395,14 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testLoggingWithDifferentLevels(): void
     {
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
-        
+
         // Test debug level
         $loggerMock->shouldReceive('debug')
                    ->once()
                    ->with('Test debug message', Mockery::on(function ($context) {
                        return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
                    }));
-        
+
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
             $this->requestStackMock,
@@ -417,57 +415,57 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             true,
             'debug'
         );
-        
+
         // Use reflection to call private log method
         $reflection = new \ReflectionClass($listener);
         $logMethod = $reflection->getMethod('log');
         $logMethod->invoke($listener, 'debug', 'Test debug message');
-        
+
         // Test info level
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Test info message', Mockery::on(function ($context) {
                        return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
                    }));
-        
+
         $logMethod->invoke($listener, 'info', 'Test info message');
-        
+
         // Test notice level
         $loggerMock->shouldReceive('notice')
                    ->once()
                    ->with('Test notice message', Mockery::on(function ($context) {
                        return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
                    }));
-        
+
         $logMethod->invoke($listener, 'notice', 'Test notice message');
-        
+
         // Test warning level
         $loggerMock->shouldReceive('warning')
                    ->once()
                    ->with('Test warning message', Mockery::on(function ($context) {
                        return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
                    }));
-        
+
         $logMethod->invoke($listener, 'warning', 'Test warning message');
-        
+
         // Test error level
         $loggerMock->shouldReceive('error')
                    ->once()
                    ->with('Test error message', Mockery::on(function ($context) {
                        return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
                    }));
-        
+
         $logMethod->invoke($listener, 'error', 'Test error message');
-        
+
         // Test default level (unknown level should default to info)
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Test unknown level message', Mockery::on(function ($context) {
                        return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
                    }));
-        
+
         $logMethod->invoke($listener, 'unknown', 'Test unknown level message');
-        
+
         $this->assertTrue(true);
     }
 
@@ -485,14 +483,14 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             true,
             'info'
         );
-        
+
         // Use reflection to call private log method with null logger
         $reflection = new \ReflectionClass($listener);
         $logMethod = $reflection->getMethod('log');
-        
+
         // Should not throw exception when logger is null
         $logMethod->invoke($listener, 'info', 'Test message');
-        
+
         $this->assertTrue(true);
     }
 
@@ -551,7 +549,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($flashBagMock);
 
         $listener->onKernelRequest($responseEventMock);
-        
+
         $this->assertTrue(true);
     }
 
@@ -619,7 +617,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($flashBagMock);
 
         $listener->onKernelRequest($responseEventMock);
-        
+
         $this->assertTrue(true);
     }
 
@@ -639,14 +637,41 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         // Create a concrete class that implements HasPasswordPolicyInterface and has getUserIdentifier method
         // This allows method_exists() to work correctly in the listener
-        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
-            public function getUserIdentifier(): string { return 'test@example.com'; }
-            public function getId(): ?int { return 123; }
-            public function getPassword(): string { return ''; }
-            public function getPasswordChangedAt(): ?\DateTime { return null; }
-            public function setPasswordChangedAt(\DateTime $dateTime): self { return $this; }
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection { return new \Doctrine\Common\Collections\ArrayCollection(); }
-            public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static { return $this; }
+        $userMock = new class () implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
+            public function getUserIdentifier(): string
+            {
+                return 'test@example.com';
+            }
+
+            public function getId(): ?int
+            {
+                return 123;
+            }
+
+            public function getPassword(): string
+            {
+                return '';
+            }
+
+            public function getPasswordChangedAt(): ?\DateTime
+            {
+                return null;
+            }
+
+            public function setPasswordChangedAt(\DateTime $dateTime): self
+            {
+                return $this;
+            }
+
+            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            {
+                return new \Doctrine\Common\Collections\ArrayCollection();
+            }
+
+            public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
         };
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
@@ -672,7 +697,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(function ($context) {
-                       return isset($context['user_identifier']) && 
+                       return isset($context['user_identifier']) &&
                               $context['user_identifier'] === 'test@example.com' &&
                               isset($context['user_id']) &&
                               isset($context['route']) &&
@@ -701,7 +726,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($flashBagMock);
 
         $listener->onKernelRequest($responseEventMock);
-        
+
         $this->assertTrue(true);
     }
 
@@ -720,14 +745,41 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         // Create a concrete class that has getEmail but not getUserIdentifier
-        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
-            public function getEmail(): string { return 'test@example.com'; }
-            public function getId(): ?int { return 123; }
-            public function getPassword(): string { return ''; }
-            public function getPasswordChangedAt(): ?\DateTime { return null; }
-            public function setPasswordChangedAt(\DateTime $dateTime): self { return $this; }
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection { return new \Doctrine\Common\Collections\ArrayCollection(); }
-            public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static { return $this; }
+        $userMock = new class () implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
+            public function getEmail(): string
+            {
+                return 'test@example.com';
+            }
+
+            public function getId(): ?int
+            {
+                return 123;
+            }
+
+            public function getPassword(): string
+            {
+                return '';
+            }
+
+            public function getPasswordChangedAt(): ?\DateTime
+            {
+                return null;
+            }
+
+            public function setPasswordChangedAt(\DateTime $dateTime): self
+            {
+                return $this;
+            }
+
+            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            {
+                return new \Doctrine\Common\Collections\ArrayCollection();
+            }
+
+            public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
         };
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
@@ -753,7 +805,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(function ($context) {
-                       return isset($context['user_identifier']) && 
+                       return isset($context['user_identifier']) &&
                               $context['user_identifier'] === 'test@example.com' &&
                               isset($context['user_id']) &&
                               isset($context['route']) &&
@@ -782,7 +834,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($flashBagMock);
 
         $listener->onKernelRequest($responseEventMock);
-        
+
         $this->assertTrue(true);
     }
 }

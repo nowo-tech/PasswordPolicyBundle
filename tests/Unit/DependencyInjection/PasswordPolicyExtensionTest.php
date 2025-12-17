@@ -35,10 +35,10 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithMinimalConfig(): void
     {
         $container = new ContainerBuilder();
-        
+
         // Create a mock entity class that implements the interface
         $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
-        
+
         $configs = [
             [
                 'entities' => [
@@ -59,10 +59,10 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithFullConfig(): void
     {
         $container = new ContainerBuilder();
-        
+
         // Create a mock entity class that implements the interface
         $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
-        
+
         $configs = [
             [
                 'entities' => [
@@ -137,10 +137,10 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithMultipleEntities(): void
     {
         $container = new ContainerBuilder();
-        
+
         // Create a mock entity class that implements the interface
         $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
-        
+
         $configs = [
             [
                 'entities' => [
@@ -159,12 +159,12 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadThrowsExceptionForDuplicateResetPasswordRoutes(): void
     {
         $container = new ContainerBuilder();
-        
+
         // Use reflection to test validateDuplicateRoutes directly
         // This avoids the need for real entity classes
         $reflection = new \ReflectionClass($this->extension);
         $method = $reflection->getMethod('validateDuplicateRoutes');
-        
+
         $entities = [
             'Entity1' => [
                 'reset_password_route_name' => 'reset_password',
@@ -185,7 +185,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         // Use reflection to test validateDuplicateRoutes directly
         $reflection = new \ReflectionClass($this->extension);
         $method = $reflection->getMethod('validateDuplicateRoutes');
-        
+
         $entities = [
             'Entity1' => [
                 'reset_password_route_name' => 'reset1',
@@ -208,7 +208,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         // Use reflection to test validateDuplicateRoutes directly
         $reflection = new \ReflectionClass($this->extension);
         $method = $reflection->getMethod('validateDuplicateRoutes');
-        
+
         $entities = [
             'Entity1' => [
                 'reset_password_route_name' => 'reset1',
@@ -224,8 +224,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         // Should not throw exception when both entities exclude the route
         $method->invoke($this->extension, $entities);
-        
+
         $this->assertTrue(true);
     }
 }
-
