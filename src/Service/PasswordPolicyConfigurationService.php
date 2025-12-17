@@ -57,4 +57,3 @@ class PasswordPolicyConfigurationService
         return isset($this->entityConfigurations[$entityClass][$key]);
     }
 }
-

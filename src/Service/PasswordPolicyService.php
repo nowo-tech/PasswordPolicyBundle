@@ -102,6 +102,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                     // This is a fallback for entities that don't support cloning
                     if (method_exists($hasPasswordPolicy, 'getPassword') && method_exists($hasPasswordPolicy, 'setPassword')) {
                         $originalPassword = $hasPasswordPolicy->getPassword();
+
                         try {
                             $hasPasswordPolicy->setPassword($hashedPassword);
                             $result = $this->userPasswordHasher->isPasswordValid($hasPasswordPolicy, $plainPassword);
