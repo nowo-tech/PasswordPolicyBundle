@@ -672,6 +672,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             {
                 return $this;
             }
+
+            public function removePasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
         };
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
@@ -777,6 +782,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             }
 
             public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
+
+            public function removePasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
             {
                 return $this;
             }
