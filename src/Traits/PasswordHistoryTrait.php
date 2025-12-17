@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Traits;
 
-
-use DateTimeInterface;
 use Carbon\Carbon;
 use DateTime;
+use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -18,12 +17,13 @@ use Doctrine\ORM\Mapping as ORM;
  */
 trait PasswordHistoryTrait
 {
-
     /**
      * The hashed password.
      *
      * @var string|null
+     *
      * @ORM\Column(type="string")
+     *
      * @ORM\Id()
      */
     private ?string $password = null;
@@ -32,6 +32,7 @@ trait PasswordHistoryTrait
      * The password salt (optional, for legacy password hashing).
      *
      * @var string|null
+     *
      * @ORM\Column(type="string", nullable=true)
      */
     private ?string $salt = null;
@@ -40,6 +41,7 @@ trait PasswordHistoryTrait
      * The creation date and time of this password history entry.
      *
      * @var DateTimeInterface|null
+     *
      * @ORM\Column(type="datetime")
      */
     private ?DateTimeInterface $createdAt = null;
@@ -58,11 +60,13 @@ trait PasswordHistoryTrait
      * Sets the hashed password.
      *
      * @param string $password The hashed password
+     *
      * @return self
      */
     public function setPassword(string $password): self
     {
         $this->password = $password;
+
         return $this;
     }
 
@@ -80,11 +84,13 @@ trait PasswordHistoryTrait
      * Sets the creation date and time.
      *
      * @param DateTimeInterface $createdAt The creation date
+     *
      * @return self
      */
     public function setCreatedAt(DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
@@ -94,6 +100,7 @@ trait PasswordHistoryTrait
      * If the creation date is not set, it will be set to the current time.
      *
      * @ORM\PrePersist
+     *
      * @return void
      */
     public function updatedTimestamps(): void
@@ -118,11 +125,11 @@ trait PasswordHistoryTrait
      * Sets the password salt.
      *
      * @param string|null $salt The password salt
+     *
      * @return void
      */
     public function setSalt(?string $salt): void
     {
         $this->salt = $salt;
     }
-
 }

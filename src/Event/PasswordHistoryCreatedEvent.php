@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Event;
 
-use Symfony\Contracts\EventDispatcher\Event;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Event dispatched when a password history entry is created.
@@ -19,16 +19,15 @@ class PasswordHistoryCreatedEvent extends Event
     /**
      * PasswordHistoryCreatedEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user The user whose password was changed
-     * @param PasswordHistoryInterface $passwordHistory The created password history entry
-     * @param int $removedEntriesCount The number of old password history entries that were removed
+     * @param HasPasswordPolicyInterface $user                The user whose password was changed
+     * @param PasswordHistoryInterface   $passwordHistory     The created password history entry
+     * @param int                        $removedEntriesCount The number of old password history entries that were removed
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,
         private readonly PasswordHistoryInterface $passwordHistory,
         private readonly int $removedEntriesCount = 0
-    )
-    {
+    ) {
     }
 
     /**
@@ -61,4 +60,3 @@ class PasswordHistoryCreatedEvent extends Event
         return $this->removedEntriesCount;
     }
 }
-

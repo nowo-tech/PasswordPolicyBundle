@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Event;
 
-use Symfony\Contracts\EventDispatcher\Event;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Event dispatched when a user attempts to reuse an old password.
@@ -19,14 +19,13 @@ class PasswordReuseAttemptedEvent extends Event
     /**
      * PasswordReuseAttemptedEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user The user attempting to reuse a password
-     * @param PasswordHistoryInterface $passwordHistory The password history entry that matches
+     * @param HasPasswordPolicyInterface $user            The user attempting to reuse a password
+     * @param PasswordHistoryInterface   $passwordHistory The password history entry that matches
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,
         private readonly PasswordHistoryInterface $passwordHistory
-    )
-    {
+    ) {
     }
 
     /**
@@ -49,4 +48,3 @@ class PasswordReuseAttemptedEvent extends Event
         return $this->passwordHistory;
     }
 }
-

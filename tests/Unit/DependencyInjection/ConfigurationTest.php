@@ -149,4 +149,3 @@ final class ConfigurationTest extends UnitTestCase
         $this->assertSame(90, $config['entities']['App\Entity\User']['expiry_days']);
     }
 }
-

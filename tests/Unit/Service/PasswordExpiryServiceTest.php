@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 
-
 use Carbon\Carbon;
+use Mockery;
 use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
-use Mockery;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
@@ -240,16 +239,16 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn('anon.');
-        
+
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCurrentUser method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCurrentUser');
-        
+
         $result = $method->invoke($service);
         $this->assertNull($result);
     }
@@ -257,20 +256,20 @@ final class PasswordExpiryServiceTest extends UnitTestCase
     public function testGetCurrentUserWithNonHasPasswordPolicyInterface(): void
     {
         $nonPolicyUser = new \stdClass();
-        
+
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($nonPolicyUser);
-        
+
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCurrentUser method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCurrentUser');
-        
+
         $result = $method->invoke($service);
         $this->assertNull($result);
     }
@@ -280,16 +279,16 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($this->userMock);
-        
+
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCurrentUser method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCurrentUser');
-        
+
         $result = $method->invoke($service);
         $this->assertEquals($this->userMock, $result);
     }
@@ -300,11 +299,11 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                                ->andReturn(null);
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCurrentUser method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCurrentUser');
-        
+
         $result = $method->invoke($service);
         $this->assertNull($result);
     }
@@ -314,16 +313,16 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($this->userMock);
-        
+
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private prepareEntityClass method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('prepareEntityClass');
-        
+
         $result = $method->invoke($service, null);
         $this->assertEquals($this->userMock::class, $result);
     }
@@ -331,11 +330,11 @@ final class PasswordExpiryServiceTest extends UnitTestCase
     public function testPrepareEntityClassWithProvidedClass(): void
     {
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private prepareEntityClass method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('prepareEntityClass');
-        
+
         $result = $method->invoke($service, 'CustomEntityClass');
         $this->assertEquals('CustomEntityClass', $result);
     }
@@ -347,19 +346,19 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                        ->andReturn(123);
         $this->userMock->shouldReceive('getPasswordChangedAt')
                        ->andReturn($dateTime);
-        
+
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCacheKey method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCacheKey');
-        
+
         $result = $method->invoke($service, $this->userMock);
-        
+
         // Cache key should contain user class hash, user ID, and timestamp
         $this->assertStringStartsWith('password_expiry_', $result);
         $this->assertStringContainsString('123', $result);
-        $this->assertStringContainsString((string)$dateTime->getTimestamp(), $result);
+        $this->assertStringContainsString((string) $dateTime->getTimestamp(), $result);
     }
 
     public function testGetCacheKeyWithNoId(): void
@@ -373,15 +372,15 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                       ->andReturn($dateTime);
         $userWithoutId->shouldReceive('getId')
                       ->andReturn(null);
-        
+
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCacheKey method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCacheKey');
-        
+
         $result = $method->invoke($service, $userWithoutId);
-        
+
         // Cache key should be generated (getId() returns null which becomes empty string)
         $this->assertStringStartsWith('password_expiry_', $result);
         $this->assertNotEmpty($result);
@@ -393,15 +392,15 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                        ->andReturn(123);
         $this->userMock->shouldReceive('getPasswordChangedAt')
                        ->andReturn(null);
-        
+
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
-        
+
         // Use reflection to call private getCacheKey method
         $reflection = new \ReflectionClass($service);
         $method = $reflection->getMethod('getCacheKey');
-        
+
         $result = $method->invoke($service, $this->userMock);
-        
+
         // Cache key should contain 'no-date' when passwordChangedAt is null
         $this->assertStringStartsWith('password_expiry_', $result);
         $this->assertStringContainsString('no-date', $result);
@@ -412,16 +411,16 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $cacheMock = Mockery::mock(\Psr\Cache\CacheItemPoolInterface::class);
         $cacheItemMock1 = Mockery::mock(\Psr\Cache\CacheItemInterface::class);
         $cacheItemMock2 = Mockery::mock(\Psr\Cache\CacheItemInterface::class);
-        
+
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($this->userMock);
-        
+
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
 
         $passwordChangedAt = Carbon::now()->subDays(100);
-        // getPasswordChangedAt is called: 
+        // getPasswordChangedAt is called:
         // 1. In getCacheKey() when checking cache (line 82)
         // 2. When calculating expiry (line 93)
         // 3. In getCacheKey() when storing in cache (line 109)
@@ -436,7 +435,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                        ->andReturn(123);
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $cacheMock, true, 3600);
-        
+
         $config = new PasswordExpiryConfiguration($this->userMock::class, 90, ['lock'], [], 'reset');
         $service->addEntity($config);
 
@@ -444,7 +443,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $cacheItemMock1->shouldReceive('isHit')
                        ->once()
                        ->andReturn(false);
-        
+
         // Second call to getItem (store in cache)
         $cacheItemMock2->shouldReceive('set')
                       ->once()
@@ -454,7 +453,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                       ->once()
                       ->with(3600)
                       ->andReturnSelf();
-        
+
         $cacheMock->shouldReceive('getItem')
                   ->twice()
                   ->andReturn($cacheItemMock1, $cacheItemMock2);
@@ -470,11 +469,11 @@ final class PasswordExpiryServiceTest extends UnitTestCase
     {
         $cacheMock = Mockery::mock(\Psr\Cache\CacheItemPoolInterface::class);
         $cacheItemMock = Mockery::mock(\Psr\Cache\CacheItemInterface::class);
-        
+
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($this->userMock);
-        
+
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
 
@@ -487,7 +486,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                        ->andReturn(Carbon::now()->subDays(50));
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $cacheMock, true, 3600);
-        
+
         $config = new PasswordExpiryConfiguration($this->userMock::class, 90, ['lock'], [], 'reset');
         $service->addEntity($config);
 
@@ -498,7 +497,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $cacheItemMock->shouldReceive('get')
                       ->once()
                       ->andReturn(false);
-        
+
         $cacheMock->shouldReceive('getItem')
                   ->once()
                   ->andReturn($cacheItemMock);
@@ -510,31 +509,30 @@ final class PasswordExpiryServiceTest extends UnitTestCase
     public function testInvalidateCache(): void
     {
         $cacheMock = Mockery::mock(\Psr\Cache\CacheItemPoolInterface::class);
-        
+
         $this->userMock->shouldReceive('getId')
                        ->andReturn(123);
         $this->userMock->shouldReceive('getPasswordChangedAt')
                        ->andReturn(new \DateTime());
 
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $cacheMock, true, 3600);
-        
+
         $cacheMock->shouldReceive('deleteItem')
                   ->once()
                   ->with(Mockery::type('string'));
 
         $service->invalidateCache($this->userMock);
-        
+
         $this->assertTrue(true);
     }
 
     public function testInvalidateCacheWhenCacheDisabled(): void
     {
         $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null, false, 3600);
-        
+
         // Should not throw exception when cache is disabled
         $service->invalidateCache($this->userMock);
-        
+
         $this->assertTrue(true);
     }
-
 }

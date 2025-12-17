@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
-
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -18,7 +17,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 class PasswordPolicyService implements PasswordPolicyServiceInterface
 {
-
     /**
      * PasswordPolicyService constructor.
      *
@@ -31,8 +29,9 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
     /**
      * Gets a password history entry that matches the given plain password.
      *
-     * @param string $password The plain password to check
+     * @param string                     $password          The plain password to check
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
+     *
      * @return PasswordHistoryInterface|null The matching password history entry or null if not found
      */
     public function getHistoryByPassword(
@@ -54,9 +53,10 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
      * Check if a password matches a hashed password.
      *
      * @param HasPasswordPolicyInterface $hasPasswordPolicy
-     * @param string $hashedPassword
-     * @param string $plainPassword
-     * @param string|null $salt
+     * @param string                     $hashedPassword
+     * @param string                     $plainPassword
+     * @param string|null                $salt
+     *
      * @return bool
      */
     private function isPasswordValid(
@@ -75,12 +75,14 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                     if (function_exists('password_verify')) {
                         return password_verify($plainPassword, $hashedPassword);
                     }
+
                     return false;
                 }
-                
+
                 $tempUser = clone $hasPasswordPolicy;
                 if (method_exists($tempUser, 'setPassword')) {
                     $tempUser->setPassword($hashedPassword);
+
                     return $this->userPasswordHasher->isPasswordValid($tempUser, $plainPassword);
                 }
             } catch (\Exception $e) {
@@ -88,6 +90,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                 if (function_exists('password_verify')) {
                     return password_verify($plainPassword, $hashedPassword);
                 }
+
                 return false;
             }
         }
@@ -96,9 +99,8 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         if (function_exists('password_verify')) {
             return password_verify($plainPassword, $hashedPassword);
         }
-        
+
         // Last resort: return false (never compare hashes directly)
         return false;
     }
-
 }

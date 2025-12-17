@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Validator;
 
-
-use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Carbon\Carbon;
+use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
-use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Validator\Constraint;
-use Symfony\Component\Validator\ConstraintValidator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Component\Validator\Constraint;
+use Symfony\Component\Validator\ConstraintValidator;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Validator for the PasswordPolicy constraint.
@@ -26,35 +25,35 @@ use Psr\Log\NullLogger;
  */
 class PasswordPolicyValidator extends ConstraintValidator
 {
-
     /**
      * PasswordPolicyValidator constructor.
      *
      * @param PasswordPolicyServiceInterface $passwordPolicyService The service for checking password history
-     * @param TranslatorInterface $translator The translator service for translating error messages
-     * @param LoggerInterface|null $logger The logger service (optional, uses NullLogger if not provided)
-     * @param bool $enableLogging Whether logging is enabled
-     * @param string $logLevel The logging level to use
-     * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
+     * @param TranslatorInterface            $translator            The translator service for translating error messages
+     * @param LoggerInterface|null           $logger                The logger service (optional, uses NullLogger if not provided)
+     * @param bool                           $enableLogging         Whether logging is enabled
+     * @param string                         $logLevel              The logging level to use
+     * @param EventDispatcherInterface|null  $eventDispatcher       The event dispatcher (optional)
      */
     public function __construct(
-      private readonly PasswordPolicyServiceInterface $passwordPolicyService,
-      private TranslatorInterface $translator,
-      private readonly ?LoggerInterface $logger = null,
-      private readonly bool $enableLogging = true,
-      private readonly string $logLevel = 'info',
-      private readonly ?EventDispatcherInterface $eventDispatcher = null
-    )
-    {
+        private readonly PasswordPolicyServiceInterface $passwordPolicyService,
+        private TranslatorInterface $translator,
+        private readonly ?LoggerInterface $logger = null,
+        private readonly bool $enableLogging = true,
+        private readonly string $logLevel = 'info',
+        private readonly ?EventDispatcherInterface $eventDispatcher = null
+    ) {
     }
 
     /**
      * Validates that the password has not been used before.
      *
-     * @param mixed $value The plain password value to validate
+     * @param mixed      $value      The plain password value to validate
      * @param Constraint $constraint The PasswordPolicy constraint instance
-     * @return void
+     *
      * @throws ValidationException If the entity does not implement HasPasswordPolicyInterface
+     *
+     * @return void
      */
     public function validate($value, Constraint $constraint): void
     {
@@ -65,8 +64,10 @@ class PasswordPolicyValidator extends ConstraintValidator
         $entity = $this->context->getObject();
 
         if (!$entity instanceof HasPasswordPolicyInterface) {
-            throw new ValidationException(message: sprintf('Expected validation entity to implements %s',
-                HasPasswordPolicyInterface::class));
+            throw new ValidationException(message: sprintf(
+                'Expected validation entity to implements %s',
+                HasPasswordPolicyInterface::class
+            ));
         }
 
         Carbon::setLocale($this->translator->getLocale());
@@ -109,9 +110,10 @@ class PasswordPolicyValidator extends ConstraintValidator
     /**
      * Logs a message with the configured log level.
      *
-     * @param string $level The log level (debug, info, notice, warning, error)
+     * @param string $level   The log level (debug, info, notice, warning, error)
      * @param string $message The log message
-     * @param array $context Additional context data
+     * @param array  $context Additional context data
+     *
      * @return void
      */
     private function log(string $level, string $message, array $context = []): void
@@ -121,7 +123,7 @@ class PasswordPolicyValidator extends ConstraintValidator
         }
 
         $context['bundle'] = 'PasswordPolicyBundle';
-        
+
         match ($level) {
             'debug' => $this->logger->debug($message, $context),
             'info' => $this->logger->info($message, $context),
