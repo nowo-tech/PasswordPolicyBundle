@@ -1182,6 +1182,8 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
  *         reset_password_route_name: scalar|null, // The route name for password reset. This route will be used when redirect_on_expiry is enabled. Must be a valid route name in your application.
  *         notified_routes?: list<scalar|null>,
  *         excluded_notified_routes?: list<scalar|null>,
+ *         detect_password_extensions?: bool, // If true, detects when a new password is an extension of an old password (e.g., "password123" is an extension of "password"). This helps prevent users from simply adding numbers or characters to their old passwords. // Default: false
+ *         extension_min_length?: int, // Minimum length of the base password to consider for extension detection. Only passwords longer than this value will be checked for extensions. Default is 4. // Default: 4
  *     }>,
  *     expiry_listener?: array{ // Configuration for the password expiry event listener that checks for expired passwords on each request.
  *         priority?: int, // Priority of the expiry listener. Higher values mean the listener runs earlier. Default is 0. // Default: 0
