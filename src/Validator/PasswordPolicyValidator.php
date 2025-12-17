@@ -28,13 +28,13 @@ class PasswordPolicyValidator extends ConstraintValidator
     /**
      * PasswordPolicyValidator constructor.
      *
-     * @param PasswordPolicyServiceInterface $passwordPolicyService The service for checking password history
-     * @param TranslatorInterface            $translator            The translator service for translating error messages
-     * @param LoggerInterface|null           $logger                The logger service (optional, uses NullLogger if not provided)
-     * @param bool                           $enableLogging         Whether logging is enabled
-     * @param string                         $logLevel              The logging level to use
-     * @param EventDispatcherInterface|null  $eventDispatcher       The event dispatcher (optional)
-     * @param \Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService|null $configService The configuration service (optional)
+     * @param PasswordPolicyServiceInterface                                             $passwordPolicyService The service for checking password history
+     * @param TranslatorInterface                                                        $translator            The translator service for translating error messages
+     * @param LoggerInterface|null                                                       $logger                The logger service (optional, uses NullLogger if not provided)
+     * @param bool                                                                       $enableLogging         Whether logging is enabled
+     * @param string                                                                     $logLevel              The logging level to use
+     * @param EventDispatcherInterface|null                                              $eventDispatcher       The event dispatcher (optional)
+     * @param \Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService|null $configService         The configuration service (optional)
      */
     public function __construct(
         private readonly PasswordPolicyServiceInterface $passwordPolicyService,
@@ -78,6 +78,7 @@ class PasswordPolicyValidator extends ConstraintValidator
         $history = $this->passwordPolicyService->getHistoryByPassword($value, $entity);
         if ($history instanceof PasswordHistoryInterface) {
             $this->handlePasswordReuse($entity, $history, $constraint, 'exact');
+
             return;
         }
 
@@ -95,6 +96,7 @@ class PasswordPolicyValidator extends ConstraintValidator
             $extensionHistory = $this->passwordPolicyService->getHistoryByPasswordExtension($value, $entity, $extensionMinLength);
             if ($extensionHistory instanceof PasswordHistoryInterface) {
                 $this->handlePasswordReuse($entity, $extensionHistory, $constraint, 'extension');
+
                 return;
             }
         }
@@ -103,10 +105,10 @@ class PasswordPolicyValidator extends ConstraintValidator
     /**
      * Handles password reuse detection (both exact matches and extensions).
      *
-     * @param HasPasswordPolicyInterface $entity    The entity with password history
-     * @param PasswordHistoryInterface   $history   The matching password history entry
-     * @param PasswordPolicy            $constraint The constraint instance
-     * @param string                    $type      The type of match: 'exact' or 'extension'
+     * @param HasPasswordPolicyInterface $entity     The entity with password history
+     * @param PasswordHistoryInterface   $history    The matching password history entry
+     * @param PasswordPolicy             $constraint The constraint instance
+     * @param string                     $type       The type of match: 'exact' or 'extension'
      *
      * @return void
      */
