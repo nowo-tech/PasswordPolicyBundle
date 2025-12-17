@@ -5,11 +5,18 @@ This directory contains three demo projects, one for each supported Symfony vers
 ## Features
 
 - Three separate demo projects for Symfony 6.4, 7.0, and 8.0
+- **Authentication System**: Complete login system with Symfony Security
+  - Form-based authentication
+  - User session management
+  - Login/logout functionality
+  - Visual user indicators in the interface
 - Complete CRUD interface for user management
+- **Password Expiry Notifications**: Visual banners and indicators showing password expiry status
+- **Password Expiry Information**: Detailed information about password expiry policy and days remaining
 - Well-structured Twig templates using inheritance and partials
 - Docker setup for easy development
 - Independent Docker containers for each demo
-- MySQL database with migrations and DataFixtures
+- MySQL database with migrations, initial data, and password history
 
 ## Requirements
 
@@ -55,13 +62,17 @@ Or using the Makefile from the `demo/` directory:
 
 ```bash
 cd demo
-make up-symfony6
-make install-symfony6
-make database-symfony6
+make up-symfony6  # Automatically installs dependencies, sets up database, and runs migrations
 
 # Or verify that the demo is running correctly
 make verify DEMO=symfony6
 ```
+
+**Note**: The `make up-*` commands now automatically:
+- Install Composer dependencies
+- Copy updated bundle files to vendor directory
+- Create database and run migrations
+- Set up initial data with password history
 
 ### Symfony 7.0 Demo
 
@@ -192,10 +203,17 @@ Each demo includes:
   - Symfony 7.0: Port 33062
   - Symfony 8.0: Port 33063
 - **Doctrine Migrations**: Database schema migrations
-- **DataFixtures**: Sample users with different password expiry states
-  - `demo@example.com` - Password expiring soon (85 days old)
-  - `admin@example.com` - Recently changed password
-  - `expired@example.com` - Expired password (100 days old)
+- **Initial Data**: Pre-configured users with different password expiry states and complete password history
+  - `expired@example.com` / `expired123` - Password expired 100 days ago (shows as **Expired** badge, triggers expiry listener)
+  - `demo@example.com` / `demo123` - Password changed 85 days ago (shows as **Expiring Soon** badge, expires in 5 days)
+  - `admin@example.com` / `admin123` - Password changed today (shows as **Active** badge)
+  - Each user includes password history entries for testing password reuse prevention
+  - Flash messages on login page and home page inform about test credentials
+- **Password Expiry Visual Indicators**:
+  - Prominent banners showing password expiry status (expired, expiring soon, warning)
+  - Detailed expiry information in user list with days remaining
+  - Color-coded badges (red for expired, yellow for expiring soon, green for active)
+  - Informative sections explaining password expiry policy
 - **Password Policy Configuration**: Example configuration file showing all available options
   - Located at `config/packages/nowo_password_policy.yaml`
   - Demonstrates password history, expiry, and policy options
@@ -272,29 +290,89 @@ This command will:
 
 ### Option 2: MySQL Init Script
 
-Alternatively, you can use the MySQL init script located at `docker/mysql/init.sql`. This script is automatically executed when MySQL container starts for the first time. However, for this demo, we use DataFixtures instead.
+Alternatively, you can use the MySQL init script located at `docker/mysql/init.sql`. This script is automatically executed when MySQL container starts for the first time and includes:
+- Table creation with `IF NOT EXISTS` for compatibility with migrations
+- Initial demo users with bcrypt password hashes
+- Complete password history entries for each user
+- Dynamic date calculations for realistic expiry scenarios
 
-To use the init script approach:
-1. Edit `docker/mysql/init.sql` with your SQL statements
-2. Remove the MySQL volume to force re-initialization: `docker-compose down -v`
-3. Start the containers: `docker-compose up -d`
+The init script is automatically executed when the MySQL container starts for the first time. Migrations are designed to work alongside init scripts using `IF NOT EXISTS` checks.
 
-**Note**: The init script approach is less flexible and doesn't integrate with Symfony's password hashing, so DataFixtures are recommended.
+**Note**: Both approaches work together - init scripts provide initial data, and migrations ensure schema consistency.
+
+## Authentication and Password Expiry Testing
+
+The demos include a complete authentication system to test password expiry functionality:
+
+### Testing Password Expiry Listener
+
+1. **Access the Login Page**: Navigate to `/login` in any demo
+2. **Login with Expired User**: Use `expired@example.com` / `expired123`
+3. **Navigate to Home**: Go to the home page (`/`) - the password expiry listener will trigger
+4. **See Warning**: A flash message will appear indicating the password has expired
+5. **Test Other Users**: Try logging in with other demo users to see different expiry states
+
+### Demo User Credentials
+
+- **expired@example.com** / **expired123** - Password expired 100 days ago
+  - Will trigger the password expiry listener when accessing routes in `notified_routes`
+  - Shows flash message warning about expired password
+- **demo@example.com** / **demo123** - Password expiring soon (85 days old, expires in 5 days)
+  - Shows as "Expiring Soon" in the user list
+- **admin@example.com** / **admin123** - Recently changed password (active)
+  - Shows as "Active" in the user list
+
+### Flash Messages
+
+The demos include informative flash messages:
+- **Login Page**: Shows available test credentials and their expiry states
+- **Home Page**: Instructions on how to test the password expiry listener
+- **Password Expiry Warning**: Displayed when authenticated user with expired password accesses locked routes
+
+## Use Cases Demonstration
+
+The demos include a comprehensive **Use Cases** section that demonstrates all features of the Password Policy Bundle:
+
+- **Password Expiry Detection**: Test password expiry detection, view expiry status, locked routes, and excluded routes
+- **Password History Tracking**: View complete password history for users and understand how passwords are tracked
+- **Password Reuse Prevention**: See how the bundle prevents users from reusing old passwords
+- **Password Validation**: Learn about the `@PasswordPolicy` validator constraint and how it works
+- **Excluded Routes**: Understand how excluded routes work to prevent redirect loops
+- **Redirect on Expiry**: Learn about automatic redirection when password expires
+
+Access the Use Cases section from the home page or directly at `/use-cases`.
 
 ## CRUD Interface
 
 The demos include a complete CRUD (Create, Read, Update, Delete) interface for managing users and testing password policies.
 
+### Password Expiry Features
+
+The demo interface includes comprehensive password expiry information:
+
+- **Banner Notifications**: Prominent banners at the top of the user list page showing:
+  - Number of users with expired passwords (red banner)
+  - Number of users with passwords expiring soon (yellow banner)
+- **Detailed Status Information**: Each user in the list shows:
+  - Password expiry status badge (Active, Expiring Soon, Expired)
+  - Days remaining until expiry or days since expiry
+  - Visual color coding for quick status identification
+- **Policy Information**: Informative sections explaining:
+  - Password expiry policy (90 days default)
+  - What each status badge means
+  - How to change passwords
+
 ### Template Structure
 
 The demo templates are well-organized using Twig best practices:
 
-- **Base Template** (`base.html.twig`): Centralized CSS styles and HTML structure
+- **Base Template** (`base.html.twig`): Centralized CSS styles and HTML structure with consistent width (1200px max-width)
 - **Template Inheritance**: All templates extend the base template using `{% extends %}`
 - **Reusable Partials**: Common components like password status badges and user actions are in partial templates
   - `_password_status.html.twig`: Displays password expiry status badges
   - `_user_actions.html.twig`: Displays action buttons (View, Edit, Change Password, Delete)
 - **Blocks**: Customizable sections using `{% block %}` for title, styles, and body content
+- **Consistent Layout**: All containers use the same width for visual alignment
 
 This structure eliminates code duplication and makes the templates easy to maintain and extend.
 

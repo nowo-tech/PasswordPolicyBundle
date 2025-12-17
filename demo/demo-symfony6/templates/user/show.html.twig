@@ -5,9 +5,6 @@
 {% block styles %}
     {{ parent() }}
     <style>
-        .container {
-            max-width: 1000px;
-        }
         h1 {
             display: block;
         }
@@ -35,7 +32,9 @@
             {% if user.passwordChangedAt %}
                 {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}
                 <br>
-                <small>({{ user.passwordChangedAt|date('U')|date_diff('now')|date('%a days ago') }})</small>
+                {% set diff = date('now').timestamp - user.passwordChangedAt.timestamp %}
+                {% set days = (diff / 86400)|round %}
+                <small>({{ days }} day{{ days != 1 ? 's' : '' }} ago)</small>
             {% else %}
                 <em>Never</em>
             {% endif %}

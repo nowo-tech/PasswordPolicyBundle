@@ -15,6 +15,13 @@ services:
   Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator:
     autowire: true
 
+  # Exclude PasswordExpiryListener from autodiscovery to prevent autowiring issues
+  # It will be registered manually in PasswordPolicyExtension with all arguments
+  Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener:
+    autowire: false
+    autoconfigure: false
+    public: false
+
   Nowo\PasswordPolicyBundle\Service\PasswordExpiryService:
     arguments:
       $tokenStorage: '@security.token_storage'

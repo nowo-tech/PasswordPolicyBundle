@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  * Tests for PasswordPolicyExtension.
  *
  * @author Héctor Franco Aceituno <hectorfranco@nowo.tech>
- * @copyright 2024 Nowo.tech
+ * @copyright 2025 Nowo.tech
  */
 final class PasswordPolicyExtensionTest extends UnitTestCase
 {
@@ -35,10 +35,14 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithMinimalConfig(): void
     {
         $container = new ContainerBuilder();
+        
+        // Create a mock entity class that implements the interface
+        $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
+        
         $configs = [
             [
                 'entities' => [
-                    'App\Entity\User' => [
+                    $mockEntityClass => [
                         'reset_password_route_name' => 'user_reset_password',
                     ],
                 ],
@@ -49,16 +53,20 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->extension->load($configs, $container);
 
         $this->assertTrue($container->hasDefinition('Nowo\PasswordPolicyBundle\Service\PasswordExpiryService'));
-        $this->assertTrue($container->hasDefinition('password_expiry_configuration.App\Entity\User'));
+        $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
     }
 
     public function testLoadWithFullConfig(): void
     {
         $container = new ContainerBuilder();
+        
+        // Create a mock entity class that implements the interface
+        $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
+        
         $configs = [
             [
                 'entities' => [
-                    'App\Entity\User' => [
+                    $mockEntityClass => [
                         'password_field' => 'password',
                         'password_history_field' => 'passwordHistory',
                         'passwords_to_remember' => 5,
@@ -85,7 +93,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->extension->load($configs, $container);
 
         $this->assertTrue($container->hasDefinition('Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener'));
-        $this->assertTrue($container->hasDefinition('password_expiry_configuration.App\Entity\User'));
+        $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
     }
 
     public function testLoadThrowsExceptionForNonExistentEntity(): void
@@ -129,10 +137,10 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithMultipleEntities(): void
     {
         $container = new ContainerBuilder();
-
+        
         // Create a mock entity class that implements the interface
         $mockEntityClass = get_class($this->createMock(HasPasswordPolicyInterface::class));
-
+        
         $configs = [
             [
                 'entities' => [
@@ -147,4 +155,77 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
     }
+
+    public function testLoadThrowsExceptionForDuplicateResetPasswordRoutes(): void
+    {
+        $container = new ContainerBuilder();
+        
+        // Use reflection to test validateDuplicateRoutes directly
+        // This avoids the need for real entity classes
+        $reflection = new \ReflectionClass($this->extension);
+        $method = $reflection->getMethod('validateDuplicateRoutes');
+        
+        $entities = [
+            'Entity1' => [
+                'reset_password_route_name' => 'reset_password',
+            ],
+            'Entity2' => [
+                'reset_password_route_name' => 'reset_password', // Duplicate!
+            ],
+        ];
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Duplicate reset_password_route_name');
+
+        $method->invoke($this->extension, $entities);
+    }
+
+    public function testLoadThrowsExceptionForDuplicateNotifiedRoutes(): void
+    {
+        // Use reflection to test validateDuplicateRoutes directly
+        $reflection = new \ReflectionClass($this->extension);
+        $method = $reflection->getMethod('validateDuplicateRoutes');
+        
+        $entities = [
+            'Entity1' => [
+                'reset_password_route_name' => 'reset1',
+                'notified_routes' => ['dashboard'],
+            ],
+            'Entity2' => [
+                'reset_password_route_name' => 'reset2',
+                'notified_routes' => ['dashboard'], // Duplicate without exclusion!
+            ],
+        ];
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Duplicate notified_route');
+
+        $method->invoke($this->extension, $entities);
+    }
+
+    public function testLoadAllowsDuplicateNotifiedRoutesWhenExcluded(): void
+    {
+        // Use reflection to test validateDuplicateRoutes directly
+        $reflection = new \ReflectionClass($this->extension);
+        $method = $reflection->getMethod('validateDuplicateRoutes');
+        
+        $entities = [
+            'Entity1' => [
+                'reset_password_route_name' => 'reset1',
+                'notified_routes' => ['dashboard'],
+                'excluded_notified_routes' => ['dashboard'], // Excluded in first
+            ],
+            'Entity2' => [
+                'reset_password_route_name' => 'reset2',
+                'notified_routes' => ['dashboard'],
+                'excluded_notified_routes' => ['dashboard'], // Excluded in second
+            ],
+        ];
+
+        // Should not throw exception when both entities exclude the route
+        $method->invoke($this->extension, $entities);
+        
+        $this->assertTrue(true);
+    }
 }
+

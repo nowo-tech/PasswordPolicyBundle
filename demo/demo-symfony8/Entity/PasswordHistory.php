@@ -25,7 +25,7 @@ class PasswordHistory implements PasswordHistoryInterface
     #[ORM\Column(type: 'string')]
     private string $password;
 
-    #[ORM\Column(type: 'datetime')]
+    #[ORM\Column(name: 'created_at', type: 'datetime')]
     private ?DateTimeInterface $createdAt = null;
 
     public function __construct()

@@ -5,10 +5,6 @@
 {% block styles %}
     {{ parent() }}
     <style>
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-        }
         h1 {
             display: block;
         }
@@ -31,9 +27,26 @@
         {% endfor %}
     </ul>
     
+    <div class="password-expiry-info">
+        <strong>🔐 Password Expiry Testing:</strong>
+        <p style="margin: 10px 0;">This demo includes pre-configured users with different password expiry states:</p>
+        <ul style="margin: 10px 0 0 20px; padding: 0;">
+            <li><strong>expired@example.com</strong> - Password: <code>expired123</code> - Password expired 100 days ago (will show as <span class="badge badge-danger">Expired</span>)</li>
+            <li><strong>demo@example.com</strong> - Password: <code>demo123</code> - Password changed 85 days ago (will show as <span class="badge badge-warning">Expiring Soon</span> - expires in 5 days)</li>
+            <li><strong>admin@example.com</strong> - Password: <code>admin123</code> - Password changed today (will show as <span class="badge badge-success">Active</span>)</li>
+        </ul>
+        <p style="margin: 10px 0 0 0;"><strong>Note:</strong> Passwords expire after <strong>90 days</strong>. The system will show warnings when passwords are about to expire or have already expired.</p>
+        <p style="margin: 10px 0 0 0; padding-top: 10px; border-top: 1px solid #b8daff;"><strong>💡 Testing Password Expiry Listener:</strong> To see the password expiry listener in action, authenticate with <strong>expired@example.com</strong> (password: <code>expired123</code>) and access this page. The listener will show a flash message warning about the expired password when accessing routes configured in <code>notified_routes</code>.</p>
+    </div>
+    
     <h2>Try It Out:</h2>
-    <p>Use the CRUD interface to manage users and test password policies:</p>
-    <a href="{{ path('user_index') }}" class="btn" style="margin-top: 20px;">
-        Go to Users Management →
-    </a>
+    <p>Explore all the features of the Password Policy Bundle:</p>
+    <div style="margin-top: 20px;">
+        <a href="{{ useCasesUrl ?? path('use_cases_index') }}" class="btn" style="margin-right: 10px;">
+            📚 View All Use Cases →
+        </a>
+        <a href="{{ path('user_index') }}" class="btn">
+            👥 Users Management →
+        </a>
+    </div>
 {% endblock %}

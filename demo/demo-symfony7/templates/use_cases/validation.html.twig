@@ -1,0 +1,59 @@
+{% extends 'use_cases/base.html.twig' %}
+
+{% block title %}Password Validation - Use Cases{% endblock %}
+
+{% block use_case_title %}Password Validation{% endblock %}
+
+{% block use_case_content %}
+    <div class="info-box info-box-info">
+        <h3>@PasswordPolicy Validator Constraint</h3>
+        <p>The bundle provides a Symfony validator constraint that automatically checks passwords against the password history.</p>
+    </div>
+    
+    <h2>Validation Rules</h2>
+    <ul>
+        {% for rule in validationRules %}
+            <li>{{ rule }}</li>
+        {% endfor %}
+    </ul>
+    
+    <h2>Usage in Entity</h2>
+    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;"><code>use Nowo\PasswordPolicyBundle\Validator\PasswordPolicy;
+
+class User implements HasPasswordPolicyInterface
+{
+    #[PasswordPolicy]
+    private ?string $plainPassword = null;
+    
+    // ... rest of entity
+}</code></pre>
+    
+    <h2>How It Works</h2>
+    <ol>
+        <li>The <code>@PasswordPolicy</code> constraint is applied to the <code>$plainPassword</code> field</li>
+        <li>When the form is validated, Symfony calls <code>PasswordPolicyValidator</code></li>
+        <li>The validator retrieves the entity from the validation context</li>
+        <li>It calls <code>PasswordPolicyService::getHistoryByPassword()</code> to check if the password exists in history</li>
+        <li>If found, validation fails with an appropriate error message</li>
+        <li>The error is displayed in the form</li>
+    </ol>
+    
+    <h2>Integration with Forms</h2>
+    <p>The validator works seamlessly with Symfony Forms:</p>
+    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;"><code>$form = $this->createForm(ChangePasswordType::class);
+
+if ($form->isSubmitted() && $form->isValid()) {
+    // Password passed validation - not in history
+    // Proceed with password change
+} else {
+    // Validation errors are automatically displayed
+    // User must choose a different password
+}</code></pre>
+    
+    <div class="info-box info-box-success">
+        <strong>✅ Test It:</strong> 
+        <a href="{{ path('user_index') }}">Go to Users Management</a> and try to change a user's password to one that's in their history. 
+        You'll see a validation error.
+    </div>
+{% endblock %}
+

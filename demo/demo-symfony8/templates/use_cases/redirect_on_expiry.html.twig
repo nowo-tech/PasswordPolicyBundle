@@ -1,0 +1,77 @@
+{% extends 'use_cases/base.html.twig' %}
+
+{% block title %}Redirect on Expiry - Use Cases{% endblock %}
+
+{% block use_case_title %}Redirect on Password Expiry{% endblock %}
+
+{% block use_case_content %}
+    <div class="info-box {% if redirectEnabled %}info-box-success{% else %}info-box-warning{% endif %}">
+        <h3>Current Status</h3>
+        <p><strong>Redirect on Expiry:</strong> 
+            {% if redirectEnabled %}
+                <span class="badge badge-success">ENABLED</span>
+            {% else %}
+                <span class="badge badge-warning">DISABLED</span> (default behavior)
+            {% endif %}
+        </p>
+        <p><strong>Reset Password Route:</strong> <code>{{ resetPasswordRoute ?: 'Not configured' }}</code></p>
+    </div>
+    
+    {% if user %}
+        {% include 'use_cases/_user_status.html.twig' with {
+            'user': user, 
+            'isExpired': isExpired,
+            'daysRemaining': null,
+            'daysSinceExpiry': null
+        } %}
+        {% if isExpired %}
+            <p style="margin-top: 10px;">
+                {% if redirectEnabled %}
+                    <strong>(Would be redirected to reset password route)</strong>
+                {% else %}
+                    <strong>(Only flash message shown - no redirect)</strong>
+                {% endif %}
+            </p>
+        {% endif %}
+    {% endif %}
+    
+    <h2>How It Works</h2>
+    <p>When <code>redirect_on_expiry: true</code> is enabled in configuration:</p>
+    <ol>
+        <li>User with expired password accesses a route in <code>notified_routes</code></li>
+        <li><code>PasswordExpiryListener</code> detects the expired password</li>
+        <li>Instead of just showing a flash message, it automatically redirects to <code>reset_password_route_name</code></li>
+        <li>Flash message is still shown before redirect</li>
+        <li>If the reset password route doesn't exist, it gracefully falls back to just showing the flash message</li>
+    </ol>
+    
+    <h2>Configuration</h2>
+    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;"><code>nowo_password_policy:
+    entities:
+        App\Entity\User:
+            reset_password_route_name: user_reset_password
+    expiry_listener:
+        redirect_on_expiry: true  # Enable automatic redirection</code></pre>
+    
+    <h2>Default Behavior (redirect_on_expiry: false)</h2>
+    <p>By default, the bundle only shows a flash message when password expires. This is less intrusive and allows users to:</p>
+    <ul>
+        <li>See the warning message</li>
+        <li>Continue using the application (with warnings)</li>
+        <li>Change password when convenient</li>
+    </ul>
+    
+    <h2>When to Enable Redirect</h2>
+    <p>Enable <code>redirect_on_expiry: true</code> when:</p>
+    <ul>
+        <li>Security policy requires immediate password change</li>
+        <li>Users should be forced to change password before continuing</li>
+        <li>You want a more strict enforcement of password expiry</li>
+    </ul>
+    
+    <div class="info-box info-box-warning">
+        <strong>⚠️ Note:</strong> In this demo, redirect is disabled to allow you to explore all features. 
+        Enable it in <code>config/packages/nowo_password_policy.yaml</code> to test automatic redirection.
+    </div>
+{% endblock %}
+

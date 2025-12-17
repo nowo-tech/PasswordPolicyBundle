@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Use Cases - Password Policy Bundle Demo{% endblock %}
+
+{% block styles %}
+    {{ parent() }}
+    <style>
+        .use-case-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+            transition: box-shadow 0.3s;
+        }
+        .use-case-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .use-case-card h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .use-case-card .description {
+            color: #666;
+            margin: 10px 0;
+        }
+        .use-case-card .features {
+            margin-top: 15px;
+        }
+        .use-case-card .features ul {
+            margin: 10px 0 0 20px;
+            padding: 0;
+        }
+        .use-case-card .features li {
+            margin: 5px 0;
+            color: #555;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <h1>Password Policy Bundle - Use Cases</h1>
+    
+    <p>This page demonstrates all the features and use cases of the Password Policy Bundle. Each use case shows a different aspect of the bundle's functionality.</p>
+    
+    <div class="info-box" style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin-bottom: 30px;">
+        <strong>💡 Note:</strong> To fully test these use cases, you should be authenticated. 
+        <a href="{{ path('app_login') }}">Login here</a> with one of the demo users:
+        <ul style="margin: 10px 0 0 20px;">
+            <li><strong>expired@example.com</strong> / <strong>expired123</strong> - Password expired</li>
+            <li><strong>demo@example.com</strong> / <strong>demo123</strong> - Expiring soon</li>
+            <li><strong>admin@example.com</strong> / <strong>admin123</strong> - Active</li>
+        </ul>
+    </div>
+    
+    <h2>Available Use Cases</h2>
+    
+    {% for useCase in use_cases %}
+        <div class="use-case-card">
+            <h3>{{ useCase.name }}</h3>
+            <p class="description">{{ useCase.description }}</p>
+            <div class="features">
+                <strong>Features demonstrated:</strong>
+                <ul>
+                    {% for feature in useCase.features %}
+                        <li>{{ feature }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <a href="{{ path(useCase.route) }}" class="btn-primary">View Use Case →</a>
+        </div>
+    {% endfor %}
+    
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
+        <h2>Additional Resources</h2>
+        <ul>
+            <li><a href="{{ path('demo_home') }}">← Back to Home</a></li>
+            <li><a href="{{ path('user_index') }}">Users Management</a></li>
+            <li><a href="{{ path('app_login') }}">Login / Logout</a></li>
+        </ul>
+    </div>
+{% endblock %}
+

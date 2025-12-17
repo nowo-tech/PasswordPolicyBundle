@@ -1,0 +1,22 @@
+{% if user %}
+    <div class="info-box {% if isExpired %}info-box-danger{% else %}info-box-success{% endif %}">
+        <h3>Current User: {{ user.email }}</h3>
+        <p><strong>Password Status:</strong> 
+            {% if isExpired %}
+                <span class="badge badge-danger">EXPIRED</span>
+                {% if daysSinceExpiry is defined and daysSinceExpiry %}
+                    <span style="margin-left: 10px;">Expired {{ daysSinceExpiry }} day(s) ago</span>
+                {% endif %}
+            {% else %}
+                <span class="badge badge-success">ACTIVE</span>
+                {% if daysRemaining is defined and daysRemaining %}
+                    <span style="margin-left: 10px;">Expires in {{ daysRemaining }} day(s)</span>
+                {% endif %}
+            {% endif %}
+        </p>
+        {% if user.passwordChangedAt %}
+            <p><strong>Password Changed:</strong> {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}</p>
+        {% endif %}
+    </div>
+{% endif %}
+

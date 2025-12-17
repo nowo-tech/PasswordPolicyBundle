@@ -8,4 +8,3 @@ return [
     Symfony\Bundle\SecurityBundle\SecurityBundle::class => ['all' => true],
     Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class => ['all' => true],
 ];
-

@@ -12,7 +12,7 @@ use Symfony\Component\Config\Definition\Processor;
  * Tests for Configuration.
  *
  * @author Héctor Franco Aceituno <hectorfranco@nowo.tech>
- * @copyright 2024 Nowo.tech
+ * @copyright 2025 Nowo.tech
  */
 final class ConfigurationTest extends UnitTestCase
 {
@@ -149,3 +149,4 @@ final class ConfigurationTest extends UnitTestCase
         $this->assertSame(90, $config['entities']['App\Entity\User']['expiry_days']);
     }
 }
+

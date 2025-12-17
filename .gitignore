@@ -12,6 +12,7 @@
 /phpunit.xml
 .phpunit.cache/
 /coverage/
+/coverage-html/
 coverage.xml
 ###< phpunit/phpunit ###
 

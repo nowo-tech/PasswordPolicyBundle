@@ -88,20 +88,24 @@ composer cs-fix
 
 All tests must pass before merging. New features should include tests.
 
+**Important**: Tests must be run inside the Docker container. Use the Makefile commands:
+
 ```bash
-# Run all tests
+# Start the Docker container (if not already running)
+make up
+
+# Run all tests (inside container)
 make test
-# or
-composer test
 
-# Run tests with coverage
+# Run tests with coverage (inside container)
 make test-coverage
-# or
-composer test-coverage
 
-# View coverage report
-open coverage/index.html
+# View coverage report (after test-coverage)
+# The coverage report is generated in the coverage/ directory
+# Open coverage/index.html in your browser
 ```
+
+**Note**: The `make test` and `make test-coverage` commands automatically execute the tests inside the PHP container created by `docker-compose.yml`. Do not run `composer test` or `composer test-coverage` directly on your host machine - always use the Makefile commands.
 
 **Test structure**:
 - Tests should be in the `tests/` directory

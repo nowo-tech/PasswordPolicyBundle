@@ -92,12 +92,31 @@ up-$(1):
 	fi && \
 	docker-compose build && \
 	docker-compose up -d && \
+	echo "⏳ Waiting for containers to be ready..." && \
+	sleep 3 && \
+	echo "📦 Installing dependencies..." && \
+	(docker-compose exec -T php composer install --no-interaction 2>&1 || \
+		(echo "⚠️  Lock file out of sync, updating dependencies..." && \
+		 sleep 2 && docker-compose exec -T php composer update --no-interaction 2>&1)) && \
+	echo "📋 Copying updated bundle files from repository..." && \
+	PHP_CONTAINER=$$$$(docker-compose ps -q php) && \
+	if [ -n "$$$$PHP_CONTAINER" ]; then \
+		docker cp ../../src/EventListener/PasswordExpiryListener.php $$$$PHP_CONTAINER:/app/vendor/nowo-tech/password-policy-bundle/src/EventListener/PasswordExpiryListener.php 2>/dev/null || true; \
+		docker cp ../../src/DependencyInjection/PasswordPolicyExtension.php $$$$PHP_CONTAINER:/app/vendor/nowo-tech/password-policy-bundle/src/DependencyInjection/PasswordPolicyExtension.php 2>/dev/null || true; \
+		docker cp ../../src/Resources/config/services.yml $$$$PHP_CONTAINER:/app/vendor/nowo-tech/password-policy-bundle/src/Resources/config/services.yml 2>/dev/null || true; \
+	fi && \
+	echo "🔄 Restarting PHP-FPM to ensure everything is loaded..." && \
+	docker-compose restart php && \
+	sleep 2 && \
+	echo "🗄️  Setting up database..." && \
+	(docker-compose exec -T php bin/console doctrine:database:create --if-not-exists 2>&1 || true) && \
+	(docker-compose exec -T php bin/console doctrine:migrations:migrate --no-interaction 2>&1 || echo "⚠️  Migrations may have already been executed") && \
 	echo "⏳ Waiting for demo to be ready..." && \
-	sleep 5 && \
-	MAX_ATTEMPTS=12; \
-	ATTEMPT=1; \
+	sleep 3 && \
+	MAX_ATTEMPTS=12 && \
+	ATTEMPT=1 && \
 	while [ $$$$ATTEMPT -le $$$$MAX_ATTEMPTS ]; do \
-		if curl -s -o /dev/null -w "%{http_code}" http://localhost:$$$$PORT | grep -q "200"; then \
+		if curl -s -o /dev/null -w "%{http_code}" http://localhost:$$$$PORT 2>/dev/null | grep -q "200"; then \
 			echo "✅ $$$$VERSION demo is running and responding at http://localhost:$$$$PORT"; \
 			exit 0; \
 		fi; \

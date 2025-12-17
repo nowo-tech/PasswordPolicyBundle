@@ -3,6 +3,33 @@
 {% block title %}Users - Password Policy Demo{% endblock %}
 
 {% block body %}
+    {% set expiryDays = 90 %}
+    {% set now = date('now') %}
+    {% set expiredUsers = [] %}
+    {% set expiringSoonUsers = [] %}
+    {% for user in users %}
+        {% if user.passwordChangedAt %}
+            {% set passwordChangedAt = user.passwordChangedAt %}
+            {% set expiresAt = passwordChangedAt|date_modify('+' ~ expiryDays ~ ' days') %}
+            {% set daysRemaining = ((expiresAt.timestamp - now.timestamp) / 86400)|round %}
+            {% if daysRemaining <= 0 %}
+                {% set expiredUsers = expiredUsers|merge([user]) %}
+            {% elseif daysRemaining <= 5 %}
+                {% set expiringSoonUsers = expiringSoonUsers|merge([user]) %}
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {% if expiredUsers|length > 0 %}
+        <div class="password-expiry-banner alert-danger">
+            <span>⚠️ <strong>{{ expiredUsers|length }}</strong> user{{ expiredUsers|length != 1 ? 's have' : ' has' }} expired password{{ expiredUsers|length != 1 ? 's' : '' }}. They need to change it immediately!</span>
+        </div>
+    {% elseif expiringSoonUsers|length > 0 %}
+        <div class="password-expiry-banner alert-warning">
+            <span>⚠️ <strong>{{ expiringSoonUsers|length }}</strong> user{{ expiringSoonUsers|length != 1 ? 's have' : ' has' }} password{{ expiringSoonUsers|length != 1 ? 's' : '' }} expiring in 5 days or less!</span>
+        </div>
+    {% endif %}
+
     <h1>
         <span>Users Management</span>
         <a href="{{ path('user_new') }}" class="btn btn-success">+ New User</a>
@@ -15,6 +42,16 @@
     {% endblock %}
 
     <a href="{{ path('demo_home') }}" class="btn btn-secondary">← Back to Home</a>
+
+    <div class="password-expiry-info">
+        <strong>ℹ️ Password Expiry Information:</strong>
+        <ul style="margin: 10px 0 0 20px; padding: 0;">
+            <li>Passwords expire after <strong>{{ expiryDays }} days</strong> from the last change date.</li>
+            <li>Users with <span class="badge badge-danger">Expired</span> passwords need to change them immediately.</li>
+            <li>Users with <span class="badge badge-warning">Expiring Soon</span> status have less than 5 days remaining.</li>
+            <li>Click on any user to see detailed password expiry information and change their password.</li>
+        </ul>
+    </div>
 
     <table>
         <thead>
@@ -36,13 +73,29 @@
                         {% if user.passwordChangedAt %}
                             {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}
                             <br>
-                            <small>({{ user.passwordChangedAt|date('U')|date_diff('now')|date('%a days ago') }})</small>
+                            {% set diff = date('now').timestamp - user.passwordChangedAt.timestamp %}
+                            {% set days = (diff / 86400)|round %}
+                            <small>({{ days }} day{{ days != 1 ? 's' : '' }} ago)</small>
                         {% else %}
                             <em>Never</em>
                         {% endif %}
                     </td>
                     <td>
                         {% include 'user/_password_status.html.twig' with {'user': user} %}
+                        {% if user.passwordChangedAt %}
+                            {% set passwordChangedAt = user.passwordChangedAt %}
+                            {% set expiresAt = passwordChangedAt|date_modify('+' ~ expiryDays ~ ' days') %}
+                            {% set daysRemaining = ((expiresAt.timestamp - now.timestamp) / 86400)|round %}
+                            {% if daysRemaining <= 0 %}
+                                <br><small style="color: #dc3545; font-weight: bold;">⚠️ Expired {{ (daysRemaining * -1) }} day{{ (daysRemaining * -1) != 1 ? 's' : '' }} ago</small>
+                            {% elseif daysRemaining <= 5 %}
+                                <br><small style="color: #856404; font-weight: bold;">⚠️ Expires in {{ daysRemaining }} day{{ daysRemaining != 1 ? 's' : '' }}</small>
+                            {% elseif daysRemaining <= 15 %}
+                                <br><small style="color: #004085;">ℹ️ Expires in {{ daysRemaining }} days</small>
+                            {% else %}
+                                <br><small style="color: #28a745;">✓ {{ daysRemaining }} days remaining</small>
+                            {% endif %}
+                        {% endif %}
                     </td>
                     <td>{{ user.passwordHistory|length }} entries</td>
                     <td>

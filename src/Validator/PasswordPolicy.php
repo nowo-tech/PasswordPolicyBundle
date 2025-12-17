@@ -4,18 +4,29 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Validator;
 
+
 use Symfony\Component\Validator\Constraint;
 
 /**
- * Class PasswordPolicy.
+ * Constraint for validating that a password has not been used before.
+ *
+ * This constraint ensures that users cannot reuse passwords that are stored
+ * in their password history.
  *
  * @Annotation
- *
  * @Target({"PROPERTY", "METHOD", "ANNOTATION"})
  */
 class PasswordPolicy extends Constraint
 {
-    public const PASSWORD_IN_HISTORY = '72a1be03-a5d1-4b23-bd70-a6841992a03c';
+    /**
+     * Error code for when a password is found in the history.
+     */
+    const PASSWORD_IN_HISTORY = 'PASSWORD_IN_HISTORY';
 
+    /**
+     * The error message template.
+     *
+     * @var string
+     */
     public $message = 'Cannot change your password to an old one. You used this password {{ days }}';
 }

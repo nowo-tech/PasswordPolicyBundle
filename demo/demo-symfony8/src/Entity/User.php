@@ -29,7 +29,7 @@ class User implements HasPasswordPolicyInterface, UserInterface, PasswordAuthent
     #[ORM\Column(type: 'string')]
     private string $password;
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[ORM\Column(name: 'password_changed_at', type: 'datetime', nullable: true)]
     private ?DateTime $passwordChangedAt = null;
 
     #[ORM\OneToMany(targetEntity: PasswordHistory::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]

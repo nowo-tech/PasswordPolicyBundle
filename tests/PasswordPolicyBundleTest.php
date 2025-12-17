@@ -13,7 +13,7 @@ use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
  * Tests for PasswordPolicyBundle.
  *
  * @author Héctor Franco Aceituno <hectorfranco@nowo.tech>
- * @copyright 2024 Nowo.tech
+ * @copyright 2025 Nowo.tech
  */
 final class PasswordPolicyBundleTest extends TestCase
 {
@@ -47,3 +47,4 @@ final class PasswordPolicyBundleTest extends TestCase
         $this->assertSame('nowo_password_policy', $extension->getAlias());
     }
 }
+

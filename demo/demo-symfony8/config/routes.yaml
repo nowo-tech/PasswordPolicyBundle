@@ -3,3 +3,9 @@ demo_home:
     controller: App\Controller\DemoController::home
     methods: [GET]
 
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+

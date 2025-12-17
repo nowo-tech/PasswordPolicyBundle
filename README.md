@@ -6,13 +6,20 @@ Symfony bundle for password policy enforcements including password history, expi
 
 ## Features
 
-- ✅ Password history tracking - prevents users from reusing old passwords
-- ✅ Password expiry enforcement - forces password changes after a specified period
-- ✅ Configurable password policies per entity
-- ✅ Doctrine lifecycle events integration
-- ✅ Customizable expiry notifications and routes
-- ✅ Validator constraint for password policy validation
-- ✅ Flexible configuration for different use cases
+- ✅ **Password History Tracking** - Prevents users from reusing old passwords
+- ✅ **Password Expiry Enforcement** - Forces password changes after a specified period
+- ✅ **Configurable Password Policies** - Per-entity configuration for different policies
+- ✅ **Doctrine Lifecycle Events Integration** - Automatic password history tracking
+- ✅ **Customizable Expiry Notifications** - Configurable routes and flash messages
+- ✅ **Validator Constraint** - Symfony validator for password policy validation
+- ✅ **Logging System** - Comprehensive logging for password policy events (configurable levels)
+- ✅ **Custom Events** - Symfony events for extensibility (PasswordExpiredEvent, PasswordChangedEvent, etc.)
+- ✅ **Performance Cache** - Optional caching for password expiry checks with automatic invalidation
+- ✅ **Multiple Entities Support** - Configure different password policies for different user types with validation
+- ✅ **Flexible Configuration** - Works out of the box with sensible defaults
+- ✅ **Modern Symfony Support** - Compatible with Symfony 6, 7, and 8
+- ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English
+- ✅ **Demo Projects** - Full-featured demos with visual expiry indicators
 
 ## Installation
 
@@ -37,6 +44,9 @@ return [
 - Symfony >= 6.0 || >= 7.0 || >= 8.0
 - Doctrine ORM
 - nesbot/carbon >= 3.9
+
+**Optional Dependencies**:
+- Symfony Cache Component (`symfony/cache`) - Required only if `enable_cache: true` is used
 
 ## Configuration
 
@@ -114,13 +124,17 @@ nowo_password_policy:
     expiry_listener:
         # You can change the expiry listener priority
         priority: 0
+        # If true, automatically redirects to reset_password_route_name when password expires
+        redirect_on_expiry: false
         error_msg:
             text:
                 title: 'Your password expired.'
                 message: 'You need to change it'
             type: 'error'
-        # The route that needs to be shown to the user when password is expired
-        lock_route: user_change_password
+    # Enable logging for password policy events
+    enable_logging: true
+    # Logging level: debug, info, notice, warning, error
+    log_level: info
 ```
 
 ## How It Works
@@ -312,48 +326,75 @@ make up
 # Install dependencies
 make install
 
-# Run tests
+# Run tests (inside container)
 make test
 
-# Run tests with coverage
+# Run tests with coverage (inside container)
 make test-coverage
 
-# Run all QA checks
+# Run all QA checks (inside container)
 make qa
 ```
 
-### Without Docker
-
-```bash
-composer install
-composer test
-composer test-coverage
-composer qa
-```
+**Note**: All commands execute inside the Docker container. The Makefile automatically handles container management and command execution.
 
 ## Demo Projects
 
 The bundle includes complete demo projects for Symfony 6.4, 7.0, and 8.0. Each demo includes:
 
-- **MySQL Database**: Isolated database per demo with migrations
+- **MySQL Database**: Isolated database per demo with migrations and initial data
+- **Authentication System**: Complete login system with Symfony Security
+  - Form-based authentication
+  - User session management
+  - Login/logout functionality
+  - Visual user indicators in the interface
 - **CRUD Interface**: Full user management interface to test password policies
-- **DataFixtures**: Sample users with different password expiry states
+- **Password Expiry Notifications**: Visual banners and indicators showing password expiry status
+  - Prominent alerts for expired passwords
+  - Warnings for passwords expiring soon
+  - Flash messages with test credentials information
+- **Initial Data**: Pre-configured users with different password expiry states:
+  - `expired@example.com` / `expired123` - Password expired 100 days ago (triggers expiry listener)
+  - `demo@example.com` / `demo123` - Password expiring soon (85 days old, expires in 5 days)
+  - `admin@example.com` / `admin123` - Recently changed password (active)
+- **Password History**: Complete password history tracking with timestamps
 - **Docker Setup**: Complete Docker Compose configuration
 
 ### Running the Demos
 
 ```bash
 cd demo
-make up-symfony6      # Start Symfony 6.4 demo
-make install-symfony6 # Install dependencies
-make database-symfony6 # Setup database and load fixtures
+make up-symfony6      # Start Symfony 6.4 demo (includes automatic setup)
+make up-symfony7      # Start Symfony 7.0 demo
+make up-symfony8      # Start Symfony 8.0 demo
 ```
 
-Access the demo at `http://localhost:8001` and use the CRUD interface to:
+The `make up-*` commands automatically:
+- Install Composer dependencies
+- Copy updated bundle files to vendor directory
+- Create database and run migrations
+- Set up initial data with password history
+
+Access the demos at:
+- Symfony 6.4: `http://localhost:8001`
+- Symfony 7.0: `http://localhost:8002`
+- Symfony 8.0: `http://localhost:8003`
+
+### Testing Password Expiry
+
+1. **Login**: Access `/` (root) and authenticate with `expired@example.com` / `expired123`
+2. **Navigate**: After login, you'll be redirected to `/home` - the password expiry listener will trigger
+3. **See Warning**: A flash message will appear indicating the password has expired
+4. **Test Other Users**: Try logging in with other demo users to see different expiry states
+5. **CRUD Access**: The user management CRUD (`/user/*`) requires authentication - you'll be redirected to login if not authenticated
+
+Use the CRUD interface to:
+- View password expiry status with visual indicators
+- See password expiry warnings and notifications
 - Create users with passwords
 - Change passwords (tests password history validation)
-- View password expiry status
-- See password history tracking
+- View complete password history with timestamps
+- Test password expiry enforcement with authentication
 
 For more information, see [demo/README.md](demo/README.md).
 
@@ -361,16 +402,24 @@ For more information, see [demo/README.md](demo/README.md).
 
 The bundle includes comprehensive test coverage. All tests are located in the `tests/` directory.
 
+**Important**: Tests must be run inside the Docker container. Use the Makefile commands:
+
 ```bash
-# Run all tests
-composer test
+# Start the Docker container (if not already running)
+make up
 
-# Run tests with coverage report
-composer test-coverage
+# Run all tests (inside container)
+make test
 
-# View coverage report
-open coverage/index.html
+# Run tests with coverage report (inside container)
+make test-coverage
+
+# View coverage report (after test-coverage)
+# The coverage report is generated in the coverage/ directory
+# Open coverage/index.html in your browser
 ```
+
+**Note**: The `make test` and `make test-coverage` commands automatically execute the tests inside the PHP container created by `docker-compose.yml`. Do not run `composer test` or `composer test-coverage` directly on your host machine - always use the Makefile commands.
 
 ## Code Quality
 
@@ -410,6 +459,9 @@ Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on how to co
 
 Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
-## Configuration Reference
+## Documentation
 
-For detailed configuration options, see [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+- **[Configuration Guide](docs/CONFIGURATION.md)** - Detailed configuration options and examples
+- **[Events Documentation](docs/EVENTS.md)** - Complete guide to custom events and event listeners
+- **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
+- **[Changelog](docs/CHANGELOG.md)** - Version history and changes

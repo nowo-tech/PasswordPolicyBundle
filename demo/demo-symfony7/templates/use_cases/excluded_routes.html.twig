@@ -1,0 +1,63 @@
+{% extends 'use_cases/base.html.twig' %}
+
+{% block title %}Excluded Routes - Use Cases{% endblock %}
+
+{% block use_case_title %}Excluded Routes{% endblock %}
+
+{% block use_case_content %}
+    <div class="info-box info-box-info">
+        <h3>Understanding Excluded Routes</h3>
+        <p>{{ note }}</p>
+    </div>
+    
+    <h2>Current Configuration</h2>
+    
+    <div class="config-box">
+        <h3>Locked Routes (notified_routes)</h3>
+        <p>These routes trigger password expiry checks:</p>
+        <ul class="route-list">
+            {% for route in lockedRoutes %}
+                <li><code>{{ route }}</code></li>
+            {% else %}
+                <li><em>No locked routes configured</em></li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="info-box info-box-warning">
+        <h3>Excluded Routes (excluded_notified_routes)</h3>
+        <p>These routes are <strong>excluded</strong> from expiry checks, even if they're in notified_routes:</p>
+        <ul class="route-list">
+            {% for route in excludedRoutes %}
+                <li><code>{{ route }}</code> - <strong>EXCLUDED</strong></li>
+            {% else %}
+                <li><em>No excluded routes configured</em></li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <h2>Why Exclude Routes?</h2>
+    <p>Excluded routes are essential to prevent redirect loops and allow users to:</p>
+    <ul>
+        <li><strong>Logout</strong> - Users should be able to logout even with expired passwords</li>
+        <li><strong>Reset Password</strong> - Users need to access the password reset page</li>
+        <li><strong>Login</strong> - New login attempts should not be blocked</li>
+    </ul>
+    
+    <h2>Configuration Example</h2>
+    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;"><code>nowo_password_policy:
+    entities:
+        App\Entity\User:
+            notified_routes:
+                - demo_home
+                - user_index
+            excluded_notified_routes:
+                - login
+                - logout
+                - user_change_password</code></pre>
+    
+    <div class="info-box info-box-success">
+        <strong>✅ Best Practice:</strong> Always exclude login, logout, and password reset routes to prevent redirect loops.
+    </div>
+{% endblock %}
+
