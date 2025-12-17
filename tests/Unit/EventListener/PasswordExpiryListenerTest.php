@@ -10,6 +10,7 @@ use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
@@ -84,10 +85,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequest(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -131,10 +133,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestAsLockedRoute(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -157,10 +160,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestExcludedRoute(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('excluded-2');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('excluded-2');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -192,10 +196,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestPasswordNotExpired(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -236,10 +241,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestWithNullRoute(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn(null);
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn(null);
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -277,10 +283,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -345,10 +352,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -497,10 +505,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestWithArrayErrorMessage(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -556,10 +565,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestWithEventDispatcher(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -624,10 +634,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestWithGetUserIdentifier(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
@@ -738,10 +749,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestWithGetEmail(): void
     {
         $requestMock = Mockery::mock(Request::class);
-        $requestMock->shouldReceive('get')
-                    ->with('_route')
-                    ->once()
-                    ->andReturn('route');
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')
+                       ->with('_route')
+                       ->andReturn('route');
+        $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
         $responseEventMock->shouldReceive('isMainRequest')
