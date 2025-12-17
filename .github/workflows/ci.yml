@@ -93,8 +93,19 @@ jobs:
           fi
           
           # Extract coverage percentage from coverage.xml
-          COVERAGE=$(grep -oP 'type="[^"]*" line-rate="([^"]*)"' coverage.xml | head -1 | grep -oP 'line-rate="[^"]*"' | grep -oP '[0-9.]+' || echo "0")
-          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc | cut -d. -f1)
+          # The format uses <metrics> with statements and coveredstatements attributes
+          # Get the project-level <metrics> element (the one with files= attribute)
+          METRICS_LINE=$(grep '<metrics files=' coverage.xml)
+          STATEMENTS=$(echo "$METRICS_LINE" | awk -F'statements="' '{print $2}' | awk -F'"' '{print $1}')
+          COVERED=$(echo "$METRICS_LINE" | awk -F'coveredstatements="' '{print $2}' | awk -F'"' '{print $1}')
+          
+          if [ -z "$STATEMENTS" ] || [ "$STATEMENTS" -eq 0 ]; then
+            echo "❌ ERROR: No statements found in coverage.xml"
+            exit 1
+          fi
+          
+          # Calculate percentage: (covered / statements) * 100
+          COVERAGE_PERCENT=$(echo "scale=2; ($COVERED / $STATEMENTS) * 100" | bc | cut -d. -f1)
           
           echo "📊 Code coverage: ${COVERAGE_PERCENT}%"
           
@@ -211,8 +222,19 @@ jobs:
           fi
           
           # Extract coverage percentage from coverage.xml
-          COVERAGE=$(grep -oP 'type="[^"]*" line-rate="([^"]*)"' coverage.xml | head -1 | grep -oP 'line-rate="[^"]*"' | grep -oP '[0-9.]+' || echo "0")
-          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc | cut -d. -f1)
+          # The format uses <metrics> with statements and coveredstatements attributes
+          # Get the project-level <metrics> element (the one with files= attribute)
+          METRICS_LINE=$(grep '<metrics files=' coverage.xml)
+          STATEMENTS=$(echo "$METRICS_LINE" | awk -F'statements="' '{print $2}' | awk -F'"' '{print $1}')
+          COVERED=$(echo "$METRICS_LINE" | awk -F'coveredstatements="' '{print $2}' | awk -F'"' '{print $1}')
+          
+          if [ -z "$STATEMENTS" ] || [ "$STATEMENTS" -eq 0 ]; then
+            echo "❌ ERROR: No statements found in coverage.xml"
+            exit 1
+          fi
+          
+          # Calculate percentage: (covered / statements) * 100
+          COVERAGE_PERCENT=$(echo "scale=2; ($COVERED / $STATEMENTS) * 100" | bc | cut -d. -f1)
           
           echo "📊 Code coverage: ${COVERAGE_PERCENT}%"
           
