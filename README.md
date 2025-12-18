@@ -1,6 +1,8 @@
 # Password Policy Bundle
 
-[![CI](https://github.com/nowo-tech/password-policy-bundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/password-policy-bundle/actions/workflows/ci.yml) [![Latest Stable Version](https://poser.pugx.org/nowo-tech/password-policy-bundle/v)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://poser.pugx.org/nowo-tech/password-policy-bundle/license)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![PHP Version Require](https://poser.pugx.org/nowo-tech/password-policy-bundle/require/php)](https://packagist.org/packages/nowo-tech/password-policy-bundle)
+[![CI](https://github.com/nowo-tech/password-policy-bundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/password-policy-bundle/actions/workflows/ci.yml) [![Latest Stable Version](https://poser.pugx.org/nowo-tech/password-policy-bundle/v)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://poser.pugx.org/nowo-tech/password-policy-bundle/license)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![PHP Version Require](https://poser.pugx.org/nowo-tech/password-policy-bundle/require/php)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/password-policy-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/password-policy-bundle)
+
+> ⭐ **Found this project useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
 Symfony bundle for password policy enforcements including password history, expiry, and validation.
 
