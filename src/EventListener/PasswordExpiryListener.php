@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\EventListener;
 
+use Exception;
 use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -15,6 +16,9 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+
+use function in_array;
+use function is_array;
 
 /**
  * Event listener for handling password expiry checks on kernel requests.
@@ -28,16 +32,16 @@ class PasswordExpiryListener
      * PasswordExpiryListener constructor.
      *
      * @param PasswordExpiryServiceInterface $passwordExpiryService The service for checking password expiry
-     * @param RequestStack                   $requestStack          The request stack for accessing the current request and session
-     * @param UrlGeneratorInterface          $urlGenerator          The URL generator for generating routes
-     * @param TranslatorInterface            $translator            The translator service for translating messages
-     * @param string                         $errorMessageType      The type of flash message (e.g., 'error', 'warning', 'info')
-     * @param string|array                   $errorMessage          The error message(s) to display when password is expired
-     * @param bool                           $redirectOnExpiry      Whether to redirect to reset password route when password expires
-     * @param LoggerInterface|null           $logger                The logger service (optional, uses NullLogger if not provided)
-     * @param bool                           $enableLogging         Whether logging is enabled
-     * @param string                         $logLevel              The logging level to use
-     * @param EventDispatcherInterface|null  $eventDispatcher       The event dispatcher (optional)
+     * @param RequestStack $requestStack The request stack for accessing the current request and session
+     * @param UrlGeneratorInterface $urlGenerator The URL generator for generating routes
+     * @param TranslatorInterface $translator The translator service for translating messages
+     * @param string $errorMessageType The type of flash message (e.g., 'error', 'warning', 'info')
+     * @param array|string $errorMessage The error message(s) to display when password is expired
+     * @param bool $redirectOnExpiry Whether to redirect to reset password route when password expires
+     * @param LoggerInterface|null $logger The logger service (optional, uses NullLogger if not provided)
+     * @param bool $enableLogging Whether logging is enabled
+     * @param string $logLevel The logging level to use
+     * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
      */
     public function __construct(
         public PasswordExpiryServiceInterface $passwordExpiryService,
@@ -48,7 +52,7 @@ class PasswordExpiryListener
         /**
          * @var string
          */
-        private string|array $errorMessage,
+        private readonly string|array $errorMessage,
         private readonly bool $redirectOnExpiry = false,
         private readonly ?LoggerInterface $logger = null,
         private readonly bool $enableLogging = true,
@@ -64,8 +68,6 @@ class PasswordExpiryListener
      * an error message to the session flash bag.
      *
      * @param RequestEvent $requestEvent The request event containing the current request
-     *
-     * @return void
      */
     public function onKernelRequest(RequestEvent $requestEvent): void
     {
@@ -75,7 +77,7 @@ class PasswordExpiryListener
         }
 
         $request = $requestEvent->getRequest();
-        $route = $request->attributes->get('_route');
+        $route   = $request->attributes->get('_route');
 
         // Skip if route is null (anonymous routes or routes without names)
         if ($route === null) {
@@ -88,12 +90,12 @@ class PasswordExpiryListener
             return;
         }
 
-        $excludeRoutes = $this->passwordExpiryService->getExcludedRoutes();
+        $excludeRoutes     = $this->passwordExpiryService->getExcludedRoutes();
         $isPasswordExpired = $this->passwordExpiryService->isPasswordExpired();
 
         if (!in_array($route, $excludeRoutes) && $isPasswordExpired) {
             $token = $this->passwordExpiryService->tokenStorage->getToken();
-            $user = $token?->getUser();
+            $user  = $token?->getUser();
 
             // Dispatch PasswordExpiredEvent if user is available and event dispatcher is set
             if ($user instanceof \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface && $this->eventDispatcher) {
@@ -101,25 +103,25 @@ class PasswordExpiryListener
                 $this->eventDispatcher->dispatch($event);
             }
 
-            $userId = $user && method_exists($user, 'getId') ? $user->getId() : 'unknown';
+            $userId         = $user && method_exists($user, 'getId') ? $user->getId() : 'unknown';
             $userIdentifier = 'unknown';
             if ($user && method_exists($user, 'getUserIdentifier')) {
                 /** @var callable $getUserIdentifier */
                 $getUserIdentifier = [$user, 'getUserIdentifier'];
-                $userIdentifier = $getUserIdentifier();
+                $userIdentifier    = $getUserIdentifier();
             } elseif ($user && method_exists($user, 'getEmail')) {
                 /** @var callable $getEmail */
-                $getEmail = [$user, 'getEmail'];
+                $getEmail       = [$user, 'getEmail'];
                 $userIdentifier = $getEmail();
             }
 
             // Log password expiry detection
             if ($this->enableLogging && $this->logger) {
                 $this->log($this->logLevel, 'Password expired detected', [
-                  'user_id' => $userId,
-                  'user_identifier' => $userIdentifier,
-                  'route' => $route,
-                  'redirect_on_expiry' => $this->redirectOnExpiry,
+                    'user_id'            => $userId,
+                    'user_identifier'    => $userIdentifier,
+                    'route'              => $route,
+                    'redirect_on_expiry' => $this->redirectOnExpiry,
                 ]);
             }
 
@@ -141,7 +143,7 @@ class PasswordExpiryListener
             // Redirect to reset password route if configured
             if ($this->redirectOnExpiry) {
                 $resetPasswordRouteName = $this->passwordExpiryService->getResetPasswordRouteName();
-                if (!empty($resetPasswordRouteName)) {
+                if ($resetPasswordRouteName !== '' && $resetPasswordRouteName !== '0') {
                     try {
                         $resetPasswordUrl = $this->urlGenerator->generate($resetPasswordRouteName);
                         $requestEvent->setResponse(new RedirectResponse($resetPasswordUrl));
@@ -149,22 +151,22 @@ class PasswordExpiryListener
                         // Log redirect
                         if ($this->enableLogging && $this->logger) {
                             $this->log($this->logLevel, 'Redirecting to password reset route', [
-                              'user_id' => $userId,
-                              'user_identifier' => $userIdentifier,
-                              'route' => $route,
-                              'reset_password_route' => $resetPasswordRouteName,
+                                'user_id'              => $userId,
+                                'user_identifier'      => $userIdentifier,
+                                'route'                => $route,
+                                'reset_password_route' => $resetPasswordRouteName,
                             ]);
                         }
 
                         return;
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         // If route doesn't exist, log error but don't break the application
                         if ($this->enableLogging && $this->logger) {
                             $this->logger->error('Failed to generate reset password route', [
-                              'user_id' => $userId,
-                              'user_identifier' => $userIdentifier,
-                              'route' => $resetPasswordRouteName,
-                              'exception' => $e->getMessage(),
+                                'user_id'         => $userId,
+                                'user_identifier' => $userIdentifier,
+                                'route'           => $resetPasswordRouteName,
+                                'exception'       => $e->getMessage(),
                             ]);
                         }
                         // The flash message will still be shown
@@ -177,27 +179,25 @@ class PasswordExpiryListener
     /**
      * Logs a message with the configured log level.
      *
-     * @param string $level   The log level (debug, info, notice, warning, error)
+     * @param string $level The log level (debug, info, notice, warning, error)
      * @param string $message The log message
-     * @param array  $context Additional context data
-     *
-     * @return void
+     * @param array $context Additional context data
      */
     private function log(string $level, string $message, array $context = []): void
     {
-        if (!$this->logger) {
+        if (!$this->logger instanceof LoggerInterface) {
             return;
         }
 
         $context['bundle'] = 'PasswordPolicyBundle';
 
         match ($level) {
-            'debug' => $this->logger->debug($message, $context),
-            'info' => $this->logger->info($message, $context),
-            'notice' => $this->logger->notice($message, $context),
+            'debug'   => $this->logger->debug($message, $context),
+            'info'    => $this->logger->info($message, $context),
+            'notice'  => $this->logger->notice($message, $context),
             'warning' => $this->logger->warning($message, $context),
-            'error' => $this->logger->error($message, $context),
-            default => $this->logger->info($message, $context),
+            'error'   => $this->logger->error($message, $context),
+            default   => $this->logger->info($message, $context),
         };
     }
 }

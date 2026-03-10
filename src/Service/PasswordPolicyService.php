@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
+use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+
+use function function_exists;
+use function strlen;
 
 /**
  * Service for enforcing password policies.
@@ -29,7 +33,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
     /**
      * Gets a password history entry that matches the given plain password.
      *
-     * @param string                     $password          The plain password to check
+     * @param string $password The plain password to check
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
      *
      * @return PasswordHistoryInterface|null The matching password history entry or null if not found
@@ -41,7 +45,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         $collection = $hasPasswordPolicy->getPasswordHistory();
 
         foreach ($collection as $passwordHistory) {
-            if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $password, $passwordHistory->getSalt())) {
+            if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $password)) {
                 return $passwordHistory;
             }
         }
@@ -56,19 +60,11 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
      * 1. First tries password_verify() for any hash format (most reliable)
      * 2. Then tries UserPasswordHasherInterface which handles Symfony's password hashers
      * 3. Never compares hashes directly (security requirement)
-     *
-     * @param HasPasswordPolicyInterface $hasPasswordPolicy
-     * @param string                     $hashedPassword
-     * @param string                     $plainPassword
-     * @param string|null                $salt
-     *
-     * @return bool
      */
     private function isPasswordValid(
         HasPasswordPolicyInterface $hasPasswordPolicy,
         string $hashedPassword,
-        string $plainPassword,
-        ?string $salt
+        string $plainPassword
     ): bool {
         // First, try password_verify() - this is the most reliable method
         // It works with bcrypt, argon2, and any hash generated with password_hash()
@@ -97,31 +93,28 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                             return true;
                         }
                     }
-                } else {
+                } elseif (method_exists($hasPasswordPolicy, 'getPassword') && method_exists($hasPasswordPolicy, 'setPassword')) {
                     // If not cloneable, try to use the entity directly (but restore password after)
                     // This is a fallback for entities that don't support cloning
-                    if (method_exists($hasPasswordPolicy, 'getPassword') && method_exists($hasPasswordPolicy, 'setPassword')) {
-                        $originalPassword = $hasPasswordPolicy->getPassword();
-
+                    $originalPassword = $hasPasswordPolicy->getPassword();
+                    try {
+                        $hasPasswordPolicy->setPassword($hashedPassword);
+                        $result = $this->userPasswordHasher->isPasswordValid($hasPasswordPolicy, $plainPassword);
+                        // Restore original password
+                        $hasPasswordPolicy->setPassword($originalPassword);
+                        if ($result) {
+                            return true;
+                        }
+                    } catch (Exception) {
+                        // If anything fails, restore original password
                         try {
-                            $hasPasswordPolicy->setPassword($hashedPassword);
-                            $result = $this->userPasswordHasher->isPasswordValid($hasPasswordPolicy, $plainPassword);
-                            // Restore original password
                             $hasPasswordPolicy->setPassword($originalPassword);
-                            if ($result) {
-                                return true;
-                            }
-                        } catch (\Exception $e) {
-                            // If anything fails, restore original password
-                            try {
-                                $hasPasswordPolicy->setPassword($originalPassword);
-                            } catch (\Exception $restoreException) {
-                                // Ignore restore errors
-                            }
+                        } catch (Exception) {
+                            // Ignore restore errors
                         }
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (Exception) {
                 // If cloning or verification fails, continue to return false
                 // This is expected for some hash formats
             }
@@ -142,9 +135,9 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
      * - Try common prefixes
      * - Check if removing common patterns from the new password matches an old password
      *
-     * @param string                     $password          The plain password to check
+     * @param string $password The plain password to check
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
-     * @param int                        $minLength         Minimum length of old password to consider
+     * @param int $minLength Minimum length of old password to consider
      *
      * @return PasswordHistoryInterface|null The matching password history entry or null if not found
      */
@@ -165,7 +158,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                 $basePassword = substr($password, 0, -strlen($suffix));
                 if (strlen($basePassword) >= $minLength) {
                     foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword, $passwordHistory->getSalt())) {
+                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
                             return $passwordHistory;
                         }
                     }
@@ -179,7 +172,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                 $basePassword = substr($password, strlen($prefix));
                 if (strlen($basePassword) >= $minLength) {
                     foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword, $passwordHistory->getSalt())) {
+                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
                             return $passwordHistory;
                         }
                     }
@@ -194,7 +187,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                 $basePassword = substr($password, 0, -strlen($suffix));
                 if (strlen($basePassword) >= $minLength) {
                     foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword, $passwordHistory->getSalt())) {
+                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
                             return $passwordHistory;
                         }
                     }
@@ -209,7 +202,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                 $basePassword = substr($password, strlen($prefix));
                 if (strlen($basePassword) >= $minLength) {
                     foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword, $passwordHistory->getSalt())) {
+                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
                             return $passwordHistory;
                         }
                     }

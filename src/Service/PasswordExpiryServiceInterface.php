@@ -34,7 +34,7 @@ interface PasswordExpiryServiceInterface
     /**
      * Checks if a given route is locked for the specified entity class.
      *
-     * @param string      $routeName   The name of the route to check
+     * @param string $routeName The name of the route to check
      * @param string|null $entityClass The entity class name. If null, uses the current user's class
      *
      * @return bool True if the route is locked, false otherwise
@@ -63,8 +63,6 @@ interface PasswordExpiryServiceInterface
      * Adds a password expiry configuration for an entity class.
      *
      * @param PasswordExpiryConfiguration $passwordExpiryConfiguration The configuration to add
-     *
-     * @return void
      */
     public function addEntity(PasswordExpiryConfiguration $passwordExpiryConfiguration): void;
 
@@ -74,8 +72,6 @@ interface PasswordExpiryServiceInterface
      * This should be called when a password is changed to ensure the cache is updated.
      *
      * @param HasPasswordPolicyInterface $user The user whose cache should be invalidated
-     *
-     * @return void
      */
     public function invalidateCache(HasPasswordPolicyInterface $user): void;
 }

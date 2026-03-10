@@ -15,19 +15,13 @@ use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 
 final class PasswordHistoryServiceTest extends UnitTestCase
 {
-    /**
-     * @var PasswordHistoryService|Mock
-     */
-    private $historyService;
+    private \Mockery\Mock|PasswordHistoryService $historyService;
 
-    /**
-     * @var HasPasswordPolicyInterface|Mock
-     */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
 
     protected function setUp(): void
     {
-        $this->entityMock = Mockery::mock(HasPasswordPolicyInterface::class);
+        $this->entityMock     = Mockery::mock(HasPasswordPolicyInterface::class);
         $this->historyService = Mockery::mock(PasswordHistoryService::class)->makePartial();
     }
 
@@ -46,7 +40,7 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
         $this->assertCount(7, $deletedItems);
 
-        $actualTimestamps = array_map(fn (PasswordHistoryInterface $passwordHistory) => $passwordHistory->getCreatedAt()->format('U'), $deletedItems);
+        $actualTimestamps = array_map(static fn (PasswordHistoryInterface $passwordHistory) => $passwordHistory->getCreatedAt()->format('U'), $deletedItems);
 
         $expectedTimestamps = [];
 
@@ -72,7 +66,7 @@ final class PasswordHistoryServiceTest extends UnitTestCase
     private function getDummyPasswordHistory(): ArrayCollection
     {
         $arrayCollection = new ArrayCollection();
-        $time = Carbon::now()->getTimestamp();
+        $time            = Carbon::now()->getTimestamp();
 
         for ($i = 0; $i < 10; ++$i) {
 
@@ -80,7 +74,7 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
             $arrayCollection->add(Mockery::mock(PasswordHistoryInterface::class)
                                      ->shouldReceive('getCreatedAt')
-                                     ->andReturn((Carbon::now())->setTimestamp($time))
+                                     ->andReturn(Carbon::now()->setTimestamp($time))
                                      ->getMock());
         }
 

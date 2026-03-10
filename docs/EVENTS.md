@@ -2,6 +2,26 @@
 
 The Password Policy Bundle dispatches custom Symfony events that allow you to extend functionality and integrate with your application's workflow.
 
+## Table of contents
+
+- [Overview](#overview)
+- [Available Events](#available-events)
+  - [PasswordExpiredEvent](#passwordexpiredevent)
+  - [PasswordHistoryCreatedEvent](#passwordhistorycreatedevent)
+  - [PasswordChangedEvent](#passwordchangedevent)
+  - [PasswordReuseAttemptedEvent](#passwordreuseattemptedevent)
+- [Listening to Events](#listening-to-events)
+  - [Method 1: Using Attributes (Symfony 6.1+)](#method-1-using-attributes-symfony-61)
+  - [Method 2: Using services.yaml](#method-2-using-servicesyaml)
+  - [Method 3: Using Event Subscribers](#method-3-using-event-subscribers)
+- [Event Priority](#event-priority)
+- [Best Practices](#best-practices)
+- [Integration Examples](#integration-examples)
+  - [Email Notifications](#email-notifications)
+  - [External Logging](#external-logging)
+  - [Security Monitoring](#security-monitoring)
+- [Related Documentation](#related-documentation)
+
 ## Overview
 
 The bundle provides four custom events that are dispatched at key moments in the password policy lifecycle:

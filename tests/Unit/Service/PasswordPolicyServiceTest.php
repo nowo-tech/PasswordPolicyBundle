@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 
+use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Mockery;
 use Mockery\Mock;
@@ -14,29 +15,22 @@ use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+use const PASSWORD_BCRYPT;
+
 final class PasswordPolicyServiceTest extends UnitTestCase
 {
-    /**
-     * @var HasPasswordPolicyInterface|Mock
-     */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
 
-    /**
-     * @var UserPasswordHasherInterface|Mock
-     */
-    private $userPasswordHasherMock;
+    private \Mockery\Mock|UserPasswordHasherInterface $userPasswordHasherMock;
 
-    /**
-     * @var PasswordPolicyService
-     */
-    private $passwordPolicyService;
+    private PasswordPolicyService $passwordPolicyService;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->userPasswordHasherMock = Mockery::mock(UserPasswordHasherInterface::class);
-        $this->passwordPolicyService = new PasswordPolicyService($this->userPasswordHasherMock);
-        $this->entityMock = Mockery::mock(HasPasswordPolicyInterface::class, UserInterface::class);
+        $this->passwordPolicyService  = new PasswordPolicyService($this->userPasswordHasherMock);
+        $this->entityMock             = Mockery::mock(HasPasswordPolicyInterface::class, UserInterface::class);
     }
 
     public function testGetHistoryByPasswordMatch(): void
@@ -96,7 +90,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
     public function testGetHistoryByPasswordWithNonCloneableObject(): void
     {
         $history1 = $this->makePasswordHistoryMock('hash1');
-        $history = [$history1];
+        $history  = [$history1];
 
         $this->entityMock->shouldReceive('getPasswordHistory')
                          ->once()
@@ -115,7 +109,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
     public function testGetHistoryByPasswordWithoutSetPasswordMethod(): void
     {
         $history1 = $this->makePasswordHistoryMock('hash1');
-        $history = [$history1];
+        $history  = [$history1];
 
         $this->entityMock->shouldReceive('getPasswordHistory')
                          ->once()
@@ -139,9 +133,9 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         // which is the same code path used when clone throws an exception
 
         // Use valid bcrypt hash
-        $hash = password_hash('pwd', PASSWORD_BCRYPT);
+        $hash     = password_hash('pwd', PASSWORD_BCRYPT);
         $history1 = $this->makePasswordHistoryMock($hash);
-        $history = [$history1];
+        $history  = [$history1];
 
         // Create entity that doesn't implement UserInterface
         // This uses the same fallback path as when clone throws exception
@@ -158,9 +152,9 @@ final class PasswordPolicyServiceTest extends UnitTestCase
     public function testIsPasswordValidWithUserInterfaceButNotCloneable(): void
     {
         // Use valid bcrypt hash
-        $hash = password_hash('pwd', PASSWORD_BCRYPT);
+        $hash     = password_hash('pwd', PASSWORD_BCRYPT);
         $history1 = $this->makePasswordHistoryMock($hash);
-        $history = [$history1];
+        $history  = [$history1];
 
         $this->entityMock->shouldReceive('getPasswordHistory')
                          ->once()
@@ -175,9 +169,9 @@ final class PasswordPolicyServiceTest extends UnitTestCase
     public function testIsPasswordValidWithNonUserInterface(): void
     {
         // Use valid bcrypt hash
-        $hash = password_hash('pwd', PASSWORD_BCRYPT);
+        $hash     = password_hash('pwd', PASSWORD_BCRYPT);
         $history1 = $this->makePasswordHistoryMock($hash);
-        $history = [$history1];
+        $history  = [$history1];
 
         // Create entity that doesn't implement UserInterface
         $nonUserEntity = Mockery::mock(HasPasswordPolicyInterface::class);
@@ -190,9 +184,116 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $this->assertEquals($history1, $actual);
     }
 
-    /**
-     * @return PasswordHistoryInterface
-     */
+    public function testGetHistoryByPasswordExtensionWithSuffixMatch(): void
+    {
+        $basePwd     = 'secret';
+        $extendedPwd = 'secret1';
+        $hash        = password_hash($basePwd, PASSWORD_BCRYPT);
+        $history1    = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension($extendedPwd, $this->entityMock, 4);
+        $this->assertEquals($history1, $actual);
+    }
+
+    public function testGetHistoryByPasswordExtensionWithPrefixMatch(): void
+    {
+        $basePwd     = 'secret';
+        $extendedPwd = '1secret';
+        $hash        = password_hash($basePwd, PASSWORD_BCRYPT);
+        $history1    = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension($extendedPwd, $this->entityMock, 4);
+        $this->assertEquals($history1, $actual);
+    }
+
+    public function testGetHistoryByPasswordExtensionWithNumericSuffixMatch(): void
+    {
+        $basePwd     = 'pass';
+        $extendedPwd = 'pass42';
+        $hash        = password_hash($basePwd, PASSWORD_BCRYPT);
+        $history1    = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension($extendedPwd, $this->entityMock, 4);
+        $this->assertEquals($history1, $actual);
+    }
+
+    public function testGetHistoryByPasswordExtensionNoMatch(): void
+    {
+        $hash     = password_hash('other', PASSWORD_BCRYPT);
+        $history1 = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension('uniquePwd99', $this->entityMock, 4);
+        $this->assertNull($actual);
+    }
+
+    public function testGetHistoryByPasswordExtensionRespectsMinLength(): void
+    {
+        $hash     = password_hash('ab', PASSWORD_BCRYPT);
+        $history1 = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension('ab1', $this->entityMock, 4);
+        $this->assertNull($actual);
+    }
+
+    public function testGetHistoryByPasswordExtensionWithNumericPrefixMatch(): void
+    {
+        $basePwd     = 'secret';
+        $extendedPwd = '99secret';
+        $hash        = password_hash($basePwd, PASSWORD_BCRYPT);
+        $history1    = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension($extendedPwd, $this->entityMock, 4);
+        $this->assertEquals($history1, $actual);
+    }
+
+    public function testIsPasswordValidWithUserInterfaceCloneAndSetPassword(): void
+    {
+        $plainPassword  = 'pwd';
+        $hashedPassword = password_hash('other', PASSWORD_BCRYPT);
+        $history1       = $this->makePasswordHistoryMock($hashedPassword);
+        $history        = [$history1];
+
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection($history));
+
+        $this->userPasswordHasherMock->shouldReceive('isPasswordValid')
+                                    ->andReturn(false);
+
+        $actual = $this->passwordPolicyService->getHistoryByPassword($plainPassword, $this->entityMock);
+        $this->assertNull($actual);
+    }
+
+    public function testIsPasswordValidWithUserInterfaceCloneAndSetPasswordMatch(): void
+    {
+        $plainPassword  = 'pwd';
+        $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT);
+        $history1       = $this->makePasswordHistoryMock($hashedPassword);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPassword($plainPassword, $this->entityMock);
+        $this->assertEquals($history1, $actual);
+    }
+
     private function makePasswordHistoryMock(string $hashedPassword = 'hashed_pwd'): PasswordHistoryInterface
     {
         return Mockery::mock(PasswordHistoryInterface::class)
@@ -201,7 +302,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
                        ->shouldReceive('getSalt')
                        ->andReturn(null)
                        ->shouldReceive('getCreatedAt')
-                       ->andReturn(new \DateTime())
+                       ->andReturn(new DateTime())
                        ->getMock();
     }
 }

@@ -19,9 +19,9 @@ class PasswordHistoryCreatedEvent extends Event
     /**
      * PasswordHistoryCreatedEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user                The user whose password was changed
-     * @param PasswordHistoryInterface   $passwordHistory     The created password history entry
-     * @param int                        $removedEntriesCount The number of old password history entries that were removed
+     * @param HasPasswordPolicyInterface $user The user whose password was changed
+     * @param PasswordHistoryInterface $passwordHistory The created password history entry
+     * @param int $removedEntriesCount The number of old password history entries that were removed
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,

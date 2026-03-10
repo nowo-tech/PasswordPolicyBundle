@@ -9,6 +9,8 @@ use DateTime;
 use Mockery;
 use PHPUnit\Framework\TestCase;
 
+use const PHP_INT_MAX;
+
 class UnitTestCase extends TestCase
 {
     protected function tearDown(): void

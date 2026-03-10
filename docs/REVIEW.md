@@ -2,6 +2,31 @@
 
 Review date: 2024-12-15
 
+## Table of contents
+
+- [🔴 Critical Issues Found](#critical-issues-found)
+  - [1. Empty `PasswordPolicy.php` class](#1-empty-passwordpolicyphp-class)
+  - [2. Possible NullPointerException in `PasswordExpiryService::isPasswordExpired()`](#2-possible-nullpointerexception-in-passwordexpiryserviceispasswordexpired)
+  - [3. Possible NullPointerException in `PasswordExpiryListener::onKernelRequest()`](#3-possible-nullpointerexception-in-passwordexpirylisteneronkernelrequest)
+  - [4. Bug in `PasswordHistoryService::getHistoryItemsForCleanup()`](#4-bug-in-passwordhistoryservicegethistoryitemsforcleanup---fixed)
+  - [5. Fragile logic in `PasswordPolicyService::isPasswordValid()`](#5-fragile-logic-in-passwordpolicyserviceispasswordvalid)
+- [🟡 Improvement Issues](#improvement-issues)
+  - [6. Missing future date validation in `PasswordExpiryService`](#6-missing-future-date-validation-in-passwordexpiryservice)
+  - [7. Missing logging in `PasswordExpiryListener`](#7-missing-logging-in-passwordexpirylistener)
+  - [8. Return type inconsistency](#8-return-type-inconsistency)
+  - [9. Unused `SessionInterface` usage](#9-unused-sessioninterface-usage)
+- [🟢 Suggested Improvements](#suggested-improvements)
+  - [10. Add stricter type validation](#10-add-stricter-type-validation)
+  - [11. Improve error handling](#11-improve-error-handling)
+  - [12. Add tests for edge cases](#12-add-tests-for-edge-cases)
+- [✅ Positive Aspects](#positive-aspects)
+- [📋 Priority Summary](#priority-summary)
+  - [Critical (Fix Immediately)](#critical-fix-immediately)
+  - [Important (Fix Soon)](#important-fix-soon)
+  - [Improvements (Future)](#improvements-future)
+- [✅ Final Status](#final-status)
+- [🔧 Notes on Linter Errors](#notes-on-linter-errors)
+
 ## 🔴 Critical Issues Found
 
 ### 1. Empty `PasswordPolicy.php` class

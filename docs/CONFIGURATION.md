@@ -2,6 +2,29 @@
 
 This document describes how to configure the Password Policy Bundle.
 
+## Table of contents
+
+- [Configuration File](#configuration-file)
+- [Configuration Options](#configuration-options)
+  - [Entity Configuration](#entity-configuration)
+  - [Expiry Listener Configuration](#expiry-listener-configuration)
+  - [Logging Configuration](#logging-configuration)
+  - [Cache Configuration](#cache-configuration)
+- [How It Works](#how-it-works)
+  - [Password History](#password-history)
+  - [Password Expiry](#password-expiry)
+  - [Caching](#caching)
+- [Examples](#examples)
+  - [Basic Configuration](#basic-configuration)
+  - [Advanced Configuration](#advanced-configuration)
+- [Multiple Entities Configuration](#multiple-entities-configuration)
+  - [Important Considerations](#important-considerations)
+  - [Example: Multiple Entities](#example-multiple-entities)
+  - [Validation](#validation)
+- [Events](#events)
+- [Best Practices](#best-practices)
+- [Demo Projects](#demo-projects)
+
 ## Configuration File
 
 The bundle configuration is defined in `config/packages/nowo_password_policy.yaml`:

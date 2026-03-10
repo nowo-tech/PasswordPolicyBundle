@@ -1,0 +1,58 @@
+# Single service "php" (FrankenPHP); no nginx (§2.4 BUNDLES_STANDARDS_PROMPT)
+name: password-policy-bundle-demo-symfony-7
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: password-policy-demo-symfony7-php
+    working_dir: /app
+    ports:
+      - "${PORT:-8001}:80"
+    volumes:
+      - .:/app
+      - ../..:/var/password-policy-bundle
+      - composer-cache:/root/.composer/cache
+    environment:
+      - COMPOSER_ALLOW_SUPERUSER=1
+      - APP_ENV=${APP_ENV:-dev}
+      - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}?serverVersion=8.0
+      - XDEBUG_MODE=${XDEBUG_MODE:-develop}
+      - XDEBUG_CONFIG=client_host=${XDEBUG_CLIENT_HOST:-host.docker.internal},client_port=${XDEBUG_CLIENT_PORT:-9003}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - password-policy-demo-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: password-policy-demo-symfony7-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "${MYSQL_PORT:-33062}:3306"
+    networks:
+      - password-policy-demo-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  composer-cache:
+    driver: local
+  mysql-data:
+    driver: local
+
+networks:
+  password-policy-demo-network:
+    driver: bridge

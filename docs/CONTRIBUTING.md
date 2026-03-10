@@ -2,6 +2,23 @@
 
 Thank you for your interest in contributing to Password Policy Bundle! This document provides guidelines for contributing to the project.
 
+## Table of contents
+
+- [Code of Conduct](#code-of-conduct)
+- [How Can I Contribute?](#how-can-i-contribute)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Suggesting Enhancements](#suggesting-enhancements)
+  - [Contributing Code](#contributing-code)
+    - [Setting Up the Development Environment](#setting-up-the-development-environment)
+    - [Code Standards](#code-standards)
+    - [Tests](#tests)
+    - [Pull Request Process](#pull-request-process)
+    - [Checklist Before PR](#checklist-before-pr)
+- [Project Structure](#project-structure)
+- [Branching Policy](#branching-policy)
+- [Questions](#questions)
+- [Acknowledgments](#acknowledgments)
+
 ## Code of Conduct
 
 This project adheres to a code of conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to hectorfranco@nowo.com.

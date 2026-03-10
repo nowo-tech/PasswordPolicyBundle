@@ -1,6 +1,6 @@
 # Password Policy Bundle
 
-[![CI](https://github.com/nowo-tech/password-policy-bundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/password-policy-bundle/actions/workflows/ci.yml) [![Latest Stable Version](https://poser.pugx.org/nowo-tech/password-policy-bundle/v)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://poser.pugx.org/nowo-tech/password-policy-bundle/license)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![PHP Version Require](https://poser.pugx.org/nowo-tech/password-policy-bundle/require/php)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/password-policy-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/password-policy-bundle)
+[![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6%20%7C%207%20%7C%208-000000?logo=symfony)](https://symfony.com) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/password-policy-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/PasswordPolicyBundle)
 
 > ⭐ **Found this project useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
@@ -22,6 +22,8 @@ Symfony bundle for password policy enforcements including password history, expi
 - ✅ **Modern Symfony Support** - Compatible with Symfony 6, 7, and 8
 - ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English
 - ✅ **Demo Projects** - Full-featured demos with visual expiry indicators
+
+**FrankenPHP worker:** The demos are built to run on **FrankenPHP** in **runtime worker mode** (single PHP service, no nginx). They are tested and compatible with FrankenPHP worker; access each demo at `http://localhost:PORT` (see `demo/README.md` and `.env` in each demo).
 
 ## Installation
 
@@ -402,6 +404,20 @@ The bundle includes complete demo projects for Symfony 6.4, 7.0, and 8.0. Each d
 - **Password History**: Complete password history tracking with timestamps
 - **Docker Setup**: Complete Docker Compose configuration
 
+### Screenshots (Symfony 8 demo)
+
+Login page with demo credentials and password status indicators:
+
+![Demo login](docs/images/demo-login.png)
+
+Home page after login: password expiry testing info and quick access to use cases and user management.
+
+![Demo home](docs/images/demo-home.png)
+
+Users management: list with password status (Active, Expiring Soon, Expired), password history and actions.
+
+![Demo users management](docs/images/demo-users-management.png)
+
 ### Running the Demos
 
 ```bash
@@ -503,8 +519,13 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
 ## Documentation
 
+- **[Installation](docs/INSTALLATION.md)** - Install and register the bundle
 - **[Configuration Guide](docs/CONFIGURATION.md)** - Detailed configuration options and examples
-- **[Upgrade Guide](docs/UPGRADE.md)** - Step-by-step instructions for upgrading between versions
+- **[Usage](docs/USAGE.md)** - Basic usage and customization
+- **[Upgrade Guide](docs/UPGRADING.md)** - Step-by-step instructions for upgrading between versions
 - **[Events Documentation](docs/EVENTS.md)** - Complete guide to custom events and event listeners
+- **[Release process](docs/RELEASE.md)** - How to release a new version
+- **[Security policy](docs/SECURITY.md)** - Reporting vulnerabilities
+- **[Engram (MCP)](docs/ENGRAM.md)** - AI persistent memory setup for Cursor
 - **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
 - **[Changelog](docs/CHANGELOG.md)** - Version history and changes

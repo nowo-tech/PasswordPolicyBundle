@@ -33,8 +33,6 @@ interface HasPasswordPolicyInterface
      * Sets the date and time when the password was last changed.
      *
      * @param DateTime $dateTime The password change date
-     *
-     * @return self
      */
     public function setPasswordChangedAt(DateTime $dateTime): self;
 
@@ -49,8 +47,6 @@ interface HasPasswordPolicyInterface
      * Adds a password history entry.
      *
      * @param PasswordHistoryInterface $passwordHistory The password history entry to add
-     *
-     * @return static
      */
     public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static;
 
@@ -58,8 +54,6 @@ interface HasPasswordPolicyInterface
      * Removes a password history entry.
      *
      * @param PasswordHistoryInterface $passwordHistory The password history entry to remove
-     *
-     * @return static
      */
     public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static;
 

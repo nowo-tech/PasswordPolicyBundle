@@ -22,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Maintains full compatibility with Symfony 6, 7, and 8
   - Resolves "Attempted to call an undefined method named 'get'" error
 - **Demo Projects Structure**: Fixed controller and form locations
-  - Moved `UserController` from root to `src/Controller/` in demo-symfony7 and demo-symfony8
-  - Moved form classes (`ChangePasswordType`, `UserType`) to `src/Form/` in demo-symfony7 and demo-symfony8
+  - Moved `UserController` from root to `src/Controller/` in symfony7 and symfony8
+  - Moved form classes (`ChangePasswordType`, `UserType`) to `src/Form/` in symfony7 and symfony8
   - Resolves "Unable to generate a URL for the named route" and "class does not exist" errors
 - **Form Constraints Syntax**: Updated constraint syntax for Symfony 7 and 8 compatibility
   - Changed `NotBlank` and `Length` constraints to use named arguments instead of arrays
@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Allows validators to access YAML configuration settings
   - Enables per-entity configuration for extension detection
 - **Demo Projects Improvements**: Enhanced demo projects consistency
-  - Added `UserRepository` to demo-symfony7 and demo-symfony8
+  - Added `UserRepository` to symfony7 and symfony8
   - All demo projects now have consistent structure and dependencies
   - Fixed missing repository classes that caused autowiring errors
 

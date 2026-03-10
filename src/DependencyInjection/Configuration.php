@@ -30,8 +30,8 @@ class Configuration implements ConfigurationInterface
     private const DEFAULT_EXPIRY_DAYS = 90;
 
     private const DEFAULT_ERROR_MSG = [
-      'title' => self::ALIAS . '.title',
-      'message' => self::ALIAS . '.message',
+        'title'   => self::ALIAS . '.title',
+        'message' => self::ALIAS . '.message',
     ];
 
     private const DEFAULT_ERROR_TYPE = 'error';
@@ -48,8 +48,8 @@ class Configuration implements ConfigurationInterface
         if (method_exists($treeBuilder, 'getRootNode')) {
             $rootNode = $treeBuilder->getRootNode();
         } else {
-            // BC layer for symfony/config 4.1 and older
-            $rootNode = $treeBuilder->root(self::ALIAS);
+            // BC layer for symfony/config 4.1 and older (not executable on Symfony 5.2+)
+            $rootNode = $treeBuilder->root(self::ALIAS); // @codeCoverageIgnore
         }
 
         // @formatter:off
@@ -157,7 +157,7 @@ class Configuration implements ConfigurationInterface
               ->info('Cache time-to-live in seconds. Default is 3600 (1 hour). Only used when enable_cache is true.')
             ->end()
           ->end();
-        //@formatter:on
+        // @formatter:on
 
         return $treeBuilder;
     }

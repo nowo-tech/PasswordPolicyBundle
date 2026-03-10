@@ -23,7 +23,7 @@ final class ConfigurationTest extends UnitTestCase
     {
         parent::setUp();
         $this->configuration = new Configuration();
-        $this->processor = new Processor();
+        $this->processor     = new Processor();
     }
 
     public function testGetConfigTreeBuilder(): void
@@ -66,21 +66,21 @@ final class ConfigurationTest extends UnitTestCase
             [
                 'entities' => [
                     'App\Entity\User' => [
-                        'password_field' => 'userPassword',
-                        'password_history_field' => 'history',
-                        'passwords_to_remember' => 10,
-                        'expiry_days' => 60,
+                        'password_field'            => 'userPassword',
+                        'password_history_field'    => 'history',
+                        'passwords_to_remember'     => 10,
+                        'expiry_days'               => 60,
                         'reset_password_route_name' => 'reset',
-                        'notified_routes' => ['dashboard', 'profile'],
-                        'excluded_notified_routes' => ['logout'],
+                        'notified_routes'           => ['dashboard', 'profile'],
+                        'excluded_notified_routes'  => ['logout'],
                     ],
                 ],
                 'expiry_listener' => [
-                    'priority' => 10,
+                    'priority'   => 10,
                     'lock_route' => 'lock',
-                    'error_msg' => [
+                    'error_msg'  => [
                         'text' => [
-                            'title' => 'Expired',
+                            'title'   => 'Expired',
                             'message' => 'Change password',
                         ],
                         'type' => 'warning',
@@ -112,7 +112,7 @@ final class ConfigurationTest extends UnitTestCase
                     ],
                     'App\Entity\Admin' => [
                         'reset_password_route_name' => 'admin_reset',
-                        'expiry_days' => 30,
+                        'expiry_days'               => 30,
                     ],
                 ],
             ],
@@ -134,9 +134,9 @@ final class ConfigurationTest extends UnitTestCase
                 'entities' => [
                     'App\Entity\User' => [
                         'reset_password_route_name' => 'reset',
-                        'password_field' => null,
-                        'passwords_to_remember' => null,
-                        'expiry_days' => null,
+                        'password_field'            => null,
+                        'passwords_to_remember'     => null,
+                        'expiry_days'               => null,
                     ],
                 ],
             ],

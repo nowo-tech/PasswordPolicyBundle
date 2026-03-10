@@ -25,8 +25,6 @@ interface PasswordHistoryInterface
      * Sets the hashed password.
      *
      * @param string $password The hashed password
-     *
-     * @return self
      */
     public function setPassword(string $password): self;
 
@@ -41,8 +39,6 @@ interface PasswordHistoryInterface
      * Sets the creation date and time of this password history entry.
      *
      * @param DateTimeInterface $createdAt The creation date
-     *
-     * @return self
      */
     public function setCreatedAt(DateTimeInterface $createdAt): self;
 }

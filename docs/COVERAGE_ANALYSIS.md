@@ -2,6 +2,48 @@
 
 Fecha de análisis: 2024-12-15
 
+## Table of contents
+
+- [🚀 Ejecutar Análisis de Cobertura](#ejecutar-análisis-de-cobertura)
+- [📊 Resumen Ejecutivo](#resumen-ejecutivo)
+- [📁 Estructura del Código](#estructura-del-código)
+  - [Archivos de Código Fuente (`src/`)](#archivos-de-código-fuente-src)
+  - [Services](#services)
+  - [Event Listeners](#event-listeners)
+  - [Validators](#validators)
+  - [Models/Interfaces](#modelsinterfaces)
+  - [Dependency Injection](#dependency-injection)
+  - [Exceptions](#exceptions)
+  - [Traits](#traits)
+  - [Bundle](#bundle)
+- [📋 Análisis Detallado por Clase](#análisis-detallado-por-clase)
+  - [1. PasswordExpiryService](#1-passwordexpiryservice)
+  - [2. PasswordHistoryService](#2-passwordhistoryservice)
+  - [3. PasswordPolicyService](#3-passwordpolicyservice)
+  - [4. PasswordExpiryListener](#4-passwordexpirylistener)
+  - [5. PasswordEntityListener](#5-passwordentitylistener)
+  - [6. PasswordPolicyValidator](#6-passwordpolicyvalidator)
+  - [7. PasswordPolicyExtension](#7-passwordpolicyextension)
+  - [8. Configuration](#8-configuration)
+  - [9. PasswordPolicyBundle](#9-passwordpolicybundle)
+- [📊 Resumen de Cobertura por Categoría](#resumen-de-cobertura-por-categoría)
+  - [Cobertura Alta (90-100%)](#cobertura-alta-90-100)
+  - [Cobertura Media (70-89%)](#cobertura-media-70-89)
+- [🔍 Áreas de Mejora Identificadas](#áreas-de-mejora-identificadas)
+  - [1. Tests Faltantes (Prioridad Alta)](#1-tests-faltantes-prioridad-alta)
+  - [2. Tests de Integración (Prioridad Media)](#2-tests-de-integración-prioridad-media)
+  - [3. Tests de Rendimiento (Prioridad Baja)](#3-tests-de-rendimiento-prioridad-baja)
+- [✅ Tests Agregados en Esta Revisión](#tests-agregados-en-esta-revisión)
+- [📈 Estimación de Cobertura Total](#estimación-de-cobertura-total)
+  - [Antes de Esta Revisión](#antes-de-esta-revisión)
+  - [Después de Esta Revisión](#después-de-esta-revisión)
+- [🎯 Objetivo de Cobertura](#objetivo-de-cobertura)
+  - [Estado Actual vs Objetivo](#estado-actual-vs-objetivo)
+- [📝 Recomendaciones](#recomendaciones)
+  - [Inmediatas (Para alcanzar 100%)](#inmediatas-para-alcanzar-100)
+  - [Futuras (Mejoras)](#futuras-mejoras)
+- [✅ Conclusión](#conclusión)
+
 ## 🚀 Ejecutar Análisis de Cobertura
 
 **Importante**: El análisis de cobertura debe ejecutarse dentro del contenedor Docker:

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Validator;
 
+use Attribute;
 use Symfony\Component\Validator\Constraint;
 
 /**
@@ -12,7 +13,7 @@ use Symfony\Component\Validator\Constraint;
  * This constraint ensures that users cannot reuse passwords that are stored
  * in their password history.
  */
-#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD)]
+#[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_METHOD)]
 class PasswordPolicy extends Constraint
 {
     /**

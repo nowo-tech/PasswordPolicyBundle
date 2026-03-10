@@ -2,6 +2,38 @@
 
 This document details the improvements and modifications proposed to enhance the bundle.
 
+## Table of contents
+
+- [🔴 Critical (High Priority)](#critical-high-priority)
+  - [1. ✅ Implement `getResetPasswordRouteName()` - COMPLETED](#1-implement-getresetpasswordroutename---completed)
+  - [2. ✅ Complete Redirection in PasswordExpiryListener - COMPLETED](#2-complete-redirection-in-passwordexpirylistener---completed)
+  - [3. ✅ Improved Configuration Validation - COMPLETED](#3-improved-configuration-validation---completed)
+- [🟡 Important (Medium Priority)](#important-medium-priority)
+  - [4. ✅ Logging System - COMPLETED](#4-logging-system---completed)
+  - [5. ✅ Symfony Events for Extensibility - COMPLETED](#5-symfony-events-for-extensibility---completed)
+  - [6. ✅ Cache for Performance Improvement - COMPLETED](#6-cache-for-performance-improvement---completed)
+  - [7. ✅ Support for Multiple Entities with Different Policies - COMPLETED](#7-support-for-multiple-entities-with-different-policies---completed)
+  - [8. ✅ Date Validation in PasswordExpiryService - COMPLETED](#8-date-validation-in-passwordexpiryservice---completed)
+- [🟢 Improvements (Low Priority)](#improvements-low-priority)
+  - [9. Metrics and Statistics](#9-metrics-and-statistics)
+  - [10. Proactive Notification Support](#10-proactive-notification-support)
+  - [11. Password Complexity Validation](#11-password-complexity-validation)
+  - [12. Console Commands for Management](#12-console-commands-for-management)
+  - [13. Test Improvements](#13-test-improvements)
+  - [14. Improved Documentation](#14-improved-documentation)
+  - [15. Timezone Support](#15-timezone-support)
+  - [16. Improved Internationalization](#16-improved-internationalization)
+  - [17. Configuration Validation at Development Time](#17-configuration-validation-at-development-time)
+  - [18. Password Expiry by Roles Support](#18-password-expiry-by-roles-support)
+  - [19. Configuration Change History](#19-configuration-change-history)
+  - [20. Error Handling Improvements](#20-error-handling-improvements)
+- [📋 Priority Summary](#priority-summary)
+  - [Phase 1 (Critical - Implement Immediately)](#phase-1-critical---implement-immediately)
+  - [Phase 2 (Important - Next Version)](#phase-2-important---next-version)
+  - [Phase 3 (Improvements - Future Versions)](#phase-3-improvements---future-versions)
+- [🎯 Implementation Recommendations](#implementation-recommendations)
+- [📝 Additional Notes](#additional-notes)
+
 ## 🔴 Critical (High Priority)
 
 ### 1. ✅ Implement `getResetPasswordRouteName()` - COMPLETED

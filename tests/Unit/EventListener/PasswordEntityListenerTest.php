@@ -18,33 +18,22 @@ use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\Unit\Mocks\PasswordHistoryMock;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use ReflectionClass;
+use stdClass;
+
+use function sprintf;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-    /**
-     * @var PasswordHistoryServiceInterface|Mock
-     */
-    private $passwordHistoryServiceMock;
+    private \Mockery\Mock|PasswordHistoryServiceInterface $passwordHistoryServiceMock;
 
-    /**
-     * @var PasswordEntityListener|Mock
-     */
-    private $passwordEntityListener;
+    private \Mockery\Mock|PasswordEntityListener $passwordEntityListener;
 
-    /**
-     * @var EntityManagerInterface|Mock
-     */
-    private $emMock;
+    private \Doctrine\ORM\EntityManagerInterface|Mock $emMock;
 
-    /**
-     * @var HasPasswordPolicyInterface|Mock
-     */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
 
-    /**
-     * @var UnitOfWork|Mock
-     */
-    private $uowMock;
+    private \Mockery\Mock|UnitOfWork $uowMock;
 
     protected function setUp(): void
     {
@@ -111,7 +100,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $classMetadata = new ClassMetadata('foo');
 
         $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy'] = 'user';
+        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -162,6 +151,54 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $this->assertNull($history->getSalt());
     }
 
+    public function testCreatePasswordHistoryWithCacheInvalidationAndEventDispatcher(): void
+    {
+        $expiryServiceMock = Mockery::mock(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface::class);
+        $expiryServiceMock->shouldReceive('invalidateCache')
+                          ->once()
+                          ->with($this->entityMock);
+
+        $eventDispatcherMock = Mockery::mock(\Symfony\Contracts\EventDispatcher\EventDispatcherInterface::class);
+        $eventDispatcherMock->shouldReceive('dispatch')
+                            ->twice()
+                            ->with(Mockery::type(\Symfony\Contracts\EventDispatcher\Event::class));
+
+        $listener = new PasswordEntityListener(
+            $this->passwordHistoryServiceMock,
+            'password',
+            'passwordHistory',
+            3,
+            $this->entityMock::class,
+            null,
+            true,
+            'info',
+            $eventDispatcherMock,
+            $expiryServiceMock,
+        );
+
+        $this->emMock->shouldReceive('getUnitOfWork')->once()->andReturn($this->uowMock);
+        $classMetadata                                                         = new ClassMetadata('foo');
+        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
+        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
+        $this->emMock->shouldReceive('getClassMetadata')
+                     ->twice()
+                     ->andReturn($classMetadata, Mockery::mock(ClassMetadata::class));
+
+        $this->entityMock->shouldReceive('addPasswordHistory')->once();
+        $this->entityMock->shouldReceive('getSalt')->andReturn(null);
+        $this->passwordHistoryServiceMock->shouldReceive('getHistoryItemsForCleanup')
+                                         ->once()
+                                         ->withArgs([$this->entityMock, 3])
+                                         ->andReturn([]);
+        $this->emMock->shouldReceive('persist')->once();
+        $this->uowMock->shouldReceive('computeChangeSet')->once();
+        $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')->once();
+        $this->entityMock->shouldReceive('setPasswordChangedAt')->once();
+
+        $history = $listener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
+        $this->assertInstanceOf(PasswordHistoryInterface::class, $history);
+    }
+
     public function testCreatePasswordHistoryNullPassword(): void
     {
         $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')
@@ -177,7 +214,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $classMetadata = new ClassMetadata('foo');
 
         $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy'] = 'user';
+        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
 
         $classMetadataMock = Mockery::mock(ClassMetadata::class);
 
@@ -232,8 +269,8 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $classMetadata = new ClassMetadata('foo');
 
         // Use stdClass instead of self::class to avoid ArgumentCountError
-        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = \stdClass::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy'] = 'user';
+        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = stdClass::class;
+        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -241,7 +278,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->andReturn($classMetadata);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(\stdClass::class . ' must implement ' . PasswordHistoryInterface::class);
+        $this->expectExceptionMessage(stdClass::class . ' must implement ' . PasswordHistoryInterface::class);
 
         $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
     }
@@ -255,7 +292,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $classMetadata = new ClassMetadata('foo');
 
         $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy'] = 'foo';
+        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'foo';
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -267,11 +304,20 @@ final class PasswordEntityListenerTest extends UnitTestCase
             sprintf(
                 'Cannot set user relation in password history class %s because method %s is missing',
                 PasswordHistoryMock::class,
-                'setFoo'
-            )
+                'setFoo',
+            ),
         );
 
         $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
+    }
+
+    public function testCreatePasswordHistoryReturnsNullForEmptyOrZeroPassword(): void
+    {
+        $this->entityMock->shouldReceive('getPassword')
+                         ->andReturn('');
+
+        $this->assertNull($this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, ''));
+        $this->assertNull($this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, '0'));
     }
 
     public function testLoggingWithDifferentLevels(): void
@@ -281,9 +327,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         // Test debug level
         $loggerMock->shouldReceive('debug')
                    ->once()
-                   ->with('Test debug message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test debug message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $listener = new PasswordEntityListener(
             $this->passwordHistoryServiceMock,
@@ -293,56 +337,46 @@ final class PasswordEntityListenerTest extends UnitTestCase
             $this->entityMock::class,
             $loggerMock,
             true,
-            'debug'
+            'debug',
         );
 
         // Use reflection to call private log method
-        $reflection = new \ReflectionClass($listener);
-        $logMethod = $reflection->getMethod('log');
+        $reflection = new ReflectionClass($listener);
+        $logMethod  = $reflection->getMethod('log');
         $logMethod->invoke($listener, 'debug', 'Test debug message');
 
         // Test info level
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test info message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test info message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'info', 'Test info message');
 
         // Test notice level
         $loggerMock->shouldReceive('notice')
                    ->once()
-                   ->with('Test notice message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test notice message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'notice', 'Test notice message');
 
         // Test warning level
         $loggerMock->shouldReceive('warning')
                    ->once()
-                   ->with('Test warning message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test warning message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'warning', 'Test warning message');
 
         // Test error level
         $loggerMock->shouldReceive('error')
                    ->once()
-                   ->with('Test error message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test error message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'error', 'Test error message');
 
         // Test default level (unknown level should default to info)
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test unknown level message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test unknown level message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'unknown', 'Test unknown level message');
 
@@ -359,12 +393,12 @@ final class PasswordEntityListenerTest extends UnitTestCase
             $this->entityMock::class,
             null,
             true,
-            'info'
+            'info',
         );
 
         // Use reflection to call private log method with null logger
-        $reflection = new \ReflectionClass($listener);
-        $logMethod = $reflection->getMethod('log');
+        $reflection = new ReflectionClass($listener);
+        $logMethod  = $reflection->getMethod('log');
 
         // Should not throw exception when logger is null
         $logMethod->invoke($listener, 'info', 'Test message');

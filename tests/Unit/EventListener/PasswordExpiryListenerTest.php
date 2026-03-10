@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
+use DateTime;
 use Mockery;
-use Mockery\Mock;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use ReflectionClass;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,35 +24,17 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
-    /**
-     * @var RequestStack|Mock
-     */
-    private $requestStackMock;
+    private \Mockery\Mock|RequestStack $requestStackMock;
 
-    /**
-     * @var Session|Mock
-     */
-    private $sessionMock;
+    private \Mockery\Mock|Session $sessionMock;
 
-    /**
-     * @var PasswordExpiryListener|Mock
-     */
-    private $passwordExpiryListenerMock;
+    private \Mockery\Mock|PasswordExpiryListener $passwordExpiryListenerMock;
 
-    /**
-     * @var PasswordExpiryServiceInterface|Mock
-     */
-    private $passwordExpiryServiceMock;
+    private \Mockery\Mock|PasswordExpiryServiceInterface $passwordExpiryServiceMock;
 
-    /**
-     * @var UrlGeneratorInterface|Mock
-     */
-    private $urlGeneratorMock;
+    private \Mockery\Mock|UrlGeneratorInterface $urlGeneratorMock;
 
-    /**
-     * @var TranslatorInterface|Mock
-     */
-    private $translatorMock;
+    private \Mockery\Mock|TranslatorInterface $translatorMock;
 
     /**
      * Setup..
@@ -59,18 +42,16 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     protected function setUp(): void
     {
         $this->passwordExpiryServiceMock = Mockery::mock(PasswordExpiryServiceInterface::class);
-        $this->requestStackMock = Mockery::mock(RequestStack::class);
-        $this->urlGeneratorMock = Mockery::mock(UrlGeneratorInterface::class);
-        $this->translatorMock = Mockery::mock(TranslatorInterface::class);
-        $this->sessionMock = Mockery::mock(Session::class);
+        $this->requestStackMock          = Mockery::mock(RequestStack::class);
+        $this->urlGeneratorMock          = Mockery::mock(UrlGeneratorInterface::class);
+        $this->translatorMock            = Mockery::mock(TranslatorInterface::class);
+        $this->sessionMock               = Mockery::mock(Session::class);
 
         $this->requestStackMock->shouldReceive('getSession')
                                ->andReturn($this->sessionMock);
 
         $this->translatorMock->shouldReceive('trans')
-                             ->andReturnUsing(function ($id, $parameters = [], $domain = null) {
-                                 return $id;
-                             });
+                             ->andReturnUsing(static fn ($id, $parameters = [], $domain = null) => $id);
 
         $this->passwordExpiryListenerMock = Mockery::mock(PasswordExpiryListener::class, [
             $this->passwordExpiryServiceMock,
@@ -84,7 +65,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequest(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -98,7 +79,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn(null);
         $tokenStorageMock->shouldReceive('getToken')
@@ -132,7 +113,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestAsLockedRoute(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -159,7 +140,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestExcludedRoute(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -195,7 +176,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestPasswordNotExpired(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -240,7 +221,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithNullRoute(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -265,7 +246,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestWithRedirectOnExpiry(): void
     {
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn(null);
         $tokenStorageMock->shouldReceive('getToken')
@@ -279,10 +260,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Your password expired',
-            true // redirect_on_expiry
+            true, // redirect_on_expiry
         );
 
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -331,10 +312,71 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->assertTrue(true);
     }
 
+    public function testOnKernelRequestWithRedirectOnExpiryAndLogging(): void
+    {
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+                   ->once()
+                   ->with('Password expired detected', Mockery::on(static fn (array $c) => isset($c['route'], $c['bundle'])));
+        $loggerMock->shouldReceive('info')
+                   ->once()
+                   ->with('Redirecting to password reset route', Mockery::on(static fn (array $c) => isset($c['reset_password_route'], $c['bundle'])));
+
+        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->andReturn(null);
+        $tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
+        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+
+        $listener = new PasswordExpiryListener(
+            $this->passwordExpiryServiceMock,
+            $this->requestStackMock,
+            $this->urlGeneratorMock,
+            $this->translatorMock,
+            'error',
+            'Your password expired',
+            true,
+            $loggerMock,
+            true,
+            'info',
+        );
+
+        $requestMock    = Mockery::mock(Request::class);
+        $attributesMock = Mockery::mock(ParameterBag::class);
+        $attributesMock->shouldReceive('get')->with('_route')->andReturn('route');
+        $requestMock->attributes = $attributesMock;
+
+        $responseEventMock = Mockery::mock(RequestEvent::class);
+        $responseEventMock->shouldReceive('isMainRequest')->andReturn(true);
+        $responseEventMock->shouldReceive('getRequest')->andReturn($requestMock);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')->once()->with('route')->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')->once()->andReturn([]);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')->once()->andReturnTrue();
+        $this->passwordExpiryServiceMock->shouldReceive('getResetPasswordRouteName')->once()->andReturn('reset_password');
+
+        $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('add')->once();
+        $this->sessionMock->shouldReceive('getFlashBag')->once()->andReturn($flashBagMock);
+        $this->urlGeneratorMock->shouldReceive('generate')->once()->with('reset_password')->andReturn('/reset-password');
+        $responseEventMock->shouldReceive('setResponse')->once()->with(Mockery::type(RedirectResponse::class));
+
+        $listener->onKernelRequest($responseEventMock);
+        $this->assertTrue(true);
+    }
+
     public function testOnKernelRequestWithInvalidRoute(): void
     {
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+                   ->once()
+                   ->with('Password expired detected', Mockery::any());
+        $loggerMock->shouldReceive('error')
+                   ->once()
+                   ->with('Failed to generate reset password route', Mockery::on(static fn (array $c) => isset($c['route'], $c['exception'])));
+
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn(null);
         $tokenStorageMock->shouldReceive('getToken')
@@ -348,10 +390,13 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Your password expired',
-            true // redirect_on_expiry
+            true, // redirect_on_expiry
+            $loggerMock,
+            true,
+            'info',
         );
 
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -407,9 +452,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         // Test debug level
         $loggerMock->shouldReceive('debug')
                    ->once()
-                   ->with('Test debug message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test debug message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
@@ -421,56 +464,46 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             false,
             $loggerMock,
             true,
-            'debug'
+            'debug',
         );
 
         // Use reflection to call private log method
-        $reflection = new \ReflectionClass($listener);
-        $logMethod = $reflection->getMethod('log');
+        $reflection = new ReflectionClass($listener);
+        $logMethod  = $reflection->getMethod('log');
         $logMethod->invoke($listener, 'debug', 'Test debug message');
 
         // Test info level
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test info message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test info message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'info', 'Test info message');
 
         // Test notice level
         $loggerMock->shouldReceive('notice')
                    ->once()
-                   ->with('Test notice message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test notice message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'notice', 'Test notice message');
 
         // Test warning level
         $loggerMock->shouldReceive('warning')
                    ->once()
-                   ->with('Test warning message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test warning message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'warning', 'Test warning message');
 
         // Test error level
         $loggerMock->shouldReceive('error')
                    ->once()
-                   ->with('Test error message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test error message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'error', 'Test error message');
 
         // Test default level (unknown level should default to info)
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test unknown level message', Mockery::on(function ($context) {
-                       return isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle';
-                   }));
+                   ->with('Test unknown level message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'unknown', 'Test unknown level message');
 
@@ -489,12 +522,12 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             false,
             null,
             true,
-            'info'
+            'info',
         );
 
         // Use reflection to call private log method with null logger
-        $reflection = new \ReflectionClass($listener);
-        $logMethod = $reflection->getMethod('log');
+        $reflection = new ReflectionClass($listener);
+        $logMethod  = $reflection->getMethod('log');
 
         // Should not throw exception when logger is null
         $logMethod->invoke($listener, 'info', 'Test message');
@@ -504,7 +537,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithArrayErrorMessage(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -518,8 +551,8 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $userMock         = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
         $userMock->shouldReceive('getId')
                  ->andReturn(123);
         $tokenMock->shouldReceive('getUser')
@@ -546,7 +579,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->urlGeneratorMock,
             $this->translatorMock,
             'error',
-            ['title' => 'Expired', 'message' => 'Change password']
+            ['title' => 'Expired', 'message' => 'Change password'],
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
@@ -564,7 +597,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithEventDispatcher(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -578,8 +611,8 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $userMock         = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
         $userMock->shouldReceive('getId')
                  ->andReturn(123);
         $tokenMock->shouldReceive('getUser')
@@ -616,7 +649,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             null,
             true,
             'info',
-            $eventDispatcherMock
+            $eventDispatcherMock,
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
@@ -633,7 +666,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithGetUserIdentifier(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -648,13 +681,13 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         // Create a concrete class that implements HasPasswordPolicyInterface and has getUserIdentifier method
         // This allows method_exists() to work correctly in the listener
-        $userMock = new class () implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
+        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
             public function getUserIdentifier(): string
             {
                 return 'test@example.com';
             }
 
-            public function getId(): ?int
+            public function getId(): int
             {
                 return 123;
             }
@@ -664,12 +697,12 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                 return '';
             }
 
-            public function getPasswordChangedAt(): ?\DateTime
+            public function getPasswordChangedAt(): ?DateTime
             {
                 return null;
             }
 
-            public function setPasswordChangedAt(\DateTime $dateTime): self
+            public function setPasswordChangedAt(DateTime $dateTime): self
             {
                 return $this;
             }
@@ -691,7 +724,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         };
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
         $tokenStorageMock->shouldReceive('getToken')
@@ -712,14 +745,12 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Password expired detected', Mockery::on(function ($context) {
-                       return isset($context['user_identifier']) &&
-                              $context['user_identifier'] === 'test@example.com' &&
-                              isset($context['user_id']) &&
-                              isset($context['route']) &&
-                              isset($context['redirect_on_expiry']) &&
-                              isset($context['bundle']);
-                   }));
+                   ->with('Password expired detected', Mockery::on(static fn ($context) => isset($context['user_identifier'])
+                          && $context['user_identifier'] === 'test@example.com'
+                          && isset($context['user_id'])
+                          && isset($context['route'])
+                          && isset($context['redirect_on_expiry'])
+                          && isset($context['bundle'])));
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
@@ -731,7 +762,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             false,
             $loggerMock,
             true,
-            'info'
+            'info',
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
@@ -748,7 +779,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithGetEmail(): void
     {
-        $requestMock = Mockery::mock(Request::class);
+        $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')
                        ->with('_route')
@@ -762,13 +793,13 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         // Create a concrete class that has getEmail but not getUserIdentifier
-        $userMock = new class () implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
+        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
             public function getEmail(): string
             {
                 return 'test@example.com';
             }
 
-            public function getId(): ?int
+            public function getId(): int
             {
                 return 123;
             }
@@ -778,12 +809,12 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                 return '';
             }
 
-            public function getPasswordChangedAt(): ?\DateTime
+            public function getPasswordChangedAt(): ?DateTime
             {
                 return null;
             }
 
-            public function setPasswordChangedAt(\DateTime $dateTime): self
+            public function setPasswordChangedAt(DateTime $dateTime): self
             {
                 return $this;
             }
@@ -805,7 +836,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         };
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock        = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
         $tokenStorageMock->shouldReceive('getToken')
@@ -826,14 +857,12 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Password expired detected', Mockery::on(function ($context) {
-                       return isset($context['user_identifier']) &&
-                              $context['user_identifier'] === 'test@example.com' &&
-                              isset($context['user_id']) &&
-                              isset($context['route']) &&
-                              isset($context['redirect_on_expiry']) &&
-                              isset($context['bundle']);
-                   }));
+                   ->with('Password expired detected', Mockery::on(static fn ($context) => isset($context['user_identifier'])
+                          && $context['user_identifier'] === 'test@example.com'
+                          && isset($context['user_id'])
+                          && isset($context['route'])
+                          && isset($context['redirect_on_expiry'])
+                          && isset($context['bundle'])));
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
@@ -845,7 +874,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             false,
             $loggerMock,
             true,
-            'info'
+            'info',
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);

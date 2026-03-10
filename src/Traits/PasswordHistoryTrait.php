@@ -20,8 +20,6 @@ trait PasswordHistoryTrait
     /**
      * The hashed password.
      *
-     * @var string|null
-     *
      * @ORM\Column(type="string")
      *
      * @ORM\Id()
@@ -31,16 +29,12 @@ trait PasswordHistoryTrait
     /**
      * The password salt (optional, for legacy password hashing).
      *
-     * @var string|null
-     *
      * @ORM\Column(type="string", nullable=true)
      */
     private ?string $salt = null;
 
     /**
      * The creation date and time of this password history entry.
-     *
-     * @var DateTimeInterface|null
      *
      * @ORM\Column(type="datetime")
      */
@@ -60,8 +54,6 @@ trait PasswordHistoryTrait
      * Sets the hashed password.
      *
      * @param string $password The hashed password
-     *
-     * @return self
      */
     public function setPassword(string $password): self
     {
@@ -84,8 +76,6 @@ trait PasswordHistoryTrait
      * Sets the creation date and time.
      *
      * @param DateTimeInterface $createdAt The creation date
-     *
-     * @return self
      */
     public function setCreatedAt(DateTimeInterface $createdAt): self
     {
@@ -100,8 +90,6 @@ trait PasswordHistoryTrait
      * If the creation date is not set, it will be set to the current time.
      *
      * @ORM\PrePersist
-     *
-     * @return void
      */
     public function updatedTimestamps(): void
     {
@@ -125,8 +113,6 @@ trait PasswordHistoryTrait
      * Sets the password salt.
      *
      * @param string|null $salt The password salt
-     *
-     * @return void
      */
     public function setSalt(?string $salt): void
     {

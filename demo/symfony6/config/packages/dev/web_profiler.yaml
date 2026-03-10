@@ -1,0 +1,5 @@
+# Web Profiler (toolbar + profiler) - only in dev
+# https://symfony.com/doc/current/profiler.html
+web_profiler:
+    toolbar: true
+    intercept_redirects: false

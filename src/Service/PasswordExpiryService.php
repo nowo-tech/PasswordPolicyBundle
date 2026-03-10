@@ -12,6 +12,9 @@ use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
+use function in_array;
+use function sprintf;
+
 /**
  * Service for handling password expiry checks and route locking.
  *
@@ -30,36 +33,26 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
 
     /**
      * Whether caching is enabled for password expiry checks.
-     *
-     * @var bool
      */
     private bool $cacheEnabled = false;
 
     /**
-     * Cache TTL in seconds.
-     *
-     * @var int
-     */
-    private int $cacheTtl = 3600;
-
-    /**
      * PasswordExpiryService constructor.
      *
-     * @param TokenStorageInterface       $tokenStorage The token storage service for accessing the current user
-     * @param UrlGeneratorInterface       $urlGenerator The URL generator service for generating routes
-     * @param CacheItemPoolInterface|null $cache        The cache pool (optional, only used if cache is enabled)
-     * @param bool                        $cacheEnabled Whether caching is enabled
-     * @param int                         $cacheTtl     Cache time-to-live in seconds
+     * @param TokenStorageInterface $tokenStorage The token storage service for accessing the current user
+     * @param UrlGeneratorInterface $urlGenerator The URL generator service for generating routes
+     * @param CacheItemPoolInterface|null $cache The cache pool (optional, only used if cache is enabled)
+     * @param bool $cacheEnabled Whether caching is enabled
+     * @param int $cacheTtl Cache time-to-live in seconds
      */
     public function __construct(
         public TokenStorageInterface $tokenStorage,
         public UrlGeneratorInterface $urlGenerator,
         private readonly ?CacheItemPoolInterface $cache = null,
         bool $cacheEnabled = false,
-        int $cacheTtl = 3600
+        private readonly int $cacheTtl = 3600
     ) {
-        $this->cacheEnabled = $cacheEnabled && $cache !== null;
-        $this->cacheTtl = $cacheTtl;
+        $this->cacheEnabled = $cacheEnabled && $cache instanceof CacheItemPoolInterface;
     }
 
     /**
@@ -77,7 +70,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
         if (($user = $this->getCurrentUser()) instanceof HasPasswordPolicyInterface) {
             // Try to get from cache if enabled
             if ($this->cacheEnabled && $this->cache) {
-                $cacheKey = $this->getCacheKey($user);
+                $cacheKey   = $this->getCacheKey($user);
                 $cachedItem = $this->cache->getItem($cacheKey);
 
                 if ($cachedItem->isHit()) {
@@ -104,7 +97,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
 
             // Store in cache if enabled
             if ($this->cacheEnabled && $this->cache) {
-                $cacheKey = $this->getCacheKey($user);
+                $cacheKey   = $this->getCacheKey($user);
                 $cachedItem = $this->cache->getItem($cacheKey);
                 $cachedItem->set($isExpired);
                 $cachedItem->expiresAfter($this->cacheTtl);
@@ -123,8 +116,6 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      * This should be called when a password is changed to ensure the cache is updated.
      *
      * @param HasPasswordPolicyInterface $user The user whose cache should be invalidated
-     *
-     * @return void
      */
     public function invalidateCache(HasPasswordPolicyInterface $user): void
     {
@@ -143,10 +134,10 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     private function getCacheKey(HasPasswordPolicyInterface $user): string
     {
-        $userId = method_exists($user, 'getId') ? (string) $user->getId() : 'unknown';
-        $userClass = $user::class;
+        $userId            = method_exists($user, 'getId') ? (string) $user->getId() : 'unknown';
+        $userClass         = $user::class;
         $passwordChangedAt = $user->getPasswordChangedAt();
-        $passwordHash = $passwordChangedAt instanceof DateTime
+        $passwordHash      = $passwordChangedAt instanceof DateTime
           ? $passwordChangedAt->getTimestamp()
           : 'no-date';
 
@@ -154,7 +145,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             'password_expiry_%s_%s_%s',
             md5($userClass),
             $userId,
-            $passwordHash
+            $passwordHash,
         );
     }
 
@@ -175,7 +166,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     /**
      * Checks if a given route is locked based on the provided route name and entity class.
      *
-     * @param string      $routeName   The name of the route to check
+     * @param string $routeName The name of the route to check
      * @param string|null $entityClass The entity class name. If null, uses the current user's class
      *
      * @return bool True if the route is locked, false otherwise
@@ -219,8 +210,6 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      * Adds a password expiry configuration for an entity class.
      *
      * @param PasswordExpiryConfiguration $passwordExpiryConfiguration The configuration to add
-     *
-     * @return void
      */
     public function addEntity(PasswordExpiryConfiguration $passwordExpiryConfiguration): void
     {
@@ -257,7 +246,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     private function prepareEntityClass(?string $entityClass): ?string
     {
-        if (is_null($entityClass) && $user = $this->getCurrentUser()) {
+        if ($entityClass === null && $user = $this->getCurrentUser()) {
             return $user::class;
         }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Event;
 
+use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
@@ -18,12 +19,12 @@ class PasswordChangedEvent extends Event
     /**
      * PasswordChangedEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user      The user whose password was changed
-     * @param \DateTimeInterface         $changedAt The timestamp when the password was changed
+     * @param HasPasswordPolicyInterface $user The user whose password was changed
+     * @param DateTimeInterface $changedAt The timestamp when the password was changed
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,
-        private readonly \DateTimeInterface $changedAt
+        private readonly DateTimeInterface $changedAt
     ) {
     }
 
@@ -40,9 +41,9 @@ class PasswordChangedEvent extends Event
     /**
      * Gets the timestamp when the password was changed.
      *
-     * @return \DateTimeInterface The change timestamp
+     * @return DateTimeInterface The change timestamp
      */
-    public function getChangedAt(): \DateTimeInterface
+    public function getChangedAt(): DateTimeInterface
     {
         return $this->changedAt;
     }

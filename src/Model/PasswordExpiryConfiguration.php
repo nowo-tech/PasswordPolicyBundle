@@ -6,6 +6,8 @@ namespace Nowo\PasswordPolicyBundle\Model;
 
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 
+use function sprintf;
+
 /**
  * Configuration class for password expiry settings per entity.
  *
@@ -16,18 +18,16 @@ class PasswordExpiryConfiguration
 {
     /**
      * The fully qualified class name of the entity.
-     *
-     * @var string
      */
     private readonly string $entityClass;
 
     /**
      * PasswordExpiryConfiguration constructor.
      *
-     * @param string $class                  The fully qualified class name of the entity
-     * @param int    $expiryDays             The number of days before a password expires
-     * @param array  $lockRoutes             Array of route names that are locked when password expires
-     * @param array  $excludedRoutes         Array of route names excluded from expiry checks
+     * @param string $class The fully qualified class name of the entity
+     * @param int $expiryDays The number of days before a password expires
+     * @param array $lockRoutes Array of route names that are locked when password expires
+     * @param array $excludedRoutes Array of route names excluded from expiry checks
      * @param string $resetPasswordRouteName The route name for password reset
      *
      * @throws RuntimeException If the entity class does not implement HasPasswordPolicyInterface
@@ -40,11 +40,7 @@ class PasswordExpiryConfiguration
         private readonly string $resetPasswordRouteName = ''
     ) {
         if (!is_a($class, HasPasswordPolicyInterface::class, true)) {
-            throw new RuntimeException(sprintf(
-                'Entity %s must implement %s interface',
-                $class,
-                HasPasswordPolicyInterface::class
-            ));
+            throw new RuntimeException(sprintf('Entity %s must implement %s interface', $class, HasPasswordPolicyInterface::class));
         }
 
         $this->entityClass = $class;

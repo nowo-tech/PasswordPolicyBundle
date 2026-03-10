@@ -18,9 +18,9 @@ class PasswordExpiredEvent extends Event
     /**
      * PasswordExpiredEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user         The user whose password has expired
-     * @param string                     $route        The route that triggered the expiry check
-     * @param bool                       $willRedirect Whether the user will be redirected to reset password route
+     * @param HasPasswordPolicyInterface $user The user whose password has expired
+     * @param string $route The route that triggered the expiry check
+     * @param bool $willRedirect Whether the user will be redirected to reset password route
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,

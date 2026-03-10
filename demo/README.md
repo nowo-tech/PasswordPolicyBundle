@@ -14,9 +14,11 @@ This directory contains three demo projects, one for each supported Symfony vers
 - **Password Expiry Notifications**: Visual banners and indicators showing password expiry status
 - **Password Expiry Information**: Detailed information about password expiry policy and days remaining
 - Well-structured Twig templates using inheritance and partials
-- Docker setup for easy development
-- Independent Docker containers for each demo
-- MySQL database with migrations, initial data, and password history
+- **FrankenPHP worker** (§2.4): Each demo runs on **FrankenPHP** in **runtime worker mode** (single service `php`, no nginx). HTTP on port 80 inside the container; access via `http://localhost:PORT` (PORT in `.env`, default 8001). Caddyfile with `:80`, `root * /app/public`, `php_server { worker /app/public/index.php 2 }`.
+- Docker setup aligned with BUNDLES_STANDARDS_PROMPT.md; each `docker-compose.yml` has `name: password-policy-bundle-demo-symfony-{6|7|8}` and mounts the bundle root at `/var/password-policy-bundle`.
+- Composer path repository `"/var/password-policy-bundle"` so the bundle is used from the repo when running in Docker.
+- Makefile in each demo directory (`symfony6`, `symfony7`, `symfony8`) with targets: up, down, build, install, test, test-coverage, update-bundle, ensure-up, restart, shell, logs, verify.
+- MySQL database with migrations, initial data, and password history.
 
 ## Requirements
 
@@ -30,7 +32,7 @@ Each demo has its own `docker-compose.yml` and can be run independently. You can
 
 **Important**: Before starting a demo, copy `.env.example` to `.env`:
 ```bash
-cd demo/demo-symfony6
+cd demo/symfony6
 cp .env.example .env
 # Optionally generate a new APP_SECRET: openssl rand -hex 32
 # The .env.example includes: APP_ENV=dev, APP_SECRET (placeholder), APP_DEBUG=1, PORT=8001
@@ -41,7 +43,7 @@ cp .env.example .env
 
 ```bash
 # Navigate to the demo directory
-cd demo/demo-symfony6
+cd demo/symfony6
 
 # Copy .env.example to .env if not already done
 cp .env.example .env
@@ -69,8 +71,7 @@ make verify DEMO=symfony6
 ```
 
 **Note**: The `make up-*` commands now automatically:
-- Install Composer dependencies
-- Copy updated bundle files to vendor directory
+- Install Composer dependencies (bundle from `/var/password-policy-bundle` when in Docker)
 - Create database and run migrations
 - Set up initial data with password history
 
@@ -78,7 +79,7 @@ make verify DEMO=symfony6
 
 ```bash
 # Navigate to the demo directory
-cd demo/demo-symfony7
+cd demo/symfony7
 
 # Copy .env.example to .env if not already done
 cp .env.example .env
@@ -107,7 +108,7 @@ make verify DEMO=symfony7
 
 ```bash
 # Navigate to the demo directory
-cd demo/demo-symfony8
+cd demo/symfony8
 
 # Copy .env.example to .env if not already done
 cp .env.example .env
@@ -138,7 +139,7 @@ make verify DEMO=symfony8
 
 1. **Navigate to the demo directory:**
    ```bash
-   cd demo/demo-symfony6
+   cd demo/symfony6
    ```
 
 2. **Install dependencies:**
@@ -155,7 +156,7 @@ make verify DEMO=symfony8
 
 1. **Navigate to the demo directory:**
    ```bash
-   cd demo/demo-symfony7
+   cd demo/symfony7
    ```
 
 2. **Install dependencies:**
@@ -172,7 +173,7 @@ make verify DEMO=symfony8
 
 1. **Navigate to the demo directory:**
    ```bash
-   cd demo/demo-symfony8
+   cd demo/symfony8
    ```
 
 2. **Install dependencies:**
@@ -222,7 +223,7 @@ Each demo includes:
 
 ```
 demo/
-├── demo-symfony6/          # Symfony 6.4 demo (Port 8001 by default)
+├── symfony6/               # Symfony 6.4 demo (Port 8001 by default)
 │   ├── docker-compose.yml  # Independent docker-compose for this demo
 │   ├── Dockerfile          # PHP-FPM image with Composer
 │   ├── nginx.conf          # Nginx configuration
@@ -230,7 +231,7 @@ demo/
 │   ├── .env.example        # Template for .env file (copy to .env and configure)
 │   ├── config/packages/nowo_password_policy.yaml  # Bundle configuration example
 │   └── ...
-├── demo-symfony7/          # Symfony 7.0 demo (Port 8001 by default)
+├── symfony7/               # Symfony 7.0 demo (Port 8001 by default)
 │   ├── docker-compose.yml  # Independent docker-compose for this demo
 │   ├── Dockerfile          # PHP-FPM image with Composer
 │   ├── nginx.conf          # Nginx configuration
@@ -238,7 +239,7 @@ demo/
 │   ├── .env.example        # Template for .env file (copy to .env and configure)
 │   ├── config/packages/nowo_password_policy.yaml  # Bundle configuration example
 │   └── ...
-├── demo-symfony8/          # Symfony 8.0 demo (Port 8001 by default)
+├── symfony8/               # Symfony 8.0 demo (Port 8001 by default)
 │   ├── docker-compose.yml  # Independent docker-compose for this demo
 │   ├── Dockerfile          # PHP-FPM image with Composer
 │   ├── nginx.conf          # Nginx configuration
@@ -253,7 +254,7 @@ Each demo is completely independent with its own `docker-compose.yml` and `nginx
 
 **Note**: Before starting a demo, copy `.env.example` to `.env` in the demo directory:
 ```bash
-cd demo/demo-symfony6
+cd demo/symfony6
 cp .env.example .env
 # Edit .env and set your APP_SECRET (or generate one with: openssl rand -hex 32)
 # The .env.example file includes standard Symfony variables:
@@ -279,7 +280,7 @@ Each demo includes a MySQL database with migrations and sample data. There are t
 DataFixtures are loaded using Doctrine Fixtures Bundle. This is the recommended approach as it's more flexible and integrates better with Symfony:
 
 ```bash
-cd demo/demo-symfony6
+cd demo/symfony6
 docker-compose exec php composer database
 ```
 
@@ -391,7 +392,7 @@ Each demo includes tests that can be run with:
 
 ```bash
 # From the demo directory
-cd demo/demo-symfony6
+cd demo/symfony6
 docker-compose exec php composer test
 
 # Or using the Makefile from demo/
@@ -418,8 +419,8 @@ make test-coverage-all
 ```
 
 Coverage reports are generated in:
-- HTML: `demo/demo-symfony6/coverage/index.html` (and similar for other demos)
-- Clover XML: `demo/demo-symfony6/coverage.xml` (and similar for other demos)
+- HTML: `demo/symfony6/coverage/index.html` (and similar for other demos)
+- Clover XML: `demo/symfony6/coverage.xml` (and similar for other demos)
 
 ### Test Structure
 

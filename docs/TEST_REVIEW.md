@@ -2,6 +2,24 @@
 
 Review date: 2024-12-15
 
+## Table of contents
+
+- [📊 Coverage Summary](#coverage-summary)
+  - [Existing Tests](#existing-tests)
+  - [✅ Complete and Correct Tests](#complete-and-correct-tests)
+- [🔴 Missing Tests (Edge Cases)](#missing-tests-edge-cases)
+  - [1. PasswordExpiryServiceTest](#1-passwordexpiryservicetest)
+  - [2. PasswordExpiryListenerTest](#2-passwordexpirylistenertest)
+  - [3. PasswordPolicyServiceTest](#3-passwordpolicyservicetest)
+  - [4. PasswordHistoryServiceTest](#4-passwordhistoryservicetest)
+- [📋 Missing Tests Summary](#missing-tests-summary)
+  - [Critical (Add Immediately)](#critical-add-immediately)
+  - [Important (Add Soon)](#important-add-soon)
+  - [Improvements (Future)](#improvements-future)
+- [✅ Final Test Status](#final-test-status)
+- [✅ Positive Aspects](#positive-aspects)
+- [🎯 Recommendations](#recommendations)
+
 ## 📊 Coverage Summary
 
 ### Existing Tests

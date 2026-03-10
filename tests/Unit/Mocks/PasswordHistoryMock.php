@@ -9,7 +9,7 @@ use Nowo\PasswordPolicyBundle\Traits\PasswordHistoryTrait;
 
 /**
  * Class PasswordHistoryMock.
- * Mocked class
+ * Mocked class.
  */
 class PasswordHistoryMock implements PasswordHistoryInterface
 {
@@ -17,9 +17,6 @@ class PasswordHistoryMock implements PasswordHistoryInterface
 
     private $user;
 
-    /**
-     * @param $user
-     */
     public function setUser($user): void
     {
         $this->user = $user;

@@ -1,0 +1,7 @@
+# demo_home is defined in DemoController as /home (no need to override here)
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+

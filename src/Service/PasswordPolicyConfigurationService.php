@@ -21,9 +21,7 @@ class PasswordPolicyConfigurationService
      * Sets the configuration for an entity.
      *
      * @param string $entityClass The fully qualified entity class name
-     * @param array  $config      The configuration array for this entity
-     *
-     * @return void
+     * @param array $config The configuration array for this entity
      */
     public function setEntityConfiguration(string $entityClass, array $config): void
     {
@@ -34,8 +32,8 @@ class PasswordPolicyConfigurationService
      * Gets the configuration for an entity.
      *
      * @param string $entityClass The fully qualified entity class name
-     * @param string $key         The configuration key to retrieve
-     * @param mixed  $default     The default value if the key doesn't exist
+     * @param string $key The configuration key to retrieve
+     * @param mixed $default The default value if the key doesn't exist
      *
      * @return mixed The configuration value or default
      */
@@ -48,7 +46,7 @@ class PasswordPolicyConfigurationService
      * Checks if a configuration key exists for an entity.
      *
      * @param string $entityClass The fully qualified entity class name
-     * @param string $key         The configuration key to check
+     * @param string $key The configuration key to check
      *
      * @return bool True if the configuration exists, false otherwise
      */

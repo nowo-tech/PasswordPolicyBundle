@@ -19,8 +19,8 @@ class PasswordReuseAttemptedEvent extends Event
     /**
      * PasswordReuseAttemptedEvent constructor.
      *
-     * @param HasPasswordPolicyInterface $user            The user attempting to reuse a password
-     * @param PasswordHistoryInterface   $passwordHistory The password history entry that matches
+     * @param HasPasswordPolicyInterface $user The user attempting to reuse a password
+     * @param PasswordHistoryInterface $passwordHistory The password history entry that matches
      */
     public function __construct(
         private readonly HasPasswordPolicyInterface $user,
