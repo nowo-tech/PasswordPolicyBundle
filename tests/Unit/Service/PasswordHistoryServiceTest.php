@@ -44,6 +44,7 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
         $actualTimestamps = array_map(static function (PasswordHistoryInterface $passwordHistory): string {
             $createdAt = $passwordHistory->getCreatedAt();
+
             return $createdAt !== null ? $createdAt->format('U') : '0';
         }, $deletedItems);
 
