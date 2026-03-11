@@ -14,26 +14,31 @@ use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionClass;
-use stdClass;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class PasswordExpiryServiceTest extends UnitTestCase
 {
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $userMock;
+    /** @var HasPasswordPolicyInterface&MockInterface */
+    private $userMock;
 
-    private \Mockery\MockInterface|UrlGeneratorInterface $routerMock;
+    /** @var MockInterface&UrlGeneratorInterface */
+    private $routerMock;
 
-    private \Mockery\MockInterface|PasswordExpiryService $passwordExpiryServiceMock;
+    /** @var MockInterface&PasswordExpiryService */
+    private $passwordExpiryServiceMock;
 
-    private \Mockery\MockInterface|TokenStorageInterface $tokenStorageMock;
+    /** @var MockInterface&TokenStorageInterface */
+    private $tokenStorageMock;
 
     protected function setUp(): void
     {
-        $this->tokenStorageMock          = Mockery::mock(TokenStorageInterface::class);
-        $this->routerMock                = Mockery::mock(UrlGeneratorInterface::class);
-        $this->userMock                  = Mockery::mock(HasPasswordPolicyInterface::class);
+        $this->tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
+        $this->routerMock       = Mockery::mock(UrlGeneratorInterface::class);
+        $this->userMock         = Mockery::mock(HasPasswordPolicyInterface::class, UserInterface::class);
+        $this->userMock->shouldReceive('getUserIdentifier')->andReturn('test-user');
         $this->passwordExpiryServiceMock = Mockery::mock(PasswordExpiryService::class, [
             $this->tokenStorageMock,
             $this->routerMock,
@@ -226,9 +231,10 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
     public function testGetCurrentUserWithAnonUser(): void
     {
+        // Token returns null (anonymous); getUser() return type is ?UserInterface so we cannot use string 'anon.'
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
-                  ->andReturn('anon.');
+                  ->andReturn(null);
 
         $this->tokenStorageMock->shouldReceive('getToken')
                                ->andReturn($tokenMock);
@@ -245,7 +251,8 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
     public function testGetCurrentUserWithNonHasPasswordPolicyInterface(): void
     {
-        $nonPolicyUser = new stdClass();
+        $nonPolicyUser = Mockery::mock(UserInterface::class);
+        $nonPolicyUser->shouldReceive('getUserIdentifier')->andReturn('other-user');
 
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')

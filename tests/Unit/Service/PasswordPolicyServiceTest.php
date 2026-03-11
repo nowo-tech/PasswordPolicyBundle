@@ -19,9 +19,11 @@ use const PASSWORD_BCRYPT;
 
 final class PasswordPolicyServiceTest extends UnitTestCase
 {
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $entityMock;
+    /** @var HasPasswordPolicyInterface&MockInterface */
+    private $entityMock;
 
-    private \Mockery\MockInterface|UserPasswordHasherInterface $userPasswordHasherMock;
+    /** @var MockInterface&UserPasswordHasherInterface */
+    private $userPasswordHasherMock;
 
     private PasswordPolicyService $passwordPolicyService;
 

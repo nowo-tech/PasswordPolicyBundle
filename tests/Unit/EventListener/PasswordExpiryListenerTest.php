@@ -20,23 +20,31 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
-    private \Mockery\MockInterface|RequestStack $requestStackMock;
+    /** @var Mockery\MockInterface&RequestStack */
+    private $requestStackMock;
 
-    private \Mockery\MockInterface|Session $sessionMock;
+    /** @var Mockery\MockInterface&Session */
+    private $sessionMock;
 
-    private \Mockery\MockInterface|PasswordExpiryListener $passwordExpiryListenerMock;
+    /** @var Mockery\MockInterface&PasswordExpiryListener */
+    private $passwordExpiryListenerMock;
 
-    private \Mockery\MockInterface|PasswordExpiryServiceInterface $passwordExpiryServiceMock;
+    /** @var Mockery\MockInterface&PasswordExpiryServiceInterface */
+    private $passwordExpiryServiceMock;
 
-    private \Mockery\MockInterface|UrlGeneratorInterface $urlGeneratorMock;
+    /** @var Mockery\MockInterface&UrlGeneratorInterface */
+    private $urlGeneratorMock;
 
-    private \Mockery\MockInterface|TranslatorInterface $translatorMock;
+    /** @var Mockery\MockInterface&TranslatorInterface */
+    private $translatorMock;
 
-    private \Mockery\MockInterface|TokenStorageInterface $tokenStorageMock;
+    /** @var Mockery\MockInterface&TokenStorageInterface */
+    private $tokenStorageMock;
 
     /**
      * Setup..
@@ -552,9 +560,9 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
-        $userMock->shouldReceive('getId')
-                 ->andReturn(123);
+        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class, UserInterface::class);
+        $userMock->shouldReceive('getId')->andReturn(123);
+        $userMock->shouldReceive('getUserIdentifier')->andReturn('123');
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
         $this->tokenStorageMock->shouldReceive('getToken')
@@ -612,9 +620,9 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
-        $userMock->shouldReceive('getId')
-                 ->andReturn(123);
+        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class, UserInterface::class);
+        $userMock->shouldReceive('getId')->andReturn(123);
+        $userMock->shouldReceive('getUserIdentifier')->andReturn('123');
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
         $this->tokenStorageMock->shouldReceive('getToken')
@@ -680,12 +688,20 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('getRequest')
                           ->andReturn($requestMock);
 
-        // Create a concrete class that implements HasPasswordPolicyInterface and has getUserIdentifier method
-        // This allows method_exists() to work correctly in the listener
-        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
+        // Create a concrete class that implements HasPasswordPolicyInterface and UserInterface (required by TokenInterface::getUser())
+        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface, UserInterface {
             public function getUserIdentifier(): string
             {
                 return 'test@example.com';
+            }
+
+            public function getRoles(): array
+            {
+                return ['ROLE_USER'];
+            }
+
+            public function eraseCredentials(): void
+            {
             }
 
             public function getId(): int
@@ -792,11 +808,25 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('getRequest')
                           ->andReturn($requestMock);
 
-        // Create a concrete class that has getEmail but not getUserIdentifier
-        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface {
+        // Create a concrete class that implements HasPasswordPolicyInterface and UserInterface (required by TokenInterface::getUser())
+        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface, UserInterface {
             public function getEmail(): string
             {
                 return 'test@example.com';
+            }
+
+            public function getUserIdentifier(): string
+            {
+                return 'test@example.com';
+            }
+
+            public function getRoles(): array
+            {
+                return ['ROLE_USER'];
+            }
+
+            public function eraseCredentials(): void
+            {
             }
 
             public function getId(): int

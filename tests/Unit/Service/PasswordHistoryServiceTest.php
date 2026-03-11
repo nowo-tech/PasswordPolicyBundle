@@ -16,9 +16,11 @@ use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 
 final class PasswordHistoryServiceTest extends UnitTestCase
 {
-    private \Mockery\MockInterface|PasswordHistoryService $historyService;
+    /** @var MockInterface&PasswordHistoryService */
+    private $historyService;
 
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $entityMock;
+    /** @var HasPasswordPolicyInterface&MockInterface */
+    private $entityMock;
 
     protected function setUp(): void
     {

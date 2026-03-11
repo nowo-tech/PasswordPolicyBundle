@@ -25,15 +25,20 @@ use function sprintf;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-    private \Mockery\MockInterface|PasswordHistoryServiceInterface $passwordHistoryServiceMock;
+    /** @var MockInterface&PasswordHistoryServiceInterface */
+    private $passwordHistoryServiceMock;
 
-    private \Mockery\MockInterface|PasswordEntityListener $passwordEntityListener;
+    /** @var MockInterface&PasswordEntityListener */
+    private $passwordEntityListener;
 
-    private \Doctrine\ORM\EntityManagerInterface|MockInterface $emMock;
+    /** @var EntityManagerInterface&MockInterface */
+    private $emMock;
 
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $entityMock;
+    /** @var HasPasswordPolicyInterface&MockInterface */
+    private $entityMock;
 
-    private \Mockery\MockInterface|UnitOfWork $uowMock;
+    /** @var MockInterface&UnitOfWork */
+    private $uowMock;
 
     /**
      * @param ClassMetadata<stdClass> $metadata

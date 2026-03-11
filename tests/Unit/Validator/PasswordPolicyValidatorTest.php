@@ -25,13 +25,17 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordPolicyValidatorTest extends UnitTestCase
 {
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $entityMock;
+    /** @var HasPasswordPolicyInterface&MockInterface */
+    private $entityMock;
 
-    private \Symfony\Component\Validator\Context\ExecutionContextInterface|MockInterface $contextMock;
+    /** @var ExecutionContextInterface&MockInterface */
+    private $contextMock;
 
-    private \Mockery\MockInterface|PasswordPolicyValidator $validator;
+    /** @var MockInterface&PasswordPolicyValidator */
+    private $validator;
 
-    private \Mockery\MockInterface|PasswordPolicyServiceInterface $passwordPolicyServiceMock;
+    /** @var MockInterface&PasswordPolicyServiceInterface */
+    private $passwordPolicyServiceMock;
 
     /**
      * Setup.
