@@ -6,7 +6,6 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
 use DateTime;
 use Mockery;
-use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
@@ -25,26 +24,19 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
-    /** @var MockInterface|RequestStack */
-    private $requestStackMock;
+    private \Mockery\MockInterface|RequestStack $requestStackMock;
 
-    /** @var MockInterface|Session */
-    private $sessionMock;
+    private \Mockery\MockInterface|Session $sessionMock;
 
-    /** @var MockInterface|PasswordExpiryListener */
-    private $passwordExpiryListenerMock;
+    private \Mockery\MockInterface|PasswordExpiryListener $passwordExpiryListenerMock;
 
-    /** @var MockInterface|PasswordExpiryServiceInterface */
-    private $passwordExpiryServiceMock;
+    private \Mockery\MockInterface|PasswordExpiryServiceInterface $passwordExpiryServiceMock;
 
-    /** @var MockInterface|UrlGeneratorInterface */
-    private $urlGeneratorMock;
+    private \Mockery\MockInterface|UrlGeneratorInterface $urlGeneratorMock;
 
-    /** @var MockInterface|TranslatorInterface */
-    private $translatorMock;
+    private \Mockery\MockInterface|TranslatorInterface $translatorMock;
 
-    /** @var MockInterface|TokenStorageInterface */
-    private $tokenStorageMock;
+    private \Mockery\MockInterface|TokenStorageInterface $tokenStorageMock;
 
     /**
      * Setup..

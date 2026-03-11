@@ -164,7 +164,7 @@ class PasswordEntityListener
         $unitOfWork->recomputeSingleEntityChangeSet($entityMeta, $hasPasswordPolicy);
 
         // Invalidate cache if enabled
-        if ($this->passwordExpiryService !== null) {
+        if ($this->passwordExpiryService instanceof PasswordExpiryServiceInterface) {
             $this->passwordExpiryService->invalidateCache($hasPasswordPolicy);
         }
 

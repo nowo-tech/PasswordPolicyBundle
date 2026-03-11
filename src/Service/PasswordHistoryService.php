@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
+use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 
@@ -41,8 +42,8 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
             usort($historyArray, static function (PasswordHistoryInterface $a, PasswordHistoryInterface $b): int {
                 $aCreatedAt = $a->getCreatedAt();
                 $bCreatedAt = $b->getCreatedAt();
-                $aTs        = $aCreatedAt !== null ? (int) $aCreatedAt->format('U') : 0;
-                $bTs        = $bCreatedAt !== null ? (int) $bCreatedAt->format('U') : 0;
+                $aTs        = $aCreatedAt instanceof DateTimeInterface ? (int) $aCreatedAt->format('U') : 0;
+                $bTs        = $bCreatedAt instanceof DateTimeInterface ? (int) $bCreatedAt->format('U') : 0;
 
                 return $bTs <=> $aTs;
             });

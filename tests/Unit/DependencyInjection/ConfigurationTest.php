@@ -28,7 +28,7 @@ final class ConfigurationTest extends UnitTestCase
 
     public function testGetConfigTreeBuilder(): void
     {
-        $treeBuilder = $this->configuration->getConfigTreeBuilder();
+        $this->configuration->getConfigTreeBuilder();
         $this->addToAssertionCount(2);
     }
 

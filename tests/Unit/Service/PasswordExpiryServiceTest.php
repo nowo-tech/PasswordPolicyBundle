@@ -21,17 +21,13 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 
 final class PasswordExpiryServiceTest extends UnitTestCase
 {
-    /** @var HasPasswordPolicyInterface|MockInterface */
-    private $userMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $userMock;
 
-    /** @var MockInterface|UrlGeneratorInterface */
-    private $routerMock;
+    private \Mockery\MockInterface|UrlGeneratorInterface $routerMock;
 
-    /** @var MockInterface|PasswordExpiryService */
-    private $passwordExpiryServiceMock;
+    private \Mockery\MockInterface|PasswordExpiryService $passwordExpiryServiceMock;
 
-    /** @var MockInterface|TokenStorageInterface */
-    private $tokenStorageMock;
+    private \Mockery\MockInterface|TokenStorageInterface $tokenStorageMock;
 
     protected function setUp(): void
     {

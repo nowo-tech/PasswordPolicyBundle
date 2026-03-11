@@ -25,29 +25,23 @@ use function sprintf;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-    /** @var MockInterface|PasswordHistoryServiceInterface */
-    private $passwordHistoryServiceMock;
+    private \Mockery\MockInterface|PasswordHistoryServiceInterface $passwordHistoryServiceMock;
 
-    /** @var MockInterface|PasswordEntityListener */
-    private $passwordEntityListener;
+    private \Mockery\MockInterface|PasswordEntityListener $passwordEntityListener;
 
-    /** @var EntityManagerInterface|MockInterface */
-    private $emMock;
+    private \Doctrine\ORM\EntityManagerInterface|MockInterface $emMock;
 
-    /** @var HasPasswordPolicyInterface|MockInterface */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $entityMock;
 
-    /** @var MockInterface|UnitOfWork */
-    private $uowMock;
+    private \Mockery\MockInterface|UnitOfWork $uowMock;
 
     /**
      * @param ClassMetadata<stdClass> $metadata
      */
-    private static function setAssociationMapping(ClassMetadata $metadata, string $field, string $targetEntity, string $mappedBy): void
+    private function setAssociationMapping(ClassMetadata $metadata, string $field, string $targetEntity, string $mappedBy): void
     {
         $ref  = new ReflectionClass($metadata);
         $prop = $ref->getProperty('associationMappings');
-        $prop->setAccessible(true);
         /** @var array<string, mixed> $current */
         $current         = $prop->getValue($metadata);
         $current[$field] = ['targetEntity' => $targetEntity, 'mappedBy' => $mappedBy];
@@ -117,7 +111,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->andReturn($this->uowMock);
 
         $classMetadata = new ClassMetadata(stdClass::class);
-        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -196,7 +190,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
         $this->emMock->shouldReceive('getUnitOfWork')->once()->andReturn($this->uowMock);
         $classMetadata = new ClassMetadata(stdClass::class);
-        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
         $this->emMock->shouldReceive('getClassMetadata')
                      ->twice()
                      ->andReturn($classMetadata, Mockery::mock(ClassMetadata::class));
@@ -229,7 +223,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->andReturn($this->uowMock);
 
         $classMetadata = new ClassMetadata(stdClass::class);
-        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
 
         $classMetadataMock = Mockery::mock(ClassMetadata::class);
 
@@ -285,7 +279,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $classMetadata = new ClassMetadata(stdClass::class);
 
         // Use stdClass instead of self::class to avoid ArgumentCountError
-        self::setAssociationMapping($classMetadata, 'passwordHistory', stdClass::class, 'user');
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', stdClass::class, 'user');
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -306,7 +300,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
         $classMetadata = new ClassMetadata(stdClass::class);
 
-        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'foo');
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'foo');
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()

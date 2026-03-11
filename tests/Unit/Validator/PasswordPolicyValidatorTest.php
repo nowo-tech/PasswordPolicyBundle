@@ -25,17 +25,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordPolicyValidatorTest extends UnitTestCase
 {
-    /** @var HasPasswordPolicyInterface|MockInterface */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|MockInterface $entityMock;
 
-    /** @var ExecutionContextInterface|MockInterface */
-    private $contextMock;
+    private \Symfony\Component\Validator\Context\ExecutionContextInterface|MockInterface $contextMock;
 
-    /** @var MockInterface|PasswordPolicyValidator */
-    private $validator;
+    private \Mockery\MockInterface|PasswordPolicyValidator $validator;
 
-    /** @var MockInterface|PasswordPolicyServiceInterface */
-    private $passwordPolicyServiceMock;
+    private \Mockery\MockInterface|PasswordPolicyServiceInterface $passwordPolicyServiceMock;
 
     /**
      * Setup.
@@ -379,7 +375,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
-          ->with('Password reuse attempt detected', Mockery::on(static fn (array $context) => isset($context['bundle'], $context['user_id'], $context['user_identifier'], $context['match_type'])
+          ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['bundle'], $context['user_id'], $context['user_identifier'], $context['match_type'])
               && $context['match_type'] === 'exact'));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
@@ -419,7 +415,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
-          ->with('Password reuse attempt detected', Mockery::on(static fn (array $context) => isset($context['user_identifier']) && $context['user_identifier'] === 'email@example.com'));
+          ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'email@example.com'));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');

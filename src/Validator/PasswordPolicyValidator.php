@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Validator;
 
 use Carbon\Carbon;
+use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -132,7 +133,7 @@ class PasswordPolicyValidator extends ConstraintValidator
             $this->log($this->logLevel, $message, [
                 'user_id'                => $userId,
                 'user_identifier'        => $userIdentifier,
-                'password_used_days_ago' => $createdAt !== null ? Carbon::instance($createdAt)->diffInDays(Carbon::now()) : 0,
+                'password_used_days_ago' => $createdAt instanceof DateTimeInterface ? Carbon::instance($createdAt)->diffInDays(Carbon::now()) : 0,
                 'match_type'             => $type,
             ]);
         }
@@ -144,7 +145,7 @@ class PasswordPolicyValidator extends ConstraintValidator
 
         $createdAt = $history->getCreatedAt();
         $this->context->buildViolation($message)
-                      ->setParameter('{{ days }}', $createdAt !== null ? Carbon::instance($createdAt)->diffForHumans() : '')
+                      ->setParameter('{{ days }}', $createdAt instanceof DateTimeInterface ? Carbon::instance($createdAt)->diffForHumans() : '')
                       ->setCode($type === 'extension' ? PasswordPolicy::PASSWORD_EXTENSION : PasswordPolicy::PASSWORD_IN_HISTORY)
                       ->addViolation();
     }

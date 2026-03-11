@@ -228,7 +228,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     private function getCurrentUser(): ?HasPasswordPolicyInterface
     {
         $token = $this->tokenStorage->getToken();
-        if ($token) {
+        if ($token instanceof \Symfony\Component\Security\Core\Authentication\Token\TokenInterface) {
             $user = $token->getUser();
             if (!is_object($user)) {
                 return null;
