@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2025-03-10
+
+### Fixed
+- **Demo Symfony 8 – Login**: Resolved route conflict so the login form is shown at `/`
+  - Removed `demo_home` override from `routes.yaml`; home is now at `/home`, login at `/`
+  - Moved `UserFixtures` from `DataFixtures/` to `src/DataFixtures/` so fixtures load and demo users exist
+- **Demo – Composer path repo**: Fixed `composer update` when using the bundle from a path repository
+  - Added Git `safe.directory` for `/var/password-policy-bundle` in demo Dockerfiles
+  - Relaxed bundle constraint in demo `composer.json` to `^0.0.5 || dev-main || dev-master` so path repo resolves
+- **Demo Symfony 8 – Cache**: Avoid corrupted container cache when mounting volumes
+  - Entrypoint runs `cache:clear` on startup in `APP_ENV=dev` so the container cache stays in sync
+- **Demo Symfony 8 – Doctrine**: Set `server_version: '8.0'` in Doctrine config to remove MySQL &lt; 8 deprecation
+- **Demo Symfony 8 – intl**: Added PHP `intl` extension in Dockerfile to satisfy Symfony recommendation
+
+### Added
+- **README**: Screenshots for the Symfony 8 demo (login, home, users management) in `docs/images/`
+- **Demo Makefiles**: New `make cache-clear` target in symfony6, symfony7, and symfony8 demos
+- **PHPStan**: Support for Mockery and Symfony interfaces in tests
+  - Added `phpstan/phpstan-mockery` and `phpstan/extension-installer`
+  - Added `symfony/password-hasher` and `symfony/security-core` to require-dev for analysis
+  - Included `phpstan-mockery` extension in `phpstan.neon.dist`
+- **Tests**: Null-safety and assertion fixes for PHPStan level 8
+  - `PasswordHistoryTraitTest` and `PasswordHistoryServiceTest`: null checks for `getCreatedAt()`
+  - Replaced `assertTrue(true)` with `addToAssertionCount(1)` where appropriate
+  - DocBlock generics for `ArrayCollection` and `Collection` return types in tests
+
+### Changed
+- **Demo Symfony 8**: Doctrine DBAL config now sets `server_version: '8.0'` explicitly
+- **Tests**: Minor type and assertion adjustments for static analysis compatibility
+
 ## [0.0.5] - 2025-12-17
 
 ### Fixed

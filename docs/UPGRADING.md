@@ -6,7 +6,8 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
-  - [Upgrading to 0.0.5 (Unreleased)](#upgrading-to-005-unreleased)
+  - [Upgrading to 0.0.6](#upgrading-to-006)
+  - [Upgrading to 0.0.5](#upgrading-to-005)
   - [Upgrading to 0.0.4](#upgrading-to-004)
   - [Upgrading to 0.0.3](#upgrading-to-003)
   - [Upgrading to 0.0.2](#upgrading-to-002)
@@ -28,9 +29,32 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
-### Upgrading to 0.0.5 (Unreleased)
+### Upgrading to 0.0.6
 
-**Release Date**: TBD
+**Release Date**: 2025-03-10
+
+#### What's New
+
+- **Demo and documentation**: Login and cache fixes for Symfony 8 demo, new README screenshots, `make cache-clear` in demos
+- **PHPStan**: Mockery extension and Symfony dev deps for tests; test fixes for static analysis
+- **Demo Symfony 8**: Doctrine `server_version` 8.0, PHP `intl` in Docker, optional cache clear on dev startup
+
+#### Breaking Changes
+
+None. Backward-compatible release.
+
+#### Upgrade Steps
+
+1. Update the bundle: `composer update nowo-tech/password-policy-bundle`
+2. Clear cache: `php bin/console cache:clear`
+
+No configuration or code changes required.
+
+---
+
+### Upgrading to 0.0.5
+
+**Release Date**: 2025-12-17
 
 #### What's New
 
@@ -427,6 +451,9 @@ If you encounter issues during upgrade:
 
 | Bundle Version | Symfony Version | PHP Version |
 |---------------|-----------------|-------------|
+| 0.0.6         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
+| 0.0.5         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
+| 0.0.4         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.3         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.2         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.1         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
