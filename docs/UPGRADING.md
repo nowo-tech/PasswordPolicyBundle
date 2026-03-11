@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 0.0.8](#upgrading-to-008)
   - [Upgrading to 0.0.6](#upgrading-to-006)
   - [Upgrading to 0.0.5](#upgrading-to-005)
   - [Upgrading to 0.0.4](#upgrading-to-004)
@@ -28,6 +29,27 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 0.0.8
+
+**Release Date**: 2025-03-11
+
+#### What's New
+
+- **Tests**: All tests pass with PHP 8.1+ and Symfony 6.4 / 7 / 8; user mocks comply with `TokenInterface::getUser()` return type (`?UserInterface`).
+- **PHPStan**: Level 8 with 0 errors; mock properties use intersection types in docblocks for correct static analysis.
+- **CI**: Release workflow improvements (changelog extraction, `body_path` for release notes).
+
+#### Breaking Changes
+
+None. Backward-compatible release.
+
+#### Upgrade Steps
+
+1. Update the bundle: `composer update nowo-tech/password-policy-bundle`
+2. Clear cache: `php bin/console cache:clear`
+
+---
 
 ### Upgrading to 0.0.6
 

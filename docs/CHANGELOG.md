@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.8] - 2025-03-11
+
+### Fixed
+- **Tests – TokenInterface::getUser() return type**: All test mocks and stubs now respect Symfony’s `?UserInterface` return type
+  - User mocks in `PasswordExpiryServiceTest` and `PasswordExpiryListenerTest` implement both `HasPasswordPolicyInterface` and `UserInterface` (including `getUserIdentifier()`, `getRoles()`, `eraseCredentials()`)
+  - Anonymous user classes in listener tests implement `UserInterface` fully
+  - `testGetCurrentUserWithAnonUser` uses `null` instead of string `'anon.'` (invalid for typed `getUser()`)
+  - `testGetCurrentUserWithNonHasPasswordPolicyInterface` uses a `UserInterface` mock instead of `stdClass`
+- **PHPStan – Mock properties**: Mock properties in unit tests now use **intersection** types in `@var` docblocks (`Interface&\Mockery\MockInterface`) instead of union types, so PHPStan recognizes `shouldReceive()` and constructor argument types correctly (0 errors at level 8).
+
+### Changed
+- **CI – Release workflow**: Changelog extraction uses escaped version in awk; release body is built via `body_path`; step summary outputs release URL.
+
 ## [0.0.6] - 2025-03-10
 
 ### Fixed
