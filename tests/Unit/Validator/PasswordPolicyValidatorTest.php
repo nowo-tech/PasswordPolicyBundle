@@ -31,10 +31,10 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
     /** @var ExecutionContextInterface|MockInterface */
     private $contextMock;
 
-    /** @var PasswordPolicyValidator|MockInterface */
+    /** @var MockInterface|PasswordPolicyValidator */
     private $validator;
 
-    /** @var PasswordPolicyServiceInterface|MockInterface */
+    /** @var MockInterface|PasswordPolicyServiceInterface */
     private $passwordPolicyServiceMock;
 
     /**

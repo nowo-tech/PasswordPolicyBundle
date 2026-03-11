@@ -12,7 +12,6 @@ use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
-use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionClass;
 use stdClass;
@@ -25,13 +24,13 @@ final class PasswordExpiryServiceTest extends UnitTestCase
     /** @var HasPasswordPolicyInterface|MockInterface */
     private $userMock;
 
-    /** @var UrlGeneratorInterface|MockInterface */
+    /** @var MockInterface|UrlGeneratorInterface */
     private $routerMock;
 
-    /** @var PasswordExpiryService|MockInterface */
+    /** @var MockInterface|PasswordExpiryService */
     private $passwordExpiryServiceMock;
 
-    /** @var TokenStorageInterface|MockInterface */
+    /** @var MockInterface|TokenStorageInterface */
     private $tokenStorageMock;
 
     protected function setUp(): void

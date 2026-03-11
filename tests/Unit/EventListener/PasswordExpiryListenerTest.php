@@ -25,25 +25,25 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
-    /** @var RequestStack|MockInterface */
+    /** @var MockInterface|RequestStack */
     private $requestStackMock;
 
-    /** @var Session|MockInterface */
+    /** @var MockInterface|Session */
     private $sessionMock;
 
-    /** @var PasswordExpiryListener|MockInterface */
+    /** @var MockInterface|PasswordExpiryListener */
     private $passwordExpiryListenerMock;
 
-    /** @var PasswordExpiryServiceInterface|MockInterface */
+    /** @var MockInterface|PasswordExpiryServiceInterface */
     private $passwordExpiryServiceMock;
 
-    /** @var UrlGeneratorInterface|MockInterface */
+    /** @var MockInterface|UrlGeneratorInterface */
     private $urlGeneratorMock;
 
-    /** @var TranslatorInterface|MockInterface */
+    /** @var MockInterface|TranslatorInterface */
     private $translatorMock;
 
-    /** @var TokenStorageInterface|MockInterface */
+    /** @var MockInterface|TokenStorageInterface */
     private $tokenStorageMock;
 
     /**
@@ -560,7 +560,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock         = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
+        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
         $userMock->shouldReceive('getId')
                  ->andReturn(123);
         $tokenMock->shouldReceive('getUser')
@@ -620,7 +620,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock         = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
+        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
         $userMock->shouldReceive('getId')
                  ->andReturn(123);
         $tokenMock->shouldReceive('getUser')

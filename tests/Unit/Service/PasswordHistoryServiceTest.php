@@ -15,7 +15,7 @@ use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 
 final class PasswordHistoryServiceTest extends UnitTestCase
 {
-    /** @var PasswordHistoryService|MockInterface */
+    /** @var MockInterface|PasswordHistoryService */
     private $historyService;
 
     /** @var HasPasswordPolicyInterface|MockInterface */
@@ -55,7 +55,7 @@ final class PasswordHistoryServiceTest extends UnitTestCase
             if ($item === null) {
                 continue;
             }
-            $createdAt = $item->getCreatedAt();
+            $createdAt            = $item->getCreatedAt();
             $expectedTimestamps[] = $createdAt !== null ? $createdAt->format('U') : '0';
         }
 

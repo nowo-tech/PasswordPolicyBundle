@@ -126,7 +126,7 @@ class PasswordPolicyValidator extends ConstraintValidator
                 ? $entity->getUserIdentifier()
                 : (method_exists($entity, 'getEmail') ? $entity->getEmail() : 'unknown');
             $createdAt = $history->getCreatedAt();
-            $message = $type === 'extension'
+            $message   = $type === 'extension'
                 ? 'Password extension detected (new password is an extension of an old password)'
                 : 'Password reuse attempt detected';
             $this->log($this->logLevel, $message, [

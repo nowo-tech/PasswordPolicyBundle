@@ -25,10 +25,10 @@ use function sprintf;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-    /** @var PasswordHistoryServiceInterface|MockInterface */
+    /** @var MockInterface|PasswordHistoryServiceInterface */
     private $passwordHistoryServiceMock;
 
-    /** @var PasswordEntityListener|MockInterface */
+    /** @var MockInterface|PasswordEntityListener */
     private $passwordEntityListener;
 
     /** @var EntityManagerInterface|MockInterface */
@@ -37,7 +37,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
     /** @var HasPasswordPolicyInterface|MockInterface */
     private $entityMock;
 
-    /** @var UnitOfWork|MockInterface */
+    /** @var MockInterface|UnitOfWork */
     private $uowMock;
 
     /**
@@ -45,11 +45,11 @@ final class PasswordEntityListenerTest extends UnitTestCase
      */
     private static function setAssociationMapping(ClassMetadata $metadata, string $field, string $targetEntity, string $mappedBy): void
     {
-        $ref = new ReflectionClass($metadata);
+        $ref  = new ReflectionClass($metadata);
         $prop = $ref->getProperty('associationMappings');
         $prop->setAccessible(true);
         /** @var array<string, mixed> $current */
-        $current = $prop->getValue($metadata);
+        $current         = $prop->getValue($metadata);
         $current[$field] = ['targetEntity' => $targetEntity, 'mappedBy' => $mappedBy];
         $prop->setValue($metadata, $current);
     }

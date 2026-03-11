@@ -22,7 +22,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
     /** @var HasPasswordPolicyInterface|MockInterface */
     private $entityMock;
 
-    /** @var UserPasswordHasherInterface|MockInterface */
+    /** @var MockInterface|UserPasswordHasherInterface */
     private $userPasswordHasherMock;
 
     private PasswordPolicyService $passwordPolicyService;

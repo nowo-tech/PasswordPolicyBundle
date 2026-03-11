@@ -41,8 +41,8 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
             usort($historyArray, static function (PasswordHistoryInterface $a, PasswordHistoryInterface $b): int {
                 $aCreatedAt = $a->getCreatedAt();
                 $bCreatedAt = $b->getCreatedAt();
-                $aTs = $aCreatedAt !== null ? (int) $aCreatedAt->format('U') : 0;
-                $bTs = $bCreatedAt !== null ? (int) $bCreatedAt->format('U') : 0;
+                $aTs        = $aCreatedAt !== null ? (int) $aCreatedAt->format('U') : 0;
+                $bTs        = $bCreatedAt !== null ? (int) $bCreatedAt->format('U') : 0;
 
                 return $bTs <=> $aTs;
             });

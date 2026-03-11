@@ -20,6 +20,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 use function in_array;
 use function is_array;
+use function is_object;
 
 /**
  * Event listener for handling password expiry checks on kernel requests.

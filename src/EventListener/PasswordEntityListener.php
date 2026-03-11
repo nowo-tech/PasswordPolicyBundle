@@ -21,6 +21,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 use function array_key_exists;
 use function count;
+use function is_array;
 use function sprintf;
 
 /**
@@ -79,7 +80,7 @@ class PasswordEntityListener
         foreach ($unitOfWork->getIdentityMap() as $entities) {
             foreach ($entities as $entity) {
                 if (is_a($entity, $this->entityClass, true) && $entity instanceof HasPasswordPolicyInterface) {
-                    $changeSet = $unitOfWork->getEntityChangeSet($entity);
+                    $changeSet      = $unitOfWork->getEntityChangeSet($entity);
                     $passwordChange = $changeSet[$this->passwordField] ?? null;
                     if (is_array($passwordChange) && isset($passwordChange[0])) {
                         $this->createPasswordHistory($em, $entity, $passwordChange[0]);
