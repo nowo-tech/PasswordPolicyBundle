@@ -36,8 +36,9 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 #### What's New
 
 - **Demo and documentation**: Login and cache fixes for Symfony 8 demo, new README screenshots, `make cache-clear` in demos
-- **PHPStan**: Mockery extension and Symfony dev deps for tests; test fixes for static analysis
+- **PHPStan**: Level 8 with 0 errors; Mockery extension and Symfony dev deps; all fixes in code (no exclusions)
 - **Demo Symfony 8**: Doctrine `server_version` 8.0, PHP `intl` in Docker, optional cache clear on dev startup
+- **PasswordExpiryListener**: Token storage is now injected via constructor (`TokenStorageInterface` as second argument). Normal apps using the bundle’s DI do not need changes.
 
 #### Breaking Changes
 
@@ -48,7 +49,7 @@ None. Backward-compatible release.
 1. Update the bundle: `composer update nowo-tech/password-policy-bundle`
 2. Clear cache: `php bin/console cache:clear`
 
-No configuration or code changes required.
+No configuration or code changes required. If you instantiate `PasswordExpiryListener` yourself (e.g. in tests), add `TokenStorageInterface` as the second constructor argument after `PasswordExpiryServiceInterface`.
 
 ---
 

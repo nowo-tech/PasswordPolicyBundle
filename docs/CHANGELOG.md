@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PHPStan**: Support for Mockery and Symfony interfaces in tests
   - Added `phpstan/phpstan-mockery` and `phpstan/extension-installer`
   - Added `symfony/password-hasher` and `symfony/security-core` to require-dev for analysis
-  - Included `phpstan-mockery` extension in `phpstan.neon.dist`
+  - Extensions loaded via extension-installer (no duplicate includes in `phpstan.neon.dist`)
 - **Tests**: Null-safety and assertion fixes for PHPStan level 8
   - `PasswordHistoryTraitTest` and `PasswordHistoryServiceTest`: null checks for `getCreatedAt()`
   - Replaced `assertTrue(true)` with `addToAssertionCount(1)` where appropriate
@@ -33,7 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Demo Symfony 8**: Doctrine DBAL config now sets `server_version: '8.0'` explicitly
-- **Tests**: Minor type and assertion adjustments for static analysis compatibility
+- **PasswordExpiryListener**: Now receives `TokenStorageInterface` via constructor (injected by the extension as `security.token_storage`). Token is no longer read from the expiry service; if you instantiate the listener manually, add the new second argument.
+- **PHPStan level 8 – 0 errors**: Full static analysis compliance without exclusions
+  - **src**: Typed arrays (`array<string, mixed>`, `array<int, string>`, etc.), `getRootNode()` only (removed BC branch), `getContainerExtension()` return type, `PasswordAuthenticatedUserInterface` checks in `PasswordPolicyService`, null-safety for `getCreatedAt()` and Carbon, `PasswordHistoryTrait` return types (`DateTimeInterface`, non-null string), Doctrine `ClassMetadata`/attributes removed from listener (registration via DI only), `array_key_exists`/changeSet handling in entity listener
+  - **Tests**: Mock types as `Interface|MockInterface` for phpstan-mockery; `ClassMetadata` in tests via reflection helper; `PasswordExpiryListenerTest` and demos use injected `tokenStorage` mock; `PasswordHistoryMock` typed `user` and `getUser()`; `makePasswordHistoryMock` fixed Mockery chaining; redundant assertions replaced or removed
+  - **Configuration**: Duplicate extension includes removed so extension-installer is the single source
 
 ## [0.0.5] - 2025-12-17
 
