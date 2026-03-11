@@ -27,7 +27,7 @@ interface PasswordExpiryServiceInterface
      *
      * @param string|null $entityClass The entity class name. If null, uses the current user's class
      *
-     * @return array Array of route names that are locked
+     * @return array<int, string> Array of route names that are locked
      */
     public function getLockedRoutes(?string $entityClass = null): array;
 
@@ -55,7 +55,7 @@ interface PasswordExpiryServiceInterface
      *
      * @param string|null $entityClass The entity class name. If null, uses the current user's class
      *
-     * @return array Array of route names that are excluded from expiry checks
+     * @return array<int, string> Array of route names that are excluded from expiry checks
      */
     public function getExcludedRoutes(?string $entityClass = null): array;
 

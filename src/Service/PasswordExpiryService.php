@@ -27,7 +27,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     /**
      * Array of password expiry configurations indexed by entity class name.
      *
-     * @var PasswordExpiryConfiguration[]
+     * @var array<string, PasswordExpiryConfiguration>|null
      */
     private ?array $entities = null;
 
@@ -66,8 +66,8 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             return false;
         }
 
-        /** @var HasPasswordPolicyInterface $user */
-        if (($user = $this->getCurrentUser()) instanceof HasPasswordPolicyInterface) {
+        $user = $this->getCurrentUser();
+        if ($user instanceof HasPasswordPolicyInterface) {
             // Try to get from cache if enabled
             if ($this->cacheEnabled && $this->cache) {
                 $cacheKey   = $this->getCacheKey($user);
@@ -80,9 +80,9 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
 
             // Calculate expiry status
             $isExpired = false;
-            foreach ($this->entities as $class => $config) {
+            foreach ($this->entities as $entityClass => $config) {
                 $passwordLastChange = $user->getPasswordChangedAt();
-                if ($passwordLastChange instanceof DateTime && $user instanceof $class) {
+                if ($passwordLastChange instanceof DateTime && $user instanceof $entityClass) {
                     // Validate that passwordChangedAt is not in the future
                     if ($passwordLastChange > Carbon::now()) {
                         // If date is in the future, treat as not expired (data error)
@@ -134,7 +134,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     private function getCacheKey(HasPasswordPolicyInterface $user): string
     {
-        $userId            = method_exists($user, 'getId') ? (string) $user->getId() : 'unknown';
+        $userId            = (string) $user->getId();
         $userClass         = $user::class;
         $passwordChangedAt = $user->getPasswordChangedAt();
         $passwordHash      = $passwordChangedAt instanceof DateTime
@@ -154,7 +154,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      *
      * @param string|null $entityClass The entity class name. If null, uses the current user's class
      *
-     * @return array Array of route names that are locked
+     * @return array<int, string> Array of route names that are locked
      */
     public function getLockedRoutes(?string $entityClass = null): array
     {
@@ -197,7 +197,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      *
      * @param string|null $entityClass The entity class name. If null, uses the current user's class
      *
-     * @return array Array of route names that are excluded from expiry checks
+     * @return array<int, string> Array of route names that are excluded from expiry checks
      */
     public function getExcludedRoutes(?string $entityClass = null): array
     {
@@ -213,6 +213,9 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function addEntity(PasswordExpiryConfiguration $passwordExpiryConfiguration): void
     {
+        if ($this->entities === null) {
+            $this->entities = [];
+        }
         $this->entities[$passwordExpiryConfiguration->getEntityClass()] = $passwordExpiryConfiguration;
     }
 
@@ -224,12 +227,14 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     private function getCurrentUser(): ?HasPasswordPolicyInterface
     {
         $token = $this->tokenStorage->getToken();
-        if ($token && $user = $token->getUser()) {
-            if ($user === 'anon.') {
+        if ($token) {
+            $user = $token->getUser();
+            if (!is_object($user)) {
                 return null;
             }
-
-            return $user instanceof HasPasswordPolicyInterface ? $user : null;
+            if ($user instanceof HasPasswordPolicyInterface) {
+                return $user;
+            }
         }
 
         return null;

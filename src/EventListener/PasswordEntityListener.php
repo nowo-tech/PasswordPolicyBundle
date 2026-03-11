@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\EventListener;
 
 use Carbon\Carbon;
-use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Events;
-use Doctrine\ORM\Mapping as ORM;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
@@ -31,7 +29,6 @@ use function sprintf;
  * This listener listens to Doctrine's onFlush event and automatically creates password
  * history entries when a password is changed, and updates the passwordChangedAt timestamp.
  */
-#[AsDoctrineListener(event: Events::onFlush, priority: 500, connection: 'default')]
 class PasswordEntityListener
 {
     /**
@@ -74,7 +71,6 @@ class PasswordEntityListener
      *
      * @param OnFlushEventArgs $onFlushEventArgs The event arguments containing entity manager and unit of work
      */
-    #[ORM\OnFlush]
     public function onFlush(OnFlushEventArgs $onFlushEventArgs): void
     {
         $em         = $onFlushEventArgs->getObjectManager();
@@ -84,11 +80,9 @@ class PasswordEntityListener
             foreach ($entities as $entity) {
                 if (is_a($entity, $this->entityClass, true) && $entity instanceof HasPasswordPolicyInterface) {
                     $changeSet = $unitOfWork->getEntityChangeSet($entity);
-                    if (array_key_exists($this->passwordField, $changeSet) && array_key_exists(
-                        0,
-                        $changeSet[$this->passwordField],
-                    )) {
-                        $this->createPasswordHistory($em, $entity, $changeSet[$this->passwordField][0]);
+                    $passwordChange = $changeSet[$this->passwordField] ?? null;
+                    if (is_array($passwordChange) && isset($passwordChange[0])) {
+                        $this->createPasswordHistory($em, $entity, $passwordChange[0]);
                     }
                 }
             }
@@ -169,7 +163,7 @@ class PasswordEntityListener
         $unitOfWork->recomputeSingleEntityChangeSet($entityMeta, $hasPasswordPolicy);
 
         // Invalidate cache if enabled
-        if ($this->passwordExpiryService && method_exists($this->passwordExpiryService, 'invalidateCache')) {
+        if ($this->passwordExpiryService !== null) {
             $this->passwordExpiryService->invalidateCache($hasPasswordPolicy);
         }
 
@@ -186,7 +180,7 @@ class PasswordEntityListener
 
         // Log password change
         if ($this->enableLogging && $this->logger) {
-            $userId = method_exists($hasPasswordPolicy, 'getId') ? $hasPasswordPolicy->getId() : 'unknown';
+            $userId = $hasPasswordPolicy->getId();
             $this->log($this->logLevel, 'Password changed successfully', [
                 'user_id'                 => $userId,
                 'entity_class'            => $hasPasswordPolicy::class,
@@ -202,7 +196,7 @@ class PasswordEntityListener
      *
      * @param string $level The log level (debug, info, notice, warning, error)
      * @param string $message The log message
-     * @param array $context Additional context data
+     * @param array<string, mixed> $context Additional context data
      */
     private function log(string $level, string $message, array $context = []): void
     {

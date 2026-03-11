@@ -21,7 +21,7 @@ class PasswordPolicyConfigurationService
      * Sets the configuration for an entity.
      *
      * @param string $entityClass The fully qualified entity class name
-     * @param array $config The configuration array for this entity
+     * @param array<string, mixed> $config The configuration array for this entity
      */
     public function setEntityConfiguration(string $entityClass, array $config): void
     {

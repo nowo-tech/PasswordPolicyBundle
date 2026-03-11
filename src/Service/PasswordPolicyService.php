@@ -8,6 +8,7 @@ use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 use function function_exists;
@@ -79,7 +80,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         // Try UserPasswordHasherInterface if the entity implements UserInterface
         // This handles Symfony's password hashers (NativePasswordHasher, etc.)
         // This is important for Symfony's custom hashers that might not use password_hash()
-        if ($hasPasswordPolicy instanceof UserInterface) {
+        if ($hasPasswordPolicy instanceof PasswordAuthenticatedUserInterface) {
             try {
                 // Try to clone the entity to avoid modifying the original
                 // If cloning is not possible, we'll skip this method
@@ -93,7 +94,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                             return true;
                         }
                     }
-                } elseif (method_exists($hasPasswordPolicy, 'getPassword') && method_exists($hasPasswordPolicy, 'setPassword')) {
+                } elseif (method_exists($hasPasswordPolicy, 'setPassword')) {
                     // If not cloneable, try to use the entity directly (but restore password after)
                     // This is a fallback for entities that don't support cloning
                     $originalPassword = $hasPasswordPolicy->getPassword();

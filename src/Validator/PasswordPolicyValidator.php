@@ -73,7 +73,7 @@ class PasswordPolicyValidator extends ConstraintValidator
 
         // First, check for exact password match
         $history = $this->passwordPolicyService->getHistoryByPassword($value, $entity);
-        if ($history instanceof PasswordHistoryInterface) {
+        if ($history instanceof PasswordHistoryInterface && $constraint instanceof PasswordPolicy) {
             $this->handlePasswordReuse($entity, $history, $constraint, 'exact');
 
             return;
@@ -91,7 +91,7 @@ class PasswordPolicyValidator extends ConstraintValidator
 
         if ($detectExtensions) {
             $extensionHistory = $this->passwordPolicyService->getHistoryByPasswordExtension($value, $entity, $extensionMinLength);
-            if ($extensionHistory instanceof PasswordHistoryInterface) {
+            if ($extensionHistory instanceof PasswordHistoryInterface && $constraint instanceof PasswordPolicy) {
                 $this->handlePasswordReuse($entity, $extensionHistory, $constraint, 'extension');
 
                 return;
@@ -121,24 +121,18 @@ class PasswordPolicyValidator extends ConstraintValidator
 
         // Log password reuse attempt
         if ($this->enableLogging && $this->logger) {
-            $userId         = method_exists($entity, 'getId') ? $entity->getId() : 'unknown';
-            $userIdentifier = 'unknown';
-            if (method_exists($entity, 'getUserIdentifier')) {
-                /** @var callable $getUserIdentifier */
-                $getUserIdentifier = [$entity, 'getUserIdentifier'];
-                $userIdentifier    = $getUserIdentifier();
-            } elseif (method_exists($entity, 'getEmail')) {
-                /** @var callable $getEmail */
-                $getEmail       = [$entity, 'getEmail'];
-                $userIdentifier = $getEmail();
-            }
+            $userId         = $entity->getId();
+            $userIdentifier = $entity instanceof \Symfony\Component\Security\Core\User\UserInterface
+                ? $entity->getUserIdentifier()
+                : (method_exists($entity, 'getEmail') ? $entity->getEmail() : 'unknown');
+            $createdAt = $history->getCreatedAt();
             $message = $type === 'extension'
                 ? 'Password extension detected (new password is an extension of an old password)'
                 : 'Password reuse attempt detected';
             $this->log($this->logLevel, $message, [
                 'user_id'                => $userId,
                 'user_identifier'        => $userIdentifier,
-                'password_used_days_ago' => Carbon::instance($history->getCreatedAt())->diffInDays(Carbon::now()),
+                'password_used_days_ago' => $createdAt !== null ? Carbon::instance($createdAt)->diffInDays(Carbon::now()) : 0,
                 'match_type'             => $type,
             ]);
         }
@@ -148,8 +142,9 @@ class PasswordPolicyValidator extends ConstraintValidator
             $message = $constraint->extensionMessage;
         }
 
+        $createdAt = $history->getCreatedAt();
         $this->context->buildViolation($message)
-                      ->setParameter('{{ days }}', Carbon::instance($history->getCreatedAt())->diffForHumans())
+                      ->setParameter('{{ days }}', $createdAt !== null ? Carbon::instance($createdAt)->diffForHumans() : '')
                       ->setCode($type === 'extension' ? PasswordPolicy::PASSWORD_EXTENSION : PasswordPolicy::PASSWORD_IN_HISTORY)
                       ->addViolation();
     }
@@ -159,7 +154,7 @@ class PasswordPolicyValidator extends ConstraintValidator
      *
      * @param string $level The log level (debug, info, notice, warning, error)
      * @param string $message The log message
-     * @param array $context Additional context data
+     * @param array<string, mixed> $context Additional context data
      */
     private function log(string $level, string $message, array $context = []): void
     {

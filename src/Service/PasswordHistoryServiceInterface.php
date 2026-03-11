@@ -20,7 +20,7 @@ interface PasswordHistoryServiceInterface
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
      * @param int $historyLimit The maximum number of password history entries to keep
      *
-     * @return array Array of password history items that should be removed
+     * @return array<int, \Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface> Array of password history items that should be removed
      */
     public function getHistoryItemsForCleanup(HasPasswordPolicyInterface $hasPasswordPolicy, int $historyLimit): array;
 }

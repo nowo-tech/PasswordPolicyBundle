@@ -6,6 +6,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
 use DateTime;
 use Mockery;
+use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
@@ -24,17 +25,26 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
-    private \Mockery\Mock|RequestStack $requestStackMock;
+    /** @var RequestStack|MockInterface */
+    private $requestStackMock;
 
-    private \Mockery\Mock|Session $sessionMock;
+    /** @var Session|MockInterface */
+    private $sessionMock;
 
-    private \Mockery\Mock|PasswordExpiryListener $passwordExpiryListenerMock;
+    /** @var PasswordExpiryListener|MockInterface */
+    private $passwordExpiryListenerMock;
 
-    private \Mockery\Mock|PasswordExpiryServiceInterface $passwordExpiryServiceMock;
+    /** @var PasswordExpiryServiceInterface|MockInterface */
+    private $passwordExpiryServiceMock;
 
-    private \Mockery\Mock|UrlGeneratorInterface $urlGeneratorMock;
+    /** @var UrlGeneratorInterface|MockInterface */
+    private $urlGeneratorMock;
 
-    private \Mockery\Mock|TranslatorInterface $translatorMock;
+    /** @var TranslatorInterface|MockInterface */
+    private $translatorMock;
+
+    /** @var TokenStorageInterface|MockInterface */
+    private $tokenStorageMock;
 
     /**
      * Setup..
@@ -46,6 +56,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->urlGeneratorMock          = Mockery::mock(UrlGeneratorInterface::class);
         $this->translatorMock            = Mockery::mock(TranslatorInterface::class);
         $this->sessionMock               = Mockery::mock(Session::class);
+        $this->tokenStorageMock          = Mockery::mock(TokenStorageInterface::class);
 
         $this->requestStackMock->shouldReceive('getSession')
                                ->andReturn($this->sessionMock);
@@ -55,6 +66,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->passwordExpiryListenerMock = Mockery::mock(PasswordExpiryListener::class, [
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -78,13 +90,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('getRequest')
                           ->andReturn($requestMock);
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn(null);
-        $tokenStorageMock->shouldReceive('getToken')
-                         ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->andReturn($tokenMock);
 
         $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
                                         ->once()
@@ -245,16 +255,15 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithRedirectOnExpiry(): void
     {
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn(null);
-        $tokenStorageMock->shouldReceive('getToken')
-                         ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->andReturn($tokenMock);
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -322,14 +331,13 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                    ->once()
                    ->with('Redirecting to password reset route', Mockery::on(static fn (array $c): bool => isset($c['reset_password_route'], $c['bundle'])));
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')->andReturn(null);
-        $tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -375,16 +383,15 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                    ->once()
                    ->with('Failed to generate reset password route', Mockery::on(static fn (array $c): bool => isset($c['route'], $c['exception'])));
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn(null);
-        $tokenStorageMock->shouldReceive('getToken')
-                         ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->andReturn($tokenMock);
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -456,6 +463,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -514,6 +522,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     {
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -550,16 +559,15 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('getRequest')
                           ->andReturn($requestMock);
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $userMock         = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
         $userMock->shouldReceive('getId')
                  ->andReturn(123);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
-        $tokenStorageMock->shouldReceive('getToken')
+        $this->tokenStorageMock->shouldReceive('getToken')
                          ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        // Token is provided via $this->tokenStorageMock (injected in listener in setUp)
 
         $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
                                         ->once()
@@ -575,6 +583,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         // Create listener with array error message
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -610,16 +619,15 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('getRequest')
                           ->andReturn($requestMock);
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $userMock         = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class);
         $userMock->shouldReceive('getId')
                  ->andReturn(123);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
-        $tokenStorageMock->shouldReceive('getToken')
+        $this->tokenStorageMock->shouldReceive('getToken')
                          ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        // Token is provided via $this->tokenStorageMock (injected in listener in setUp)
 
         $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
                                         ->once()
@@ -640,6 +648,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         // Create listener with event dispatcher
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -723,13 +732,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             }
         };
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
-        $tokenStorageMock->shouldReceive('getToken')
-                         ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->andReturn($tokenMock);
 
         $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
                                         ->once()
@@ -754,6 +761,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,
@@ -835,13 +843,11 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             }
         };
 
-        $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
-        $tokenMock        = Mockery::mock(TokenInterface::class);
+        $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
                   ->andReturn($userMock);
-        $tokenStorageMock->shouldReceive('getToken')
-                         ->andReturn($tokenMock);
-        $this->passwordExpiryServiceMock->tokenStorage = $tokenStorageMock;
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->andReturn($tokenMock);
 
         $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
                                         ->once()
@@ -866,6 +872,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
             $this->requestStackMock,
             $this->urlGeneratorMock,
             $this->translatorMock,

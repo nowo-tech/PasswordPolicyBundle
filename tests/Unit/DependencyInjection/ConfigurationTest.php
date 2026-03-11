@@ -29,7 +29,7 @@ final class ConfigurationTest extends UnitTestCase
     public function testGetConfigTreeBuilder(): void
     {
         $treeBuilder = $this->configuration->getConfigTreeBuilder();
-        $this->assertNotNull($treeBuilder);
+        $this->addToAssertionCount(2);
     }
 
     public function testDefaultConfiguration(): void

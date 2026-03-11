@@ -47,7 +47,7 @@ trait PasswordHistoryTrait
      */
     public function getPassword(): string
     {
-        return $this->password;
+        return $this->password ?? '';
     }
 
     /**
@@ -65,9 +65,9 @@ trait PasswordHistoryTrait
     /**
      * Gets the creation date and time.
      *
-     * @return DateTime|null The creation date or null if not set
+     * @return DateTimeInterface|null The creation date or null if not set
      */
-    public function getCreatedAt(): ?DateTime
+    public function getCreatedAt(): ?DateTimeInterface
     {
         return $this->createdAt;
     }

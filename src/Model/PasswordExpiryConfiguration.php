@@ -26,8 +26,8 @@ class PasswordExpiryConfiguration
      *
      * @param string $class The fully qualified class name of the entity
      * @param int $expiryDays The number of days before a password expires
-     * @param array $lockRoutes Array of route names that are locked when password expires
-     * @param array $excludedRoutes Array of route names excluded from expiry checks
+     * @param array<int, string> $lockRoutes Array of route names that are locked when password expires
+     * @param array<int, string> $excludedRoutes Array of route names excluded from expiry checks
      * @param string $resetPasswordRouteName The route name for password reset
      *
      * @throws RuntimeException If the entity class does not implement HasPasswordPolicyInterface
@@ -69,7 +69,7 @@ class PasswordExpiryConfiguration
     /**
      * Gets the list of locked routes.
      *
-     * @return array Array of route names that are locked when password expires
+     * @return array<int, string> Array of route names that are locked when password expires
      */
     public function getLockRoutes(): array
     {
@@ -79,7 +79,7 @@ class PasswordExpiryConfiguration
     /**
      * Gets the list of excluded routes.
      *
-     * @return array Array of route names excluded from expiry checks
+     * @return array<int, string> Array of route names excluded from expiry checks
      */
     public function getExcludedRoutes(): array
     {

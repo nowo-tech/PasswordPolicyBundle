@@ -10,7 +10,7 @@ use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use Mockery;
-use Mockery\Mock;
+use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -25,15 +25,34 @@ use function sprintf;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-    private \Mockery\Mock|PasswordHistoryServiceInterface $passwordHistoryServiceMock;
+    /** @var PasswordHistoryServiceInterface|MockInterface */
+    private $passwordHistoryServiceMock;
 
-    private \Mockery\Mock|PasswordEntityListener $passwordEntityListener;
+    /** @var PasswordEntityListener|MockInterface */
+    private $passwordEntityListener;
 
-    private \Doctrine\ORM\EntityManagerInterface|Mock $emMock;
+    /** @var EntityManagerInterface|MockInterface */
+    private $emMock;
 
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
+    /** @var HasPasswordPolicyInterface|MockInterface */
+    private $entityMock;
 
-    private \Mockery\Mock|UnitOfWork $uowMock;
+    /** @var UnitOfWork|MockInterface */
+    private $uowMock;
+
+    /**
+     * @param ClassMetadata<stdClass> $metadata
+     */
+    private static function setAssociationMapping(ClassMetadata $metadata, string $field, string $targetEntity, string $mappedBy): void
+    {
+        $ref = new ReflectionClass($metadata);
+        $prop = $ref->getProperty('associationMappings');
+        $prop->setAccessible(true);
+        /** @var array<string, mixed> $current */
+        $current = $prop->getValue($metadata);
+        $current[$field] = ['targetEntity' => $targetEntity, 'mappedBy' => $mappedBy];
+        $prop->setValue($metadata, $current);
+    }
 
     protected function setUp(): void
     {
@@ -97,10 +116,8 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->once()
                      ->andReturn($this->uowMock);
 
-        $classMetadata = new ClassMetadata('foo');
-
-        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
+        $classMetadata = new ClassMetadata(stdClass::class);
+        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -142,10 +159,11 @@ final class PasswordEntityListenerTest extends UnitTestCase
                          ->once();
 
         $history = $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
-        $this->assertInstanceof(PasswordHistoryInterface::class, $history);
+        $this->assertInstanceOf(PasswordHistoryInterface::class, $history);
 
         $this->assertSame('old_pwd', $history->getPassword());
         $this->assertInstanceOf(DateTime::class, $history->getCreatedAt());
+        $this->assertInstanceOf(PasswordHistoryMock::class, $history);
         $this->assertEquals($this->entityMock, $history->getUser());
         // Salt is not set in createPasswordHistory (line is commented out)
         $this->assertNull($history->getSalt());
@@ -177,9 +195,8 @@ final class PasswordEntityListenerTest extends UnitTestCase
         );
 
         $this->emMock->shouldReceive('getUnitOfWork')->once()->andReturn($this->uowMock);
-        $classMetadata                                                         = new ClassMetadata('foo');
-        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
+        $classMetadata = new ClassMetadata(stdClass::class);
+        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
         $this->emMock->shouldReceive('getClassMetadata')
                      ->twice()
                      ->andReturn($classMetadata, Mockery::mock(ClassMetadata::class));
@@ -211,10 +228,8 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->once()
                      ->andReturn($this->uowMock);
 
-        $classMetadata = new ClassMetadata('foo');
-
-        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
+        $classMetadata = new ClassMetadata(stdClass::class);
+        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
 
         $classMetadataMock = Mockery::mock(ClassMetadata::class);
 
@@ -249,10 +264,11 @@ final class PasswordEntityListenerTest extends UnitTestCase
                          ->andReturnValues(['pwd', '']);
 
         $history = $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, null);
-        $this->assertInstanceof(PasswordHistoryInterface::class, $history);
+        $this->assertInstanceOf(PasswordHistoryInterface::class, $history);
 
         $this->assertSame('pwd', $history->getPassword());
         $this->assertInstanceOf(DateTime::class, $history->getCreatedAt());
+        $this->assertInstanceOf(PasswordHistoryMock::class, $history);
         $this->assertEquals($this->entityMock, $history->getUser());
         // Salt is not set in createPasswordHistory (line is commented out)
         $this->assertNull($history->getSalt());
@@ -266,11 +282,10 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->once()
                      ->andReturn($this->uowMock);
 
-        $classMetadata = new ClassMetadata('foo');
+        $classMetadata = new ClassMetadata(stdClass::class);
 
         // Use stdClass instead of self::class to avoid ArgumentCountError
-        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = stdClass::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'user';
+        self::setAssociationMapping($classMetadata, 'passwordHistory', stdClass::class, 'user');
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()
@@ -289,10 +304,9 @@ final class PasswordEntityListenerTest extends UnitTestCase
                      ->once()
                      ->andReturn($this->uowMock);
 
-        $classMetadata = new ClassMetadata('foo');
+        $classMetadata = new ClassMetadata(stdClass::class);
 
-        $classMetadata->associationMappings['passwordHistory']['targetEntity'] = PasswordHistoryMock::class;
-        $classMetadata->associationMappings['passwordHistory']['mappedBy']     = 'foo';
+        self::setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'foo');
 
         $this->emMock->shouldReceive('getClassMetadata')
                      ->once()

@@ -7,7 +7,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 use Carbon\Carbon;
 use DateTime;
 use Mockery;
-use Mockery\Mock;
+use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
@@ -22,15 +22,16 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 
 final class PasswordExpiryServiceTest extends UnitTestCase
 {
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $userMock;
+    /** @var HasPasswordPolicyInterface|MockInterface */
+    private $userMock;
 
-    private \Mockery\Mock|UrlGeneratorInterface $routerMock;
+    /** @var UrlGeneratorInterface|MockInterface */
+    private $routerMock;
 
-    private \Mockery\Mock|PasswordExpiryServiceInterface $passwordExpiryServiceMock;
+    /** @var PasswordExpiryService|MockInterface */
+    private $passwordExpiryServiceMock;
 
-    /**
-     * @var Mock|\Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage
-     */
+    /** @var TokenStorageInterface|MockInterface */
     private $tokenStorageMock;
 
     protected function setUp(): void

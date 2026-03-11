@@ -7,7 +7,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Validator;
 use Carbon\Carbon;
 use DateTime;
 use Mockery;
-use Mockery\Mock;
+use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -25,13 +25,17 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordPolicyValidatorTest extends UnitTestCase
 {
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
+    /** @var HasPasswordPolicyInterface|MockInterface */
+    private $entityMock;
 
-    private \Symfony\Component\Validator\Context\ExecutionContextInterface|Mock $contextMock;
+    /** @var ExecutionContextInterface|MockInterface */
+    private $contextMock;
 
-    private \Mockery\Mock|PasswordPolicyValidator $validator;
+    /** @var PasswordPolicyValidator|MockInterface */
+    private $validator;
 
-    private \Mockery\Mock|PasswordPolicyServiceInterface $passwordPolicyServiceMock;
+    /** @var PasswordPolicyServiceInterface|MockInterface */
+    private $passwordPolicyServiceMock;
 
     /**
      * Setup.

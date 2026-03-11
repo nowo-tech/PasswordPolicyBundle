@@ -43,6 +43,7 @@ final class PasswordPolicyBundleTest extends TestCase
     public function testGetContainerExtensionAlias(): void
     {
         $extension = $this->bundle->getContainerExtension();
+        $this->assertInstanceOf(PasswordPolicyExtension::class, $extension);
 
         $this->assertSame('nowo_password_policy', $extension->getAlias());
     }

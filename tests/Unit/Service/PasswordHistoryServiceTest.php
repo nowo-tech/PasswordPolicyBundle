@@ -7,7 +7,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 use Carbon\Carbon;
 use Doctrine\Common\Collections\ArrayCollection;
 use Mockery;
-use Mockery\Mock;
+use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryService;
@@ -15,9 +15,11 @@ use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 
 final class PasswordHistoryServiceTest extends UnitTestCase
 {
-    private \Mockery\Mock|PasswordHistoryService $historyService;
+    /** @var PasswordHistoryService|MockInterface */
+    private $historyService;
 
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
+    /** @var HasPasswordPolicyInterface|MockInterface */
+    private $entityMock;
 
     protected function setUp(): void
     {
@@ -49,6 +51,9 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
         for ($i = 6; $i >= 0; --$i) {
             $item = $arrayCollection->offsetGet($i);
+            if ($item === null) {
+                continue;
+            }
             $createdAt = $item->getCreatedAt();
             $expectedTimestamps[] = $createdAt !== null ? $createdAt->format('U') : '0';
         }

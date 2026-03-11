@@ -29,6 +29,6 @@ class PasswordPolicyBundle extends Bundle
             $this->extension = new PasswordPolicyExtension();
         }
 
-        return $this->extension;
+        return $this->extension instanceof ExtensionInterface ? $this->extension : null;
     }
 }

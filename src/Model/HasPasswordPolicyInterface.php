@@ -39,7 +39,7 @@ interface HasPasswordPolicyInterface
     /**
      * Gets the password history collection.
      *
-     * @return Collection The collection of password history entries
+     * @return Collection<int, PasswordHistoryInterface> The collection of password history entries
      */
     public function getPasswordHistory(): Collection;
 

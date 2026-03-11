@@ -15,17 +15,15 @@ class PasswordHistoryMock implements PasswordHistoryInterface
 {
     use PasswordHistoryTrait;
 
-    private $user;
+    /** @var \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|null */
+    private $user = null;
 
-    public function setUser($user): void
+    public function setUser(?\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface $user): void
     {
         $this->user = $user;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getUser()
+    public function getUser(): ?\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface
     {
         return $this->user;
     }

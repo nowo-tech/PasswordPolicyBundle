@@ -7,7 +7,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Mockery;
-use Mockery\Mock;
+use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
@@ -19,9 +19,11 @@ use const PASSWORD_BCRYPT;
 
 final class PasswordPolicyServiceTest extends UnitTestCase
 {
-    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface|Mock $entityMock;
+    /** @var HasPasswordPolicyInterface|MockInterface */
+    private $entityMock;
 
-    private \Mockery\Mock|UserPasswordHasherInterface $userPasswordHasherMock;
+    /** @var UserPasswordHasherInterface|MockInterface */
+    private $userPasswordHasherMock;
 
     private PasswordPolicyService $passwordPolicyService;
 
@@ -296,13 +298,11 @@ final class PasswordPolicyServiceTest extends UnitTestCase
 
     private function makePasswordHistoryMock(string $hashedPassword = 'hashed_pwd'): PasswordHistoryInterface
     {
-        return Mockery::mock(PasswordHistoryInterface::class)
-                       ->shouldReceive('getPassword')
-                       ->andReturn($hashedPassword)
-                       ->shouldReceive('getSalt')
-                       ->andReturn(null)
-                       ->shouldReceive('getCreatedAt')
-                       ->andReturn(new DateTime())
-                       ->getMock();
+        $mock = Mockery::mock(PasswordHistoryInterface::class);
+        $mock->shouldReceive('getPassword')->andReturn($hashedPassword);
+        $mock->shouldReceive('getSalt')->andReturn(null);
+        $mock->shouldReceive('getCreatedAt')->andReturn(new DateTime());
+
+        return $mock;
     }
 }

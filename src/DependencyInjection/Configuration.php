@@ -44,13 +44,7 @@ class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder(self::ALIAS);
-
-        if (method_exists($treeBuilder, 'getRootNode')) {
-            $rootNode = $treeBuilder->getRootNode();
-        } else {
-            // BC layer for symfony/config 4.1 and older (not executable on Symfony 5.2+)
-            $rootNode = $treeBuilder->root(self::ALIAS); // @codeCoverageIgnore
-        }
+        $rootNode = $treeBuilder->getRootNode();
 
         // @formatter:off
         $rootNode->fixXmlConfig('entity')

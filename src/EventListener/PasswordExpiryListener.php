@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -32,11 +33,12 @@ class PasswordExpiryListener
      * PasswordExpiryListener constructor.
      *
      * @param PasswordExpiryServiceInterface $passwordExpiryService The service for checking password expiry
+     * @param TokenStorageInterface $tokenStorage The token storage for accessing the current user
      * @param RequestStack $requestStack The request stack for accessing the current request and session
      * @param UrlGeneratorInterface $urlGenerator The URL generator for generating routes
      * @param TranslatorInterface $translator The translator service for translating messages
      * @param string $errorMessageType The type of flash message (e.g., 'error', 'warning', 'info')
-     * @param array|string $errorMessage The error message(s) to display when password is expired
+     * @param array<string, string>|string $errorMessage The error message(s) to display when password is expired
      * @param bool $redirectOnExpiry Whether to redirect to reset password route when password expires
      * @param LoggerInterface|null $logger The logger service (optional, uses NullLogger if not provided)
      * @param bool $enableLogging Whether logging is enabled
@@ -45,13 +47,12 @@ class PasswordExpiryListener
      */
     public function __construct(
         public PasswordExpiryServiceInterface $passwordExpiryService,
+        private readonly TokenStorageInterface $tokenStorage,
         public RequestStack $requestStack,
         public UrlGeneratorInterface $urlGenerator,
         public TranslatorInterface $translator,
         private readonly string $errorMessageType,
-        /**
-         * @var string
-         */
+        /** @var array<string, string>|string */
         private readonly string|array $errorMessage,
         private readonly bool $redirectOnExpiry = false,
         private readonly ?LoggerInterface $logger = null,
@@ -94,8 +95,11 @@ class PasswordExpiryListener
         $isPasswordExpired = $this->passwordExpiryService->isPasswordExpired();
 
         if (!in_array($route, $excludeRoutes) && $isPasswordExpired) {
-            $token = $this->passwordExpiryService->tokenStorage->getToken();
+            $token = $this->tokenStorage->getToken();
             $user  = $token?->getUser();
+            if (!is_object($user)) {
+                $user = null;
+            }
 
             // Dispatch PasswordExpiredEvent if user is available and event dispatcher is set
             if ($user instanceof \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface && $this->eventDispatcher) {
@@ -103,17 +107,10 @@ class PasswordExpiryListener
                 $this->eventDispatcher->dispatch($event);
             }
 
-            $userId         = $user && method_exists($user, 'getId') ? $user->getId() : 'unknown';
-            $userIdentifier = 'unknown';
-            if ($user && method_exists($user, 'getUserIdentifier')) {
-                /** @var callable $getUserIdentifier */
-                $getUserIdentifier = [$user, 'getUserIdentifier'];
-                $userIdentifier    = $getUserIdentifier();
-            } elseif ($user && method_exists($user, 'getEmail')) {
-                /** @var callable $getEmail */
-                $getEmail       = [$user, 'getEmail'];
-                $userIdentifier = $getEmail();
-            }
+            $userId         = $user instanceof \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface ? (string) $user->getId() : 'unknown';
+            $userIdentifier = $user instanceof \Symfony\Component\Security\Core\User\UserInterface
+                ? $user->getUserIdentifier()
+                : 'unknown';
 
             // Log password expiry detection
             if ($this->enableLogging && $this->logger) {
@@ -181,7 +178,7 @@ class PasswordExpiryListener
      *
      * @param string $level The log level (debug, info, notice, warning, error)
      * @param string $message The log message
-     * @param array $context Additional context data
+     * @param array<string, mixed> $context Additional context data
      */
     private function log(string $level, string $message, array $context = []): void
     {

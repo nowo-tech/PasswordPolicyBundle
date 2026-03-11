@@ -26,7 +26,7 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
      * @param int $historyLimit The maximum number of password history entries to keep
      *
-     * @return array Array of password history items that should be removed
+     * @return array<int, PasswordHistoryInterface> Array of password history items that should be removed
      */
     public function getHistoryItemsForCleanup(HasPasswordPolicyInterface $hasPasswordPolicy, int $historyLimit): array
     {
@@ -38,11 +38,13 @@ class PasswordHistoryService implements PasswordHistoryServiceInterface
         if ($len > $historyLimit) {
             $historyArray = $historyCollection->toArray();
 
-            usort($historyArray, static function (PasswordHistoryInterface $a, PasswordHistoryInterface $b): int|float {
-                $aTs = $a->getCreatedAt()->format(format: 'U');
-                $bTs = $b->getCreatedAt()->format(format: 'U');
+            usort($historyArray, static function (PasswordHistoryInterface $a, PasswordHistoryInterface $b): int {
+                $aCreatedAt = $a->getCreatedAt();
+                $bCreatedAt = $b->getCreatedAt();
+                $aTs = $aCreatedAt !== null ? (int) $aCreatedAt->format('U') : 0;
+                $bTs = $bCreatedAt !== null ? (int) $bCreatedAt->format('U') : 0;
 
-                return $bTs - $aTs;
+                return $bTs <=> $aTs;
             });
 
             $historyForCleanup = array_slice(array: $historyArray, offset: $historyLimit);

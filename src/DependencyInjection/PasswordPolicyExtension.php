@@ -35,7 +35,7 @@ class PasswordPolicyExtension extends Extension
     /**
      * Loads the bundle configuration and registers services.
      *
-     * @param array $configs The configuration array
+     * @param array<int, array<string, mixed>> $configs The configuration array
      * @param ContainerBuilder $containerBuilder The container builder
      *
      * @throws Exception If configuration is invalid
@@ -118,8 +118,7 @@ class PasswordPolicyExtension extends Extension
     /**
      * Registers the password expiry listener service.
      *
-     * @param ContainerBuilder $containerBuilder The container builder
-     * @param array $config The configuration array
+     * @param array<string, mixed> $config The configuration array
      *
      * @return Definition The service definition for the password expiry listener
      */
@@ -144,6 +143,7 @@ class PasswordPolicyExtension extends Extension
           ])
           ->setArguments([
               new Reference(PasswordExpiryServiceInterface::class), // $passwordExpiryService
+              new Reference('security.token_storage'), // $tokenStorage
               new Reference('request_stack'), // $requestStack
               new Reference('router'), // $urlGenerator
               new Reference('translator'), // $translator
@@ -162,7 +162,7 @@ class PasswordPolicyExtension extends Extension
     /**
      * Validates that there are no duplicate routes across different entities.
      *
-     * @param array $entities The entities configuration
+     * @param array<string, array<string, mixed>> $entities The entities configuration
      *
      * @throws ConfigurationException If duplicate routes are found
      */
@@ -203,10 +203,8 @@ class PasswordPolicyExtension extends Extension
     /**
      * Registers a Doctrine entity listener for password history management.
      *
-     * @param ContainerBuilder $containerBuilder The container builder
-     * @param string $entityClass The fully qualified class name of the entity
-     * @param array $settings The entity configuration settings
-     * @param array $config The full configuration array
+     * @param array<string, mixed> $settings The entity configuration settings
+     * @param array<string, mixed> $config The full configuration array
      *
      * @throws ConfigurationException If the entity class does not implement HasPasswordPolicyInterface
      *
@@ -246,8 +244,7 @@ class PasswordPolicyExtension extends Extension
     /**
      * Configures the PasswordPolicyValidator service with logging parameters.
      *
-     * @param ContainerBuilder $containerBuilder The container builder
-     * @param array $config The configuration array
+     * @param array<string, mixed> $config The configuration array
      */
     private function configureValidator(ContainerBuilder $containerBuilder, array $config): void
     {
@@ -268,8 +265,7 @@ class PasswordPolicyExtension extends Extension
     /**
      * Registers the password policy configuration service and populates it with entity configurations.
      *
-     * @param ContainerBuilder $containerBuilder The container builder
-     * @param array $config The configuration array
+     * @param array<string, mixed> $config The configuration array
      */
     private function registerConfigurationService(ContainerBuilder $containerBuilder, array $config): void
     {
