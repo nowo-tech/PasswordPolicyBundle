@@ -517,7 +517,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
         $service->invalidateCache($this->userMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testInvalidateCacheWhenCacheDisabled(): void
@@ -527,6 +527,6 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         // Should not throw exception when cache is disabled
         $service->invalidateCache($this->userMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 }

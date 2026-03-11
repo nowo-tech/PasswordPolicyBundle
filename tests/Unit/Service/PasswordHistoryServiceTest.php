@@ -40,12 +40,17 @@ final class PasswordHistoryServiceTest extends UnitTestCase
 
         $this->assertCount(7, $deletedItems);
 
-        $actualTimestamps = array_map(static fn (PasswordHistoryInterface $passwordHistory) => $passwordHistory->getCreatedAt()->format('U'), $deletedItems);
+        $actualTimestamps = array_map(static function (PasswordHistoryInterface $passwordHistory): string {
+            $createdAt = $passwordHistory->getCreatedAt();
+            return $createdAt !== null ? $createdAt->format('U') : '0';
+        }, $deletedItems);
 
         $expectedTimestamps = [];
 
         for ($i = 6; $i >= 0; --$i) {
-            $expectedTimestamps[] = $arrayCollection->offsetGet($i)->getCreatedAt()->format('U');
+            $item = $arrayCollection->offsetGet($i);
+            $createdAt = $item->getCreatedAt();
+            $expectedTimestamps[] = $createdAt !== null ? $createdAt->format('U') : '0';
         }
 
         $this->assertEquals($expectedTimestamps, $actualTimestamps);
@@ -63,6 +68,9 @@ final class PasswordHistoryServiceTest extends UnitTestCase
         $this->assertEmpty($deletedItems);
     }
 
+    /**
+     * @return ArrayCollection<int, PasswordHistoryInterface>
+     */
     private function getDummyPasswordHistory(): ArrayCollection
     {
         $arrayCollection = new ArrayCollection();

@@ -23,8 +23,10 @@ final class PasswordHistoryTraitTest extends UnitTestCase
         $entity = new PasswordHistoryMock();
         $now    = Carbon::now();
         $entity->setCreatedAt($now);
-        $this->assertInstanceOf(DateTime::class, $entity->getCreatedAt());
-        $this->assertSame($now->getTimestamp(), $entity->getCreatedAt()->getTimestamp());
+        $createdAt = $entity->getCreatedAt();
+        $this->assertInstanceOf(DateTime::class, $createdAt);
+        $this->assertNotNull($createdAt);
+        $this->assertSame($now->getTimestamp(), $createdAt->getTimestamp());
     }
 
     public function testGetSetSalt(): void
@@ -52,6 +54,8 @@ final class PasswordHistoryTraitTest extends UnitTestCase
         $fixed = Carbon::create(2020, 1, 15, 12, 0, 0);
         $entity->setCreatedAt($fixed);
         $entity->updatedTimestamps();
-        $this->assertSame($fixed->getTimestamp(), $entity->getCreatedAt()->getTimestamp());
+        $createdAt = $entity->getCreatedAt();
+        $this->assertNotNull($createdAt);
+        $this->assertSame($fixed->getTimestamp(), $createdAt->getTimestamp());
     }
 }

@@ -88,7 +88,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
         $this->passwordEntityListener->onFlush($onFlushEventArgs);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testCreatePasswordHistory(): void
@@ -327,7 +327,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         // Test debug level
         $loggerMock->shouldReceive('debug')
                    ->once()
-                   ->with('Test debug message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test debug message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $listener = new PasswordEntityListener(
             $this->passwordHistoryServiceMock,
@@ -348,39 +348,39 @@ final class PasswordEntityListenerTest extends UnitTestCase
         // Test info level
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test info message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test info message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'info', 'Test info message');
 
         // Test notice level
         $loggerMock->shouldReceive('notice')
                    ->once()
-                   ->with('Test notice message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test notice message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'notice', 'Test notice message');
 
         // Test warning level
         $loggerMock->shouldReceive('warning')
                    ->once()
-                   ->with('Test warning message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test warning message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'warning', 'Test warning message');
 
         // Test error level
         $loggerMock->shouldReceive('error')
                    ->once()
-                   ->with('Test error message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test error message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'error', 'Test error message');
 
         // Test default level (unknown level should default to info)
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test unknown level message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test unknown level message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'unknown', 'Test unknown level message');
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testLoggingWithNullLogger(): void
@@ -403,6 +403,6 @@ final class PasswordEntityListenerTest extends UnitTestCase
         // Should not throw exception when logger is null
         $logMethod->invoke($listener, 'info', 'Test message');
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 }

@@ -66,7 +66,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $this->validator->initialize($this->contextMock);
         $this->validator->validate('pwd', $passwordPolicy);
         // If no exception is thrown and no violation is added, validation passes
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateFail(): void
@@ -105,14 +105,14 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $this->validator->initialize($this->contextMock);
         $this->validator->validate('pwd', $passwordPolicy);
         // If violation is added, validation fails (verified by buildViolation being called)
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateNullValue(): void
     {
         $this->validator->validate(null, new PasswordPolicy());
         // Null values should return early without validation
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateBadEntity(): void
@@ -155,46 +155,46 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         // Test debug level
         $loggerMock->shouldReceive('debug')
                    ->once()
-                   ->with('Test debug message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test debug message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($validator, 'debug', 'Test debug message');
 
         // Test info level
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test info message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test info message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($validator, 'info', 'Test info message');
 
         // Test notice level
         $loggerMock->shouldReceive('notice')
                    ->once()
-                   ->with('Test notice message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test notice message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($validator, 'notice', 'Test notice message');
 
         // Test warning level
         $loggerMock->shouldReceive('warning')
                    ->once()
-                   ->with('Test warning message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test warning message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($validator, 'warning', 'Test warning message');
 
         // Test error level
         $loggerMock->shouldReceive('error')
                    ->once()
-                   ->with('Test error message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test error message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($validator, 'error', 'Test error message');
 
         // Test default level (unknown level should default to info)
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test unknown level message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test unknown level message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($validator, 'unknown', 'Test unknown level message');
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testLoggingWithNullLogger(): void
@@ -218,7 +218,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         // Should not throw exception when logger is null
         $logMethod->invoke($validator, 'info', 'Test message');
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateFailWithExtensionDetection(): void
@@ -240,7 +240,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $this->contextMock->shouldReceive('buildViolation')
           ->once()
-          ->with(Mockery::on(static fn ($msg) => str_contains($msg, 'extension') || $msg !== ''))
+          ->with(Mockery::on(static fn ($msg): bool => str_contains((string) $msg, 'extension') || $msg !== ''))
           ->andReturn($constraintBuilderMock);
 
         $constraint                   = new PasswordPolicy();
@@ -260,7 +260,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $this->validator->initialize($this->contextMock);
         $this->validator->validate('pass123', $constraint);
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateFailWithExtensionUsesDefaultMessageWhenExtensionMessageEmpty(): void
@@ -296,7 +296,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $this->validator->initialize($this->contextMock);
         $this->validator->validate('pass99', $constraint);
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateWithEventDispatcherDispatchesReuseEvent(): void
@@ -333,7 +333,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $validator->initialize($this->contextMock);
         $validator->validate('pwd', new PasswordPolicy());
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateUsesConfigServiceForExtensionSettings(): void
@@ -367,7 +367,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $validator->initialize($this->contextMock);
         $validator->validate('pwd', new PasswordPolicy());
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateFailWithLoggingCallsLogger(): void
@@ -375,10 +375,8 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
-          ->with('Password reuse attempt detected', Mockery::on(static function (array $context) {
-              return isset($context['bundle'], $context['user_id'], $context['user_identifier'], $context['match_type'])
-                  && $context['match_type'] === 'exact';
-          }));
+          ->with('Password reuse attempt detected', Mockery::on(static fn(array $context) => isset($context['bundle'], $context['user_id'], $context['user_identifier'], $context['match_type'])
+              && $context['match_type'] === 'exact'));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');
@@ -409,7 +407,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $validator->initialize($this->contextMock);
         $validator->validate('pwd', new PasswordPolicy());
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateFailWithLoggingUsesGetEmailWhenNoUserIdentifier(): void
@@ -417,9 +415,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
-          ->with('Password reuse attempt detected', Mockery::on(static function (array $context) {
-              return isset($context['user_identifier']) && $context['user_identifier'] === 'email@example.com';
-          }));
+          ->with('Password reuse attempt detected', Mockery::on(static fn(array $context) => isset($context['user_identifier']) && $context['user_identifier'] === 'email@example.com'));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');
@@ -458,6 +454,9 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
                 return $this;
             }
 
+            /**
+             * @return \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface>
+             */
             public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
             {
                 return new \Doctrine\Common\Collections\ArrayCollection();
@@ -489,6 +488,6 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
         $validator->initialize($this->contextMock);
         $validator->validate('pwd', new PasswordPolicy());
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 }

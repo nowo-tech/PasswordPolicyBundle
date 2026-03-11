@@ -226,7 +226,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         // Should not throw exception when both entities exclude the route
         $method->invoke($this->extension, $entities);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testLoadThrowsExceptionForEmptyResetPasswordRouteName(): void

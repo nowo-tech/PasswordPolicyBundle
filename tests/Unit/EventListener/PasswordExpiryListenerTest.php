@@ -108,7 +108,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
         // Verify that flash message was added
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestAsLockedRoute(): void
@@ -135,7 +135,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestExcludedRoute(): void
@@ -171,7 +171,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestPasswordNotExpired(): void
@@ -202,7 +202,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestAsSubRequest(): void
@@ -216,7 +216,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithNullRoute(): void
@@ -240,7 +240,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithRedirectOnExpiry(): void
@@ -309,7 +309,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $listener->onKernelRequest($responseEventMock);
 
         // Verify that redirect was set
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithRedirectOnExpiryAndLogging(): void
@@ -317,10 +317,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Password expired detected', Mockery::on(static fn (array $c) => isset($c['route'], $c['bundle'])));
+                   ->with('Password expired detected', Mockery::on(static fn (array $c): bool => isset($c['route'], $c['bundle'])));
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Redirecting to password reset route', Mockery::on(static fn (array $c) => isset($c['reset_password_route'], $c['bundle'])));
+                   ->with('Redirecting to password reset route', Mockery::on(static fn (array $c): bool => isset($c['reset_password_route'], $c['bundle'])));
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
         $tokenMock        = Mockery::mock(TokenInterface::class);
@@ -362,7 +362,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('setResponse')->once()->with(Mockery::type(RedirectResponse::class));
 
         $listener->onKernelRequest($responseEventMock);
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithInvalidRoute(): void
@@ -373,7 +373,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                    ->with('Password expired detected', Mockery::any());
         $loggerMock->shouldReceive('error')
                    ->once()
-                   ->with('Failed to generate reset password route', Mockery::on(static fn (array $c) => isset($c['route'], $c['exception'])));
+                   ->with('Failed to generate reset password route', Mockery::on(static fn (array $c): bool => isset($c['route'], $c['exception'])));
 
         $tokenStorageMock = Mockery::mock(TokenStorageInterface::class);
         $tokenMock        = Mockery::mock(TokenInterface::class);
@@ -442,7 +442,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $listener->onKernelRequest($responseEventMock);
 
         // Verify that flash message was shown even though redirect failed
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testLoggingWithDifferentLevels(): void
@@ -452,7 +452,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         // Test debug level
         $loggerMock->shouldReceive('debug')
                    ->once()
-                   ->with('Test debug message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test debug message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $listener = new PasswordExpiryListener(
             $this->passwordExpiryServiceMock,
@@ -475,39 +475,39 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         // Test info level
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test info message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test info message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'info', 'Test info message');
 
         // Test notice level
         $loggerMock->shouldReceive('notice')
                    ->once()
-                   ->with('Test notice message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test notice message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'notice', 'Test notice message');
 
         // Test warning level
         $loggerMock->shouldReceive('warning')
                    ->once()
-                   ->with('Test warning message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test warning message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'warning', 'Test warning message');
 
         // Test error level
         $loggerMock->shouldReceive('error')
                    ->once()
-                   ->with('Test error message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test error message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'error', 'Test error message');
 
         // Test default level (unknown level should default to info)
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Test unknown level message', Mockery::on(static fn ($context) => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
+                   ->with('Test unknown level message', Mockery::on(static fn ($context): bool => isset($context['bundle']) && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $logMethod->invoke($listener, 'unknown', 'Test unknown level message');
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testLoggingWithNullLogger(): void
@@ -532,7 +532,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         // Should not throw exception when logger is null
         $logMethod->invoke($listener, 'info', 'Test message');
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithArrayErrorMessage(): void
@@ -592,7 +592,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithEventDispatcher(): void
@@ -661,7 +661,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithGetUserIdentifier(): void
@@ -745,7 +745,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Password expired detected', Mockery::on(static fn ($context) => isset($context['user_identifier'])
+                   ->with('Password expired detected', Mockery::on(static fn ($context): bool => isset($context['user_identifier'])
                           && $context['user_identifier'] === 'test@example.com'
                           && isset($context['user_id'])
                           && isset($context['route'])
@@ -774,7 +774,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 
     public function testOnKernelRequestWithGetEmail(): void
@@ -857,7 +857,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Password expired detected', Mockery::on(static fn ($context) => isset($context['user_identifier'])
+                   ->with('Password expired detected', Mockery::on(static fn ($context): bool => isset($context['user_identifier'])
                           && $context['user_identifier'] === 'test@example.com'
                           && isset($context['user_id'])
                           && isset($context['route'])
@@ -886,6 +886,6 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $listener->onKernelRequest($responseEventMock);
 
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 }
