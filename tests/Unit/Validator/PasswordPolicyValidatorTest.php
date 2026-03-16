@@ -533,7 +533,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
-            ->with('Password extension detected (new password is an extension of an old password)', Mockery::on(static fn(array $context): bool => isset($context['match_type'], $context['password_used_days_ago'])
+            ->with('Password extension detected (new password is an extension of an old password)', Mockery::on(static fn (array $context): bool => isset($context['match_type'], $context['password_used_days_ago'])
                 && $context['match_type'] === 'extension'
                 && $context['password_used_days_ago'] === 0));
 
@@ -621,7 +621,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
-            ->with('Password reuse attempt detected', Mockery::on(static fn(array $context): bool => isset($context['user_identifier'], $context['user_id'])
+            ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier'], $context['user_id'])
                 && $context['user_identifier'] === 'unknown'
                 && $context['user_id'] === 99));
 

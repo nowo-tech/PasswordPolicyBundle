@@ -493,7 +493,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
             ->with(Mockery::type(PasswordAuthenticatedUserInterface::class), $plainPassword)
             ->andReturn(true);
 
-        $ref = new ReflectionMethod(PasswordPolicyService::class, 'isPasswordValid');
+        $ref    = new ReflectionMethod(PasswordPolicyService::class, 'isPasswordValid');
         $result = $ref->invoke($this->passwordPolicyService, $entity, $nonBcryptHash, $plainPassword);
 
         $this->assertTrue($result);
@@ -513,7 +513,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
             ->with($tempUser, $plainPassword)
             ->andReturn(true);
 
-        $ref = new ReflectionMethod(PasswordPolicyService::class, 'verifyWithClonedUser');
+        $ref    = new ReflectionMethod(PasswordPolicyService::class, 'verifyWithClonedUser');
         $result = $ref->invoke($this->passwordPolicyService, $tempUser, $hashedPassword, $plainPassword);
 
         $this->assertTrue($result);
@@ -548,7 +548,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
             }
         };
 
-        $ref = new ReflectionMethod(PasswordPolicyService::class, 'verifyWithClonedUser');
+        $ref    = new ReflectionMethod(PasswordPolicyService::class, 'verifyWithClonedUser');
         $result = $ref->invoke($this->passwordPolicyService, $tempUser, $hashedPassword, $plainPassword);
 
         $this->assertFalse($result);
@@ -673,7 +673,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
             }
         };
 
-        $ref = new ReflectionMethod(PasswordPolicyService::class, 'isPasswordValid');
+        $ref    = new ReflectionMethod(PasswordPolicyService::class, 'isPasswordValid');
         $result = $ref->invoke($this->passwordPolicyService, $entityThrowsOnClone, $nonBcryptHash, $plainPassword);
 
         $this->assertFalse($result);

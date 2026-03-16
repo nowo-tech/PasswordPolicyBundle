@@ -447,7 +447,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
-                   ->with('Password changed successfully', Mockery::on(static fn(array $context): bool => isset($context['bundle'], $context['user_id'], $context['entity_class'], $context['history_entries_removed'])
+                   ->with('Password changed successfully', Mockery::on(static fn (array $context): bool => isset($context['bundle'], $context['user_id'], $context['entity_class'], $context['history_entries_removed'])
                        && $context['bundle'] === 'PasswordPolicyBundle'));
 
         $listener = new PasswordEntityListener(
