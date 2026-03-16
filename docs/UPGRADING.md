@@ -30,6 +30,51 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
+### Upgrading to 0.0.9
+
+**Release Date**: 2026-03-16
+
+#### What's New
+
+- **Logging System**: Configurable logging for password expiry, reuse attempts, history creation and route errors (integrated with Symfony’s `LoggerInterface`).
+- **Symfony Events**: New bundle events (`PasswordExpiredEvent`, `PasswordHistoryCreatedEvent`, `PasswordChangedEvent`, `PasswordReuseAttemptedEvent`) for extending behaviour in your application.
+- **Performance Cache**: Optional cache for password expiry checks (using `cache.app`) with TTL and automatic invalidation when the password changes.
+- **Multiple Entities Validation**: Stronger validation of `reset_password_route_name`, notified routes and duplicate route conflicts when configuring multiple entities.
+- **Documentation & Coverage**: Updated docs (configuration, events, coverage analysis) and **100% code coverage** across all bundle classes.
+
+#### Breaking Changes
+
+None. This is a backward‑compatible feature release.
+
+#### Configuration Changes
+
+No required configuration changes if you already followed the configuration for previous versions.
+
+You can optionally:
+
+- Enable logging (if not already enabled) and configure `log_level`.
+- Enable caching for expiry checks with `enable_cache: true` and `cache_ttl`.
+
+See `docs/CONFIGURATION.md` and `docs/EVENTS.md` for examples.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Run your test suite and ensure password expiry, history and validation flows still behave as expected.
+
+---
+
 ### Upgrading to 0.0.8
 
 **Release Date**: 2025-03-11

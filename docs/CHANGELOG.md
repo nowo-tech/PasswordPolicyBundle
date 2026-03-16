@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.9] - 2026-03-16
+
+### Added
+- **Logging System**: Full logging for password policy events with configurable levels (`debug`, `info`, `notice`, `warning`, `error`) and optional enable/disable via configuration.
+- **Symfony Events for Extensibility**: New events (`PasswordExpiredEvent`, `PasswordHistoryCreatedEvent`, `PasswordChangedEvent`, `PasswordReuseAttemptedEvent`) dispatched from the bundle so applications can plug custom logic.
+- **Cache System for Performance**: Optional cache for password expiry checks using Symfony Cache (`cache.app`), with TTL configuration and automatic invalidation when the password changes.
+- **Multiple Entities Support Improvements**: Additional validation for duplicate routes, reset password route names, and notified routes when configuring multiple entities.
+- **Configuration Documentation Enhancements**: More detailed `Configuration.php` node descriptions surfaced in `docs/CONFIGURATION.md` and IDE auto‑completion.
+
+### Fixed
+- **Null-Safety and Edge Cases**: Additional guards around entities configuration, route names and date handling in expiry and policy services/listeners based on the coverage analysis.
+- **Password History Cleanup**: `PasswordHistoryService::getHistoryItemsForCleanup()` now reliably returns the items that should be removed.
+
+### Changed
+- **PasswordPolicyService::isPasswordValid()**: Refined clone and fallback paths with focused tests and small internal refactors for better testability (no behavior change).
+
 ## [0.0.8] - 2025-03-11
 
 ### Fixed
@@ -205,11 +221,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         // Custom logic when password expires
     }
     ```
-- **Test Coverage Analysis**: Comprehensive analysis document created (`docs/COVERAGE_ANALYSIS.md`)
-  - Detailed coverage breakdown by class and method
-  - Identification of coverage gaps and missing tests
-  - Recommendations for achieving 100% coverage
-  - Current coverage estimated at ~92-95%
 - **Configuration Documentation**: Enhanced configuration definitions with descriptive information
   - Added `->info()` descriptions to all configuration nodes in `Configuration.php`
   - Each configuration option now has clear, helpful descriptions explaining its purpose
