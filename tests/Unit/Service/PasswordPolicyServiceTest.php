@@ -14,7 +14,6 @@ use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionMethod;
-use ReflectionProperty;
 use RuntimeException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -771,12 +770,12 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $plainPassword = 'pwd';
         $historyHash   = 'any_hash';
         $history1      = $this->makePasswordHistoryMock($historyHash);
-        $entity        = new class($historyHash) implements HasPasswordPolicyInterface, PasswordAuthenticatedUserInterface {
+        $entity        = new class($historyHash, new ArrayCollection([$history1])) implements HasPasswordPolicyInterface, PasswordAuthenticatedUserInterface {
             public string $password = 'original';
 
             public function __construct(
                 private readonly string $hashToSet,
-                private readonly \Doctrine\Common\Collections\Collection $passwordHistory = new ArrayCollection(),
+                private readonly \Doctrine\Common\Collections\Collection $passwordHistory,
             ) {
             }
 
@@ -839,8 +838,6 @@ final class PasswordPolicyServiceTest extends UnitTestCase
             {
             }
         };
-        $ref = new ReflectionProperty($entity, 'passwordHistory');
-        $ref->setValue($entity, new ArrayCollection([$history1]));
 
         $isCloneable = static fn (object $o): bool => false;
         $service     = new PasswordPolicyService($this->userPasswordHasherMock, $isCloneable);
