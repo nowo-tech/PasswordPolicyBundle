@@ -25,20 +25,15 @@ use function sprintf;
 
 final class PasswordEntityListenerTest extends UnitTestCase
 {
-    /** @var MockInterface&PasswordHistoryServiceInterface */
-    private $passwordHistoryServiceMock;
+    private \Mockery\MockInterface&PasswordHistoryServiceInterface $passwordHistoryServiceMock;
 
-    /** @var MockInterface&PasswordEntityListener */
-    private $passwordEntityListener;
+    private \Mockery\MockInterface&PasswordEntityListener $passwordEntityListener;
 
-    /** @var EntityManagerInterface&MockInterface */
-    private $emMock;
+    private \Doctrine\ORM\EntityManagerInterface&MockInterface $emMock;
 
-    /** @var HasPasswordPolicyInterface&MockInterface */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface&MockInterface $entityMock;
 
-    /** @var MockInterface&UnitOfWork */
-    private $uowMock;
+    private \Mockery\MockInterface&UnitOfWork $uowMock;
 
     /**
      * @param ClassMetadata<stdClass> $metadata
@@ -417,5 +412,68 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $logMethod->invoke($listener, 'info', 'Test message');
 
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers createPasswordHistory returning null when the same password was already processed (processedPasswords).
+     */
+    public function testCreatePasswordHistoryReturnsNullWhenPasswordAlreadyProcessed(): void
+    {
+        $this->emMock->shouldReceive('getUnitOfWork')->andReturn($this->uowMock);
+        $classMetadata = new ClassMetadata(stdClass::class);
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+        $this->emMock->shouldReceive('getClassMetadata')
+                     ->andReturn($classMetadata);
+        $this->entityMock->shouldReceive('addPasswordHistory')->once();
+        $this->passwordHistoryServiceMock->shouldReceive('getHistoryItemsForCleanup')
+                                         ->andReturn([]);
+        $this->emMock->shouldReceive('persist')->once();
+        $this->uowMock->shouldReceive('computeChangeSet')->once();
+        $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')->once();
+        $this->entityMock->shouldReceive('setPasswordChangedAt')->once();
+
+        $first = $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'same_pwd');
+        $this->assertInstanceOf(PasswordHistoryInterface::class, $first);
+
+        $second = $this->passwordEntityListener->createPasswordHistory($this->emMock, $this->entityMock, 'same_pwd');
+        $this->assertNull($second);
+    }
+
+    /**
+     * Covers the logging block inside createPasswordHistory (enableLogging && logger).
+     */
+    public function testCreatePasswordHistoryLogsWhenLoggerProvided(): void
+    {
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+                   ->once()
+                   ->with('Password changed successfully', Mockery::on(static fn(array $context): bool => isset($context['bundle'], $context['user_id'], $context['entity_class'], $context['history_entries_removed'])
+                       && $context['bundle'] === 'PasswordPolicyBundle'));
+
+        $listener = new PasswordEntityListener(
+            $this->passwordHistoryServiceMock,
+            'password',
+            'passwordHistory',
+            3,
+            $this->entityMock::class,
+            $loggerMock,
+            true,
+            'info',
+        );
+
+        $this->emMock->shouldReceive('getUnitOfWork')->andReturn($this->uowMock);
+        $classMetadata = new ClassMetadata(stdClass::class);
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+        $this->emMock->shouldReceive('getClassMetadata')->andReturn($classMetadata);
+        $this->entityMock->shouldReceive('addPasswordHistory')->once();
+        $this->entityMock->shouldReceive('getId')->andReturn(1);
+        $this->passwordHistoryServiceMock->shouldReceive('getHistoryItemsForCleanup')->andReturn([]);
+        $this->emMock->shouldReceive('persist')->once();
+        $this->uowMock->shouldReceive('computeChangeSet')->once();
+        $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')->once();
+        $this->entityMock->shouldReceive('setPasswordChangedAt')->once();
+
+        $history = $listener->createPasswordHistory($this->emMock, $this->entityMock, 'new_pwd');
+        $this->assertInstanceOf(PasswordHistoryInterface::class, $history);
     }
 }

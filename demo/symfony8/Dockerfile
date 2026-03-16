@@ -22,9 +22,11 @@ ENV XDEBUG_MODE=develop
 ENV XDEBUG_CONFIG="client_host=host.docker.internal client_port=9003"
 
 COPY docker/frankenphp/Caddyfile /etc/frankenphp/Caddyfile
+COPY docker/frankenphp/Caddyfile.dev /etc/frankenphp/Caddyfile.dev
 
 RUN echo '#!/bin/sh' > /usr/local/bin/docker-entrypoint.sh && \
     echo 'set -e' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'if [ "${APP_ENV:-prod}" = "dev" ]; then cp /etc/frankenphp/Caddyfile.dev /etc/frankenphp/Caddyfile; fi' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'mkdir -p /app/var/cache /app/var/log' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'chmod -R 777 /app/var' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'if [ -d /app/vendor ] && [ "${APP_ENV:-dev}" = dev ]; then (cd /app && php bin/console cache:clear) 2>/dev/null || true; fi' >> /usr/local/bin/docker-entrypoint.sh && \

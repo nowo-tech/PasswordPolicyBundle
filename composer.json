@@ -38,8 +38,8 @@
     },
     "require-dev": {
         "doctrine/collections": "^2.4",
-        "doctrine/orm": "^2.15 || ^3.0",
         "doctrine/dbal": "^3.8",
+        "doctrine/orm": "^2.15 || ^3.0",
         "friendsofphp/php-cs-fixer": "^3.0",
         "mockery/mockery": "^1.6",
         "phpstan/extension-installer": "^1.4",
@@ -54,7 +54,7 @@
         "symfony/yaml": "^6.0 || ^7.0 || ^8.0"
     },
     "archive": {
-        "exclude": ["/demo"]
+        "exclude": ["/demo", "/.cursor"]
     },
     "autoload": {
         "psr-4": {

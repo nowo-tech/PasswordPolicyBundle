@@ -25,26 +25,19 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
 {
-    /** @var Mockery\MockInterface&RequestStack */
-    private $requestStackMock;
+    private \Mockery\MockInterface&RequestStack $requestStackMock;
 
-    /** @var Mockery\MockInterface&Session */
-    private $sessionMock;
+    private \Mockery\MockInterface&Session $sessionMock;
 
-    /** @var Mockery\MockInterface&PasswordExpiryListener */
-    private $passwordExpiryListenerMock;
+    private \Mockery\MockInterface&PasswordExpiryListener $passwordExpiryListenerMock;
 
-    /** @var Mockery\MockInterface&PasswordExpiryServiceInterface */
-    private $passwordExpiryServiceMock;
+    private \Mockery\MockInterface&PasswordExpiryServiceInterface $passwordExpiryServiceMock;
 
-    /** @var Mockery\MockInterface&UrlGeneratorInterface */
-    private $urlGeneratorMock;
+    private \Mockery\MockInterface&UrlGeneratorInterface $urlGeneratorMock;
 
-    /** @var Mockery\MockInterface&TranslatorInterface */
-    private $translatorMock;
+    private \Mockery\MockInterface&TranslatorInterface $translatorMock;
 
-    /** @var Mockery\MockInterface&TokenStorageInterface */
-    private $tokenStorageMock;
+    private \Mockery\MockInterface&TokenStorageInterface $tokenStorageMock;
 
     /**
      * Setup..

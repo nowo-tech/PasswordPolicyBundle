@@ -50,6 +50,9 @@
     "nowo-tech/password-policy-bundle": {
         "version": "v0.0.4"
     },
+    "nowo-tech/twig-inspector-bundle": {
+        "version": "v1.0.3"
+    },
     "phpunit/phpunit": {
         "version": "11.5",
         "recipe": {

@@ -18,6 +18,8 @@ use Nowo\PasswordPolicyBundle\Validator\PasswordPolicy;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use ReflectionClass;
 use stdClass;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -25,17 +27,13 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordPolicyValidatorTest extends UnitTestCase
 {
-    /** @var HasPasswordPolicyInterface&MockInterface */
-    private $entityMock;
+    private \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface&MockInterface $entityMock;
 
-    /** @var ExecutionContextInterface&MockInterface */
-    private $contextMock;
+    private \Symfony\Component\Validator\Context\ExecutionContextInterface&MockInterface $contextMock;
 
-    /** @var MockInterface&PasswordPolicyValidator */
-    private $validator;
+    private \Mockery\MockInterface&PasswordPolicyValidator $validator;
 
-    /** @var MockInterface&PasswordPolicyServiceInterface */
-    private $passwordPolicyServiceMock;
+    private \Mockery\MockInterface&PasswordPolicyServiceInterface $passwordPolicyServiceMock;
 
     /**
      * Setup.
@@ -489,6 +487,336 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
           ->withArgs(['pwd', $entityWithEmailOnly])
           ->andReturn($historyMock);
+
+        $validator->initialize($this->contextMock);
+        $validator->validate('pwd', new PasswordPolicy());
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers handlePasswordReuse when history->getCreatedAt() is null (diffInDays/diffForHumans fallbacks).
+     */
+    public function testValidateFailWithHistoryNullCreatedAt(): void
+    {
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+
+        $constraintBuilderMock = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $constraintBuilderMock->shouldReceive('setParameter')
+            ->once()
+            ->with('{{ days }}', '')
+            ->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('setCode')
+            ->once()
+            ->with(PasswordPolicy::PASSWORD_IN_HISTORY)
+            ->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('addViolation')->once();
+
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($constraintBuilderMock);
+
+        $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+        $historyMock->shouldReceive('getCreatedAt')->andReturn(null);
+
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pwd', $this->entityMock])
+            ->andReturn($historyMock);
+
+        $this->validator->initialize($this->contextMock);
+        $this->validator->validate('pwd', new PasswordPolicy());
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers handlePasswordReuse for type 'extension' with logging (extension message) and history null getCreatedAt.
+     */
+    public function testValidateFailWithExtensionDetectionAndLoggingNullCreatedAt(): void
+    {
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+            ->once()
+            ->with('Password extension detected (new password is an extension of an old password)', Mockery::on(static fn(array $context): bool => isset($context['match_type'], $context['password_used_days_ago'])
+                && $context['match_type'] === 'extension'
+                && $context['password_used_days_ago'] === 0));
+
+        $translatorMock = Mockery::mock(TranslatorInterface::class);
+        $translatorMock->shouldReceive('getLocale')->andReturn('en');
+
+        $validator = new PasswordPolicyValidator(
+            $this->passwordPolicyServiceMock,
+            $translatorMock,
+            $loggerMock,
+            true,
+            'info',
+        );
+
+        $this->entityMock->shouldReceive('getId')->andReturn(1);
+
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $constraintBuilderMock = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $constraintBuilderMock->shouldReceive('setParameter')->once()->with('{{ days }}', '')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('setCode')->once()->with(PasswordPolicy::PASSWORD_EXTENSION)->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('addViolation')->once();
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($constraintBuilderMock);
+
+        $constraint                   = new PasswordPolicy();
+        $constraint->detectExtensions = true;
+        $constraint->extensionMessage = 'Extension {{ days }}';
+
+        $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+        $historyMock->shouldReceive('getCreatedAt')->andReturn(null);
+
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pass1', $this->entityMock])
+            ->andReturn(null);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPasswordExtension')
+            ->withArgs(['pass1', $this->entityMock, 4])
+            ->andReturn($historyMock);
+
+        $validator->initialize($this->contextMock);
+        $validator->validate('pass1', $constraint);
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers handlePasswordReuse when entity has neither UserInterface nor getEmail (userIdentifier = 'unknown').
+     */
+    public function testValidateFailWithEntityWithoutUserIdentifierOrEmail(): void
+    {
+        $entityNoIdentifier = new class implements HasPasswordPolicyInterface {
+            public function getId(): int
+            {
+                return 99;
+            }
+
+            public function getPassword(): string
+            {
+                return '';
+            }
+
+            public function getPasswordChangedAt(): ?DateTime
+            {
+                return null;
+            }
+
+            public function setPasswordChangedAt(DateTime $dateTime): static
+            {
+                return $this;
+            }
+
+            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            {
+                return new \Doctrine\Common\Collections\ArrayCollection();
+            }
+
+            public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
+
+            public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
+        };
+
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+            ->once()
+            ->with('Password reuse attempt detected', Mockery::on(static fn(array $context): bool => isset($context['user_identifier'], $context['user_id'])
+                && $context['user_identifier'] === 'unknown'
+                && $context['user_id'] === 99));
+
+        $translatorMock = Mockery::mock(TranslatorInterface::class);
+        $translatorMock->shouldReceive('getLocale')->andReturn('en');
+
+        $validator = new PasswordPolicyValidator(
+            $this->passwordPolicyServiceMock,
+            $translatorMock,
+            $loggerMock,
+            true,
+            'info',
+        );
+
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($entityNoIdentifier);
+        $constraintBuilderMock = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $constraintBuilderMock->shouldReceive('setParameter')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('setCode')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('addViolation')->once();
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($constraintBuilderMock);
+
+        $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+        $historyMock->shouldReceive('getCreatedAt')->andReturn(Carbon::now());
+
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pwd', $entityNoIdentifier])
+            ->andReturn($historyMock);
+
+        $validator->initialize($this->contextMock);
+        $validator->validate('pwd', new PasswordPolicy());
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers validate() when getHistoryByPassword returns history but constraint is not PasswordPolicy (no violation).
+     */
+    public function testValidateExactMatchWithNonPasswordPolicyConstraintSkipsHandlePasswordReuse(): void
+    {
+        $otherConstraint = new class extends Constraint {};
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pwd', $this->entityMock])
+            ->andReturn(Mockery::mock(PasswordHistoryInterface::class));
+
+        $this->validator->initialize($this->contextMock);
+        $this->validator->validate('pwd', $otherConstraint);
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers validate() when getHistoryByPasswordExtension returns history but constraint is not PasswordPolicy (no violation).
+     */
+    public function testValidateExtensionMatchWithNonPasswordPolicyConstraintSkipsHandlePasswordReuse(): void
+    {
+        $otherConstraint = new class extends Constraint {
+            public bool $detectExtensions  = true;
+            public int $extensionMinLength = 4;
+        };
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pwd', $this->entityMock])
+            ->andReturn(null);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPasswordExtension')
+            ->withArgs(['pwd', $this->entityMock, 4])
+            ->andReturn(Mockery::mock(PasswordHistoryInterface::class));
+
+        $this->validator->initialize($this->contextMock);
+        $this->validator->validate('pwd', $otherConstraint);
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers handlePasswordReuse when entity implements UserInterface (userIdentifier from getUserIdentifier()).
+     */
+    public function testValidateFailWithUserInterfaceUsesGetUserIdentifier(): void
+    {
+        $entityUserInterface = new class implements HasPasswordPolicyInterface, UserInterface {
+            public function getId(): int
+            {
+                return 10;
+            }
+
+            public function getUserIdentifier(): string
+            {
+                return 'auth_user_10';
+            }
+
+            public function getRoles(): array
+            {
+                return ['ROLE_USER'];
+            }
+
+            public function eraseCredentials(): void
+            {
+            }
+
+            public function getPassword(): string
+            {
+                return '';
+            }
+
+            public function getPasswordChangedAt(): ?DateTime
+            {
+                return null;
+            }
+
+            public function setPasswordChangedAt(DateTime $dateTime): static
+            {
+                return $this;
+            }
+
+            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            {
+                return new \Doctrine\Common\Collections\ArrayCollection();
+            }
+
+            public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
+
+            public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
+            {
+                return $this;
+            }
+        };
+
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+            ->once()
+            ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'auth_user_10'));
+
+        $translatorMock = Mockery::mock(TranslatorInterface::class);
+        $translatorMock->shouldReceive('getLocale')->andReturn('en');
+
+        $validator = new PasswordPolicyValidator(
+            $this->passwordPolicyServiceMock,
+            $translatorMock,
+            $loggerMock,
+            true,
+            'info',
+        );
+
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($entityUserInterface);
+        $constraintBuilderMock = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $constraintBuilderMock->shouldReceive('setParameter')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('setCode')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('addViolation')->once();
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($constraintBuilderMock);
+
+        $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+        $historyMock->shouldReceive('getCreatedAt')->andReturn(Carbon::now());
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pwd', $entityUserInterface])
+            ->andReturn($historyMock);
+
+        $validator->initialize($this->contextMock);
+        $validator->validate('pwd', new PasswordPolicy());
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers log() default branch when log level is not one of debug/info/notice/warning/error.
+     */
+    public function testValidateFailWithCustomLogLevelFallsBackToInfo(): void
+    {
+        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock->shouldReceive('info')
+            ->once()
+            ->with('Password reuse attempt detected', Mockery::type('array'));
+
+        $translatorMock = Mockery::mock(TranslatorInterface::class);
+        $translatorMock->shouldReceive('getLocale')->andReturn('en');
+
+        $validator = new PasswordPolicyValidator(
+            $this->passwordPolicyServiceMock,
+            $translatorMock,
+            $loggerMock,
+            true,
+            'critical', // not in match() branches -> hits default => info
+        );
+
+        $this->entityMock->shouldReceive('getId')->andReturn(1);
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $constraintBuilderMock = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $constraintBuilderMock->shouldReceive('setParameter')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('setCode')->andReturnSelf();
+        $constraintBuilderMock->shouldReceive('addViolation')->once();
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($constraintBuilderMock);
+
+        $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+        $historyMock->shouldReceive('getCreatedAt')->andReturn(Carbon::now());
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+            ->withArgs(['pwd', $this->entityMock])
+            ->andReturn($historyMock);
 
         $validator->initialize($this->contextMock);
         $validator->validate('pwd', new PasswordPolicy());

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c88be69c74f76c998ce7684e5d8625ae",
+    "content-hash": "aafc615d2264ca198e651f03c13fc2fa",
     "packages": [
         {
             "name": "carbonphp/carbon-doctrine-types",
@@ -1352,16 +1352,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "3.11.1",
+            "version": "3.11.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon.git",
-                "reference": "f438fcc98f92babee98381d399c65336f3a3827f"
+                "reference": "6a7e652845bb018c668220c2a545aded8594fbbf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/f438fcc98f92babee98381d399c65336f3a3827f",
-                "reference": "f438fcc98f92babee98381d399c65336f3a3827f",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/6a7e652845bb018c668220c2a545aded8594fbbf",
+                "reference": "6a7e652845bb018c668220c2a545aded8594fbbf",
                 "shasum": ""
             },
             "require": {
@@ -1453,7 +1453,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-01-29T09:26:29+00:00"
+            "time": "2026-03-11T17:23:39+00:00"
         },
         {
             "name": "nowo-tech/password-policy-bundle",
@@ -1461,7 +1461,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/password-policy-bundle",
-                "reference": "5fbfc751bfee05f59bd542247e2563c6ceee3e2d"
+                "reference": "b901e1ff9cec3791c1dba865dbe975d1cf37a8a7"
             },
             "require": {
                 "nesbot/carbon": "^3.9",
@@ -1475,11 +1475,15 @@
                 "doctrine/orm": "^2.15 || ^3.0",
                 "friendsofphp/php-cs-fixer": "^3.0",
                 "mockery/mockery": "^1.6",
+                "phpstan/extension-installer": "^1.4",
                 "phpstan/phpstan": "^2.0",
+                "phpstan/phpstan-mockery": "^2.0",
                 "phpstan/phpstan-phpunit": "^2.0",
                 "phpstan/phpstan-symfony": "^2.0",
                 "phpunit/phpunit": "^10.0",
                 "rector/rector": "^2.0",
+                "symfony/password-hasher": "^6.0 || ^7.0 || ^8.0",
+                "symfony/security-core": "^6.0 || ^7.0 || ^8.0",
                 "symfony/yaml": "^6.0 || ^7.0 || ^8.0"
             },
             "type": "symfony-bundle",
@@ -1495,7 +1499,8 @@
             },
             "archive": {
                 "exclude": [
-                    "/demo"
+                    "/demo",
+                    "/.cursor"
                 ]
             },
             "scripts": {
@@ -5973,6 +5978,83 @@
                 "source": "https://github.com/nikic/PHP-Parser/tree/v5.7.0"
             },
             "time": "2025-12-06T11:56:16+00:00"
+        },
+        {
+            "name": "nowo-tech/twig-inspector-bundle",
+            "version": "v1.0.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/nowo-tech/TwigInspectorBundle.git",
+                "reference": "ed4937bd86ad29f516bca4efa2d507d90c603dd2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/nowo-tech/TwigInspectorBundle/zipball/ed4937bd86ad29f516bca4efa2d507d90c603dd2",
+                "reference": "ed4937bd86ad29f516bca4efa2d507d90c603dd2",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.1 <8.6",
+                "symfony/config": "^6.0 || ^7.0 || ^8.0",
+                "symfony/console": "^6.0 || ^7.0 || ^8.0",
+                "symfony/dependency-injection": "^6.0 || ^7.0 || ^8.0",
+                "symfony/filesystem": "^6.0 || ^7.0 || ^8.0",
+                "symfony/http-foundation": "^6.0 || ^7.0 || ^8.0",
+                "symfony/http-kernel": "^6.0 || ^7.0 || ^8.0",
+                "symfony/routing": "^6.0 || ^7.0 || ^8.0",
+                "symfony/web-profiler-bundle": "^6.0 || ^7.0 || ^8.0",
+                "twig/twig": "^3.8 || ^4.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.0",
+                "phpunit/phpunit": "^10.0",
+                "symfony/yaml": "^6.0 || ^7.0 || ^8.0"
+            },
+            "type": "symfony-bundle",
+            "autoload": {
+                "psr-4": {
+                    "Nowo\\TwigInspectorBundle\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Héctor Franco Aceituno",
+                    "email": "hectorfranco@nowo.com",
+                    "homepage": "https://github.com/HecFranco",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Nowo.tech",
+                    "homepage": "https://nowo.tech"
+                }
+            ],
+            "description": "Symfony bundle that adds the possibility to find Twig templates and blocks used for rendering HTML pages faster during development",
+            "homepage": "https://github.com/nowo-tech/twig-inspector-bundle",
+            "keywords": [
+                "bundle",
+                "debug",
+                "inspect",
+                "symfony",
+                "template",
+                "toolbar-extension",
+                "twig",
+                "web-profiler"
+            ],
+            "support": {
+                "issues": "https://github.com/nowo-tech/twig-inspector-bundle/issues",
+                "source": "https://github.com/nowo-tech/twig-inspector-bundle"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/HecFranco",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-12-15T12:28:14+00:00"
         },
         {
             "name": "phar-io/manifest",

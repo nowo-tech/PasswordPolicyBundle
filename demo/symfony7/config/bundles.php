@@ -11,4 +11,5 @@ return [
     Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class            => ['all' => true],
     Symfony\Bundle\TwigBundle\TwigBundle::class                      => ['all' => true],
     Symfony\Bundle\WebProfilerBundle\WebProfilerBundle::class        => ['dev' => true],
+    Nowo\TwigInspectorBundle\NowoTwigInspectorBundle::class          => ['dev' => true, 'test' => true],
 ];

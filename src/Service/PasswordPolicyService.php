@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
+use Closure;
 use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -23,12 +24,17 @@ use function strlen;
 class PasswordPolicyService implements PasswordPolicyServiceInterface
 {
     /**
-     * PasswordPolicyService constructor.
+     * Optional closure to determine if an entity can be cloned. Signature: (object): bool.
+     * If null, defaults to method_exists($entity, '__clone').
+     * Used for testability of the non-clone fallback path.
      *
      * @param UserPasswordHasherInterface $userPasswordHasher The password hasher service for verifying passwords
+     * @param Closure(object): bool|null $isCloneable Optional; when null, cloneability is determined via method_exists
      */
-    public function __construct(public UserPasswordHasherInterface $userPasswordHasher)
-    {
+    public function __construct(
+        public UserPasswordHasherInterface $userPasswordHasher,
+        private readonly ?Closure $isCloneable = null
+    ) {
     }
 
     /**
@@ -82,17 +88,16 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         // This is important for Symfony's custom hashers that might not use password_hash()
         if ($hasPasswordPolicy instanceof PasswordAuthenticatedUserInterface) {
             try {
+                $canClone = $this->isCloneable instanceof \Closure
+                    ? ($this->isCloneable)($hasPasswordPolicy)
+                    : method_exists($hasPasswordPolicy, '__clone');
                 // Try to clone the entity to avoid modifying the original
                 // If cloning is not possible, we'll skip this method
-                if (method_exists($hasPasswordPolicy, '__clone')) {
+                if ($canClone) {
                     $tempUser = clone $hasPasswordPolicy;
-                    if (method_exists($tempUser, 'setPassword')) {
-                        // Set the hashed password from history on the temp user
-                        $tempUser->setPassword($hashedPassword);
-                        // Verify if the plain password matches the hashed password
-                        if ($this->userPasswordHasher->isPasswordValid($tempUser, $plainPassword)) {
-                            return true;
-                        }
+                    $valid    = $this->verifyWithClonedUser($tempUser, $hashedPassword, $plainPassword);
+                    if ($valid) {
+                        return true;
                     }
                 } elseif (method_exists($hasPasswordPolicy, 'setPassword')) {
                     // If not cloneable, try to use the entity directly (but restore password after)
@@ -124,6 +129,23 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         // If all methods failed, the password doesn't match
         // We never compare hashes directly for security reasons
         return false;
+    }
+
+    /**
+     * Verifies plain password against hashed password using a cloned user (has setPassword).
+     * Extracted for testability and reliable coverage of the clone path.
+     */
+    private function verifyWithClonedUser(
+        PasswordAuthenticatedUserInterface $tempUser,
+        string $hashedPassword,
+        string $plainPassword
+    ): bool {
+        if (!method_exists($tempUser, 'setPassword')) {
+            return false;
+        }
+        $tempUser->setPassword($hashedPassword);
+
+        return $this->userPasswordHasher->isPasswordValid($tempUser, $plainPassword);
     }
 
     /**

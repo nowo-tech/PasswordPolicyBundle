@@ -293,4 +293,70 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->extension->load($configs, $container);
     }
+
+    /**
+     * Covers load() when container has cache.app (cache service reference is set).
+     */
+    public function testLoadWithCacheAppService(): void
+    {
+        $container = new ContainerBuilder();
+        $container->register('cache.app', \Symfony\Component\Cache\Adapter\ArrayAdapter::class);
+
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+        $configs         = [
+            [
+                'entities' => [
+                    $mockEntityClass => [
+                        'reset_password_route_name' => 'reset',
+                    ],
+                ],
+                'enable_cache' => true,
+            ],
+        ];
+
+        $this->extension->load($configs, $container);
+
+        $def  = $container->getDefinition(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryService::class);
+        $args = $def->getArguments();
+        $this->assertNotNull($args['$cache'] ?? null);
+    }
+
+    /**
+     * Covers configureValidator() early return when container has no PasswordPolicyValidator definition.
+     */
+    public function testConfigureValidatorReturnsEarlyWhenValidatorNotRegistered(): void
+    {
+        $container  = new ContainerBuilder();
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('configureValidator');
+        $config     = ['enable_logging' => true, 'log_level' => 'info'];
+
+        $method->invoke($this->extension, $container, $config);
+        $this->assertFalse($container->hasDefinition(\Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator::class));
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Covers addExpiryListener() when container does not have PasswordExpiryListener definition (register branch).
+     */
+    public function testAddExpiryListenerRegistersWhenDefinitionMissing(): void
+    {
+        $container  = new ContainerBuilder();
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('addExpiryListener');
+        $config     = [
+            'expiry_listener' => [
+                'priority'           => 5,
+                'error_msg'          => ['type' => 'error', 'text' => 'Expired'],
+                'redirect_on_expiry' => false,
+            ],
+            'enable_logging' => true,
+            'log_level'      => 'info',
+        ];
+
+        $definition = $method->invoke($this->extension, $container, $config);
+        $this->assertTrue($container->hasDefinition(\Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener::class));
+        $this->assertNotEmpty($definition->getTags());
+        $this->addToAssertionCount(1);
+    }
 }

@@ -519,13 +519,17 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
 ## Documentation
 
-- **[Installation](docs/INSTALLATION.md)** - Install and register the bundle
-- **[Configuration Guide](docs/CONFIGURATION.md)** - Detailed configuration options and examples
-- **[Usage](docs/USAGE.md)** - Basic usage and customization
-- **[Upgrade Guide](docs/UPGRADING.md)** - Step-by-step instructions for upgrading between versions
-- **[Events Documentation](docs/EVENTS.md)** - Complete guide to custom events and event listeners
-- **[Release process](docs/RELEASE.md)** - How to release a new version
-- **[Security policy](docs/SECURITY.md)** - Reporting vulnerabilities
-- **[Engram (MCP)](docs/ENGRAM.md)** - AI persistent memory setup for Cursor
-- **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute to the project
-- **[Changelog](docs/CHANGELOG.md)** - Version history and changes
+- [Installation](docs/INSTALLATION.md)
+- [Configuration](docs/CONFIGURATION.md)
+- [Usage](docs/USAGE.md)
+- [Contributing](docs/CONTRIBUTING.md)
+- [Changelog](docs/CHANGELOG.md)
+- [Upgrading](docs/UPGRADING.md)
+- [Release](docs/RELEASE.md)
+- [Security](docs/SECURITY.md)
+- [Engram](docs/ENGRAM.md)
+
+### Additional documentation
+
+- [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run demos in dev (no cache) or production (worker)
+- [Events](docs/EVENTS.md) — Custom events and event listeners
