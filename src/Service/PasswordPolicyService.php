@@ -88,7 +88,7 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         // This is important for Symfony's custom hashers that might not use password_hash()
         if ($hasPasswordPolicy instanceof PasswordAuthenticatedUserInterface) {
             try {
-                $canClone = $this->isCloneable instanceof \Closure
+                $canClone = $this->isCloneable instanceof Closure
                     ? ($this->isCloneable)($hasPasswordPolicy)
                     : method_exists($hasPasswordPolicy, '__clone');
                 // Try to clone the entity to avoid modifying the original
