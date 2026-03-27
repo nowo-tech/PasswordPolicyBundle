@@ -1,15 +1,24 @@
-
-###> symfony/framework-bundle ###
+# Local environment files (never commit local secrets/overrides)
+/.env
+/.env.dev
 /.env.local
 /.env.local.php
 /.env.*.local
 /config/secrets/prod/prod.decrypt.private.php
-/public/bundles/
-/var/
-/vendor/
-###< symfony/framework-bundle ###
 
-###> phpunit/phpunit ###
+# Dependencies and runtime/cache artifacts
+/vendor/
+/var/
+/public/bundles/
+
+# PHPUnit local files
 /phpunit.xml
 /.phpunit.cache/
-###< phpunit/phpunit ###
+
+# Archives / compressed
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z

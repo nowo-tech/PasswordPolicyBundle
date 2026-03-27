@@ -14,6 +14,7 @@
 /coverage/
 /coverage-html/
 coverage.xml
+/coverage-php.txt
 ###< phpunit/phpunit ###
 
 ###> php-cs-fixer ###

@@ -14,7 +14,7 @@ This directory contains three demo projects, one for each supported Symfony vers
 - **Password Expiry Notifications**: Visual banners and indicators showing password expiry status
 - **Password Expiry Information**: Detailed information about password expiry policy and days remaining
 - Well-structured Twig templates using inheritance and partials
-- **FrankenPHP worker** (§2.4): Each demo runs on **FrankenPHP** in **runtime worker mode** (single service `php`, no nginx). HTTP on port 80 inside the container; access via `http://localhost:PORT` (PORT in `.env`, default 8001). Caddyfile with `:80`, `root * /app/public`, `php_server { worker /app/public/index.php 2 }`.
+- **FrankenPHP** (§2.4): Single service `php` (no nginx). With **`APP_ENV=dev`**, the image **entrypoint** uses **`Caddyfile.dev`** (`php_server` **without** worker, cache-busting headers). The image’s default **`Caddyfile`** can use **`worker`** for production-style runs. HTTP on port 80 in the container; access via `http://localhost:PORT` (see each demo’s `.env`).
 - Docker setup aligned with BUNDLES_STANDARDS_PROMPT.md; each `docker-compose.yml` has `name: password-policy-bundle-demo-symfony-{6|7|8}` and mounts the bundle root at `/var/password-policy-bundle`.
 - Composer path repository `"/var/password-policy-bundle"` so the bundle is used from the repo when running in Docker.
 - Makefile in each demo directory (`symfony6`, `symfony7`, `symfony8`) with targets: up, down, build, install, test, test-coverage, update-bundle, ensure-up, restart, shell, logs, verify.

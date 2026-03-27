@@ -2,7 +2,7 @@
 
 This document describes how the bundle's demo applications run under **FrankenPHP** in Docker, and how to reproduce **development** (no cache, changes visible on refresh) and **production** (worker mode, cache enabled) configurations. The same approach can be used in other Symfony bundles or applications that ship a FrankenPHP-based demo.
 
-## Contents
+## Table of contents
 
 - [Overview](#overview)
 - [What the demos include](#what-the-demos-include)
@@ -48,7 +48,7 @@ The demo applications are configured for **local development and debugging**:
 - **Symfony Web Profiler** — enabled in `dev` environment.
 - **Password Policy Bundle** (`Nowo\PasswordPolicyBundle\PasswordPolicyBundle`) — the bundle under test; enabled in the demos.
 
-Example `config/bundles.php` (Symfony 8 demo):
+Example `config/bundles.php` (aligned with **demo/symfony8**):
 
 ```php
 <?php
@@ -56,11 +56,15 @@ Example `config/bundles.php` (Symfony 8 demo):
 declare(strict_types=1);
 
 return [
-    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class   => ['all' => true],
-    Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class   => ['all' => true],
-    Symfony\Bundle\TwigBundle\TwigBundle::class             => ['all' => true],
-    Symfony\Bundle\WebProfilerBundle\WebProfilerBundle::class => ['dev' => true],
-    // ...
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class            => ['all' => true],
+    Doctrine\Bundle\DoctrineBundle\DoctrineBundle::class             => ['all' => true],
+    Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle::class   => ['dev' => true, 'test' => true],
+    Symfony\Bundle\SecurityBundle\SecurityBundle::class            => ['all' => true],
+    Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class            => ['all' => true],
+    Symfony\Bundle\TwigBundle\TwigBundle::class                      => ['all' => true],
+    Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle::class => ['all' => true],
+    Symfony\Bundle\WebProfilerBundle\WebProfilerBundle::class      => ['dev' => true],
+    Nowo\TwigInspectorBundle\NowoTwigInspectorBundle::class          => ['dev' => true, 'test' => true],
 ];
 ```
 

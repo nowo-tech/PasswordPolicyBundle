@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Table of contents
+
+- [[0.0.9] - 2026-03-16](#009---2026-03-16)
+- [[0.0.8] - 2025-03-11](#008---2025-03-11)
+- [[0.0.6] - 2025-03-10](#006---2025-03-10)
+- [[0.0.5] - 2025-12-17](#005---2025-12-17)
+- [[0.0.4] - 2025-12-17](#004---2025-12-17)
+- [[0.0.3] - 2025-12-17](#003---2025-12-17)
+- [[Unreleased]](#unreleased)
+- [[0.0.2] - 2025-12-16](#002---2025-12-16)
+- [[0.0.1] - 2025-12-15](#001---2025-12-15)
+
 ## [0.0.9] - 2026-03-16
 
 ### Added
@@ -320,6 +332,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Corrected `PasswordExpiryServiceTest` to use proper array format for `lockRoutes`
   - Replaced non-existent `testGenerateLockedRoute()` with `testGetLockedRoutes()` and `testIsLockedRoute()`
   - All tests now properly aligned with current implementation
+
+### Documentation
+- **README**: Clarified that **`nowo_password_policy.entities` is required**; corrected password-expiry behaviour (**`redirect_on_expiry`** + **`reset_password_route_name`**, not `lock_route`); expanded options table (`redirect_on_expiry`, `enable_cache`, `cache_ttl`); noted Doctrine is an app dependency; FrankenPHP demos use **`Caddyfile.dev`** without worker when `APP_ENV=dev`.
+- **demo/README.md**: FrankenPHP description aligned with dev **Caddyfile.dev** vs prod **worker**.
+- **DEMO-FRANKENPHP.md**: `bundles.php` example aligned with **demo/symfony8** (Doctrine, Security, Migrations, Fixtures, Twig Inspector).
+- **INSTALLATION.md**: Clarified that **`entities`** configuration is required, not optional.
 
 ## [0.0.2] - 2025-12-16
 

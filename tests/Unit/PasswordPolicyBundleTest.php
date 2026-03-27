@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Nowo\PasswordPolicyBundle\Tests;
+namespace Nowo\PasswordPolicyBundle\Tests\Unit;
 
 use Nowo\PasswordPolicyBundle\DependencyInjection\PasswordPolicyExtension;
 use Nowo\PasswordPolicyBundle\PasswordPolicyBundle;

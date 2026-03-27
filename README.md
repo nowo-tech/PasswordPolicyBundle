@@ -1,8 +1,8 @@
 # Password Policy Bundle
 
-[![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6%20%7C%207%20%7C%208-000000?logo=symfony)](https://symfony.com) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/password-policy-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/PasswordPolicyBundle)
+[![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6%20%7C%207%20%7C%208-000000?logo=symfony)](https://symfony.com) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/password-policy-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/PasswordPolicyBundle) [![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)](#tests-and-coverage)
 
-> ⭐ **Found this project useful?** Give it a star on GitHub! It helps us maintain and improve the project.
+> ⭐ **Found this useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
 Symfony bundle for password policy enforcements including password history, expiry, and validation.
 
@@ -23,7 +23,7 @@ Symfony bundle for password policy enforcements including password history, expi
 - ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English
 - ✅ **Demo Projects** - Full-featured demos with visual expiry indicators
 
-**FrankenPHP worker:** The demos are built to run on **FrankenPHP** in **runtime worker mode** (single PHP service, no nginx). They are tested and compatible with FrankenPHP worker; access each demo at `http://localhost:PORT` (see `demo/README.md` and `.env` in each demo).
+**FrankenPHP:** Demos use a **single PHP service** (FrankenPHP, no nginx). With **`APP_ENV=dev`** (default), the Docker **entrypoint swaps in `Caddyfile.dev`** — **`php_server` without workers** for comfortable local development. The baked-in production `Caddyfile` can use **`php_server { worker … }`**; see [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md). Access each demo at `http://localhost:PORT` (see `demo/README.md` and `.env`).
 
 ## Installation
 
@@ -37,8 +37,8 @@ Then, register the bundle in your `config/bundles.php`:
 <?php
 
 return [
-    // ...
-    Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class => ['all' => true],
+  // ...
+  Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class => ['all' => true],
 ];
 ```
 
@@ -46,11 +46,11 @@ return [
 
 - PHP >= 8.1, < 8.6
 - Symfony >= 6.0 || >= 7.0 || >= 8.0
-- Doctrine ORM
-- nesbot/carbon >= 3.9
+- **Doctrine ORM** (`doctrine/orm`, `doctrine/doctrine-bundle`) — required in your app for entity mapping and the bundle’s Doctrine listeners. This package does **not** declare them in `composer.json`; add them like any Symfony + Doctrine app.
+- nesbot/carbon `^3.9` (declared in this package)
 
-**Optional Dependencies**:
-- Symfony Cache Component (`symfony/cache`) - Required only if `enable_cache: true` is used
+**Optional dependencies**:
+- Symfony Cache Component (`symfony/cache`) — required only if `enable_cache: true` is used (`cache.app` must exist; Symfony Framework provides it by default).
 
 ## Configuration
 
@@ -69,20 +69,22 @@ use Nowo\PasswordPolicyBundle\Validator\PasswordPolicy;
 
 class User implements HasPasswordPolicyInterface
 {
-    /**
-     * @PasswordPolicy()
-     */
-    private ?string $plainPassword = null;
-    
-    // ... rest of your entity
+  /**
+   * @PasswordPolicy()
+   */
+  private ?string $plainPassword = null;
+  
+  // ... rest of your entity
 }
 ```
 
 ### Step 3: Configure Bundle
 
-The bundle works out of the box with default settings. **No configuration file is required** - the bundle uses sensible defaults defined in `Configuration.php`.
+You **must** define at least one entity under `nowo_password_policy.entities` (each needs `reset_password_route_name`, etc.). The Symfony Config tree marks **`entities` as required**; without it, the container will not compile.
 
-**Important**: The configuration file (`nowo_password_policy.yaml`) is **optional**. You only need to create it if you want to customize the default behavior.
+Default values exist for many keys (password field names, `expiry_days`, `expiry_listener.redirect_on_expiry`, logging, cache flags — see `Configuration.php` and [docs/CONFIGURATION.md](docs/CONFIGURATION.md)), but **not** for the entity list itself.
+
+**Important**: A `config/packages/nowo_password_policy.yaml` file is **optional only in the sense** that Flex may create it for you — you still need the **`entities`** section with your `App\Entity\…` classes.
 
 #### Symfony Flex Recipe (Automatic - Recommended)
 
@@ -101,50 +103,50 @@ Configure how Password policy will behave on every entity:
 
 ```yaml
 nowo_password_policy:
-    entities:
-        # The entity class implementing HasPasswordPolicyInterface
-        App\Entity\User:
-            # The route where the user will be notified when password is expired
-            notified_routes: 
-                - user_profile
-                - user_settings
-            # These routes will be excluded from the expiry check
-            excluded_notified_routes: 
-                - user_logout
-            # Which is the password property in the entity (defaults to 'password')
-            password_field: password
-            
-            # Password history property in the entity (defaults to 'passwordHistory')
-            password_history_field: passwordHistory
-            
-            # How many password changes to track (defaults to 3)
-            passwords_to_remember: 5
-            
-            # Force expiry of the password in that many days (defaults to 90)
-            expiry_days: 60
-            
-            # Route name for password reset (required)
-            reset_password_route_name: user_reset_password
-            
-            # Enable detection of password extensions (optional, default: false)
-            # Detects when users add numbers or characters to old passwords
-            # Example: If user had "password" and tries "password123", it will be detected
-            detect_password_extensions: false
-            extension_min_length: 4  # Minimum length of base password for extension detection
-    expiry_listener:
-        # You can change the expiry listener priority
-        priority: 0
-        # If true, automatically redirects to reset_password_route_name when password expires
-        redirect_on_expiry: false
-        error_msg:
-            text:
-                title: 'Your password expired.'
-                message: 'You need to change it'
-            type: 'error'
-    # Enable logging for password policy events
-    enable_logging: true
-    # Logging level: debug, info, notice, warning, error
-    log_level: info
+  entities:
+    # The entity class implementing HasPasswordPolicyInterface
+    App\Entity\User:
+      # The route where the user will be notified when password is expired
+      notified_routes: 
+        - user_profile
+        - user_settings
+      # These routes will be excluded from the expiry check
+      excluded_notified_routes: 
+        - user_logout
+      # Which is the password property in the entity (defaults to 'password')
+      password_field: password
+      
+      # Password history property in the entity (defaults to 'passwordHistory')
+      password_history_field: passwordHistory
+      
+      # How many password changes to track (defaults to 3)
+      passwords_to_remember: 5
+      
+      # Force expiry of the password in that many days (defaults to 90)
+      expiry_days: 60
+      
+      # Route name for password reset (required)
+      reset_password_route_name: user_reset_password
+      
+      # Enable detection of password extensions (optional, default: false)
+      # Detects when users add numbers or characters to old passwords
+      # Example: If user had "password" and tries "password123", it will be detected
+      detect_password_extensions: false
+      extension_min_length: 4 # Minimum length of base password for extension detection
+  expiry_listener:
+    # You can change the expiry listener priority
+    priority: 0
+    # If true, automatically redirects to reset_password_route_name when password expires
+    redirect_on_expiry: false
+    error_msg:
+      text:
+        title: 'Your password expired.'
+        message: 'You need to change it'
+      type: 'error'
+  # Enable logging for password policy events
+  enable_logging: true
+  # Logging level: debug, info, notice, warning, error
+  log_level: info
 ```
 
 ## How It Works
@@ -159,12 +161,12 @@ The bundle uses Doctrine lifecycle events to create password history and set las
 
 ### Password Expiry
 
-Expiry works by checking the last password change on every request made to the app, excluding those configured in the application:
+Expiry works by checking the last password change on **notified** routes, excluding routes listed in `excluded_notified_routes`:
 
-1. On each request, the bundle checks if the password has expired
-2. If expired, the user is redirected to the configured `lock_route`
-3. Flash messages are displayed according to the configuration
-4. The user cannot access other routes until the password is changed
+1. On each main request to a **locked** (notified) route, the bundle checks if the password has expired
+2. If expired, a flash message is shown (with optional translation via `expiry_listener.error_msg`)
+3. If `expiry_listener.redirect_on_expiry` is **true**, the user is **redirected** to the entity’s **`reset_password_route_name`** (not the deprecated `lock_route`)
+4. If `redirect_on_expiry` is **false**, only the flash is shown — the request continues (adjust routes/notifications to match your UX)
 
 **Important**: The library uses Doctrine lifecycle events (`onFlush`) to create password history and set last password change. You must be aware that any entity changes after the recalculation will not be persisted to the database.
 
@@ -173,15 +175,15 @@ Expiry works by checking the last password change on every request made to the a
 The bundle prevents users from reusing old passwords and can optionally detect password extensions:
 
 1. **Exact Match Detection**: Checks if the new password exactly matches any password in history
-   - Uses `password_verify()` for reliable hash comparison
-   - Works with bcrypt, argon2, and Symfony's password hashers
-   - Always enabled by default
+  - Uses `password_verify()` for reliable hash comparison
+  - Works with bcrypt, argon2, and Symfony's password hashers
+  - Always enabled by default
 
 2. **Extension Detection** (optional): Detects when a new password is an extension of an old password
-   - Detects common patterns: adding numbers (0-999) or special characters (!, @, #, $, %) to the beginning or end
-   - Example: If user had "password" and tries "password123", it will be detected and rejected
-   - Can be enabled per entity in YAML configuration or per field using constraint attributes
-   - Configurable minimum length for the base password (default: 4 characters)
+  - Detects common patterns: adding numbers (0-999) or special characters (!, @, #, $, %) to the beginning or end
+  - Example: If user had "password" and tries "password123", it will be detected and rejected
+  - Can be enabled per entity in YAML configuration or per field using constraint attributes
+  - Configurable minimum length for the base password (default: 4 characters)
 
 **How Extension Detection Works**:
 - The bundle tries removing common suffixes/prefixes from the new password
@@ -202,10 +204,12 @@ The bundle prevents users from reusing old passwords and can optionally detect p
 | `detect_password_extensions` | `bool` | `false` | Enable detection of password extensions (e.g., "password123" is extension of "password") |
 | `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
 | `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
-| `expiry_listener.lock_route` | `string` | - | Route to redirect when password is expired |
-| `expiry_listener.error_msg.text.title` | `string` | - | Error message title |
-| `expiry_listener.error_msg.text.message` | `string` | - | Error message body |
+| `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to **`reset_password_route_name`** when password is expired |
+| `expiry_listener.lock_route` | `string` | - | **Deprecated** — use `redirect_on_expiry` + `reset_password_route_name` |
+| `expiry_listener.error_msg.text` | `array` or `string` | keys `nowo_password_policy.title` / `.message` (defaults) | Flash title/message (supports translation keys) |
 | `expiry_listener.error_msg.type` | `string` | `'error'` | Flash message type |
+| `enable_cache` | `bool` | `false` | Cache expiry checks (needs `cache.app`) |
+| `cache_ttl` | `int` | `3600` | TTL in seconds when `enable_cache` is true |
 
 ## Usage Examples
 
@@ -220,76 +224,76 @@ use Nowo\PasswordPolicyBundle\Validator\PasswordPolicy;
 #[ORM\Entity]
 class User implements HasPasswordPolicyInterface
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
-    
-    #[ORM\Column]
-    private string $password;
-    
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTime $passwordChangedAt = null;
-    
-    #[ORM\OneToMany(targetEntity: UserPasswordHistory::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private Collection $passwordHistory;
-    
-    /**
-     * @PasswordPolicy(
-     *     detectExtensions=true,
-     *     extensionMinLength=4,
-     *     extensionMessage="Cannot use an extension of an old password"
-     * )
-     */
-    private ?string $plainPassword = null;
-    
-    public function getId(): ?int
-    {
-        return $this->id;
+  #[ORM\Id]
+  #[ORM\GeneratedValue]
+  #[ORM\Column]
+  private ?int $id = null;
+  
+  #[ORM\Column]
+  private string $password;
+  
+  #[ORM\Column(type: 'datetime', nullable: true)]
+  private ?\DateTime $passwordChangedAt = null;
+  
+  #[ORM\OneToMany(targetEntity: UserPasswordHistory::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
+  private Collection $passwordHistory;
+  
+  /**
+   * @PasswordPolicy(
+   *   detectExtensions=true,
+   *   extensionMinLength=4,
+   *   extensionMessage="Cannot use an extension of an old password"
+   * )
+   */
+  private ?string $plainPassword = null;
+  
+  public function getId(): ?int
+  {
+    return $this->id;
+  }
+  
+  public function getPassword(): string
+  {
+    return $this->password;
+  }
+  
+  public function setPassword(string $password): self
+  {
+    $this->password = $password;
+    return $this;
+  }
+  
+  public function getPasswordChangedAt(): ?\DateTime
+  {
+    return $this->passwordChangedAt;
+  }
+  
+  public function setPasswordChangedAt(\DateTime $dateTime): self
+  {
+    $this->passwordChangedAt = $dateTime;
+    return $this;
+  }
+  
+  public function getPasswordHistory(): Collection
+  {
+    return $this->passwordHistory;
+  }
+  
+  public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
+  {
+    if (!$this->passwordHistory->contains($passwordHistory)) {
+      $this->passwordHistory->add($passwordHistory);
     }
-    
-    public function getPassword(): string
-    {
-        return $this->password;
+    return $this;
+  }
+  
+  public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
+  {
+    if ($this->passwordHistory->contains($passwordHistory)) {
+      $this->passwordHistory->removeElement($passwordHistory);
     }
-    
-    public function setPassword(string $password): self
-    {
-        $this->password = $password;
-        return $this;
-    }
-    
-    public function getPasswordChangedAt(): ?\DateTime
-    {
-        return $this->passwordChangedAt;
-    }
-    
-    public function setPasswordChangedAt(\DateTime $dateTime): self
-    {
-        $this->passwordChangedAt = $dateTime;
-        return $this;
-    }
-    
-    public function getPasswordHistory(): Collection
-    {
-        return $this->passwordHistory;
-    }
-    
-    public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
-    {
-        if (!$this->passwordHistory->contains($passwordHistory)) {
-            $this->passwordHistory->add($passwordHistory);
-        }
-        return $this;
-    }
-    
-    public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
-    {
-        if ($this->passwordHistory->contains($passwordHistory)) {
-            $this->passwordHistory->removeElement($passwordHistory);
-        }
-        return $this;
-    }
+    return $this;
+  }
 }
 ```
 
@@ -302,60 +306,60 @@ use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 #[ORM\Entity]
 class UserPasswordHistory implements PasswordHistoryInterface
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
-    
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'passwordHistory')]
-    private User $user;
-    
-    #[ORM\Column]
-    private string $password;
-    
-    #[ORM\Column(type: 'string', nullable: true)]
-    private ?string $salt = null;
-    
-    #[ORM\Column(type: 'datetime')]
-    private \DateTime $createdAt;
-    
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-    
-    public function getPassword(): string
-    {
-        return $this->password;
-    }
-    
-    public function setPassword(string $password): self
-    {
-        $this->password = $password;
-        return $this;
-    }
-    
-    public function getSalt(): ?string
-    {
-        return $this->salt;
-    }
-    
-    public function setSalt(?string $salt): self
-    {
-        $this->salt = $salt;
-        return $this;
-    }
-    
-    public function getCreatedAt(): \DateTime
-    {
-        return $this->createdAt;
-    }
-    
-    public function setCreatedAt(\DateTime $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
+  #[ORM\Id]
+  #[ORM\GeneratedValue]
+  #[ORM\Column]
+  private ?int $id = null;
+  
+  #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'passwordHistory')]
+  private User $user;
+  
+  #[ORM\Column]
+  private string $password;
+  
+  #[ORM\Column(type: 'string', nullable: true)]
+  private ?string $salt = null;
+  
+  #[ORM\Column(type: 'datetime')]
+  private \DateTime $createdAt;
+  
+  public function getId(): ?int
+  {
+    return $this->id;
+  }
+  
+  public function getPassword(): string
+  {
+    return $this->password;
+  }
+  
+  public function setPassword(string $password): self
+  {
+    $this->password = $password;
+    return $this;
+  }
+  
+  public function getSalt(): ?string
+  {
+    return $this->salt;
+  }
+  
+  public function setSalt(?string $salt): self
+  {
+    $this->salt = $salt;
+    return $this;
+  }
+  
+  public function getCreatedAt(): \DateTime
+  {
+    return $this->createdAt;
+  }
+  
+  public function setCreatedAt(\DateTime $createdAt): self
+  {
+    $this->createdAt = $createdAt;
+    return $this;
+  }
 }
 ```
 
@@ -388,19 +392,19 @@ The bundle includes complete demo projects for Symfony 6.4, 7.0, and 8.0. Each d
 
 - **MySQL Database**: Isolated database per demo with migrations and initial data
 - **Authentication System**: Complete login system with Symfony Security
-  - Form-based authentication
-  - User session management
-  - Login/logout functionality
-  - Visual user indicators in the interface
+ - Form-based authentication
+ - User session management
+ - Login/logout functionality
+ - Visual user indicators in the interface
 - **CRUD Interface**: Full user management interface to test password policies
 - **Password Expiry Notifications**: Visual banners and indicators showing password expiry status
-  - Prominent alerts for expired passwords
-  - Warnings for passwords expiring soon
-  - Flash messages with test credentials information
+ - Prominent alerts for expired passwords
+ - Warnings for passwords expiring soon
+ - Flash messages with test credentials information
 - **Initial Data**: Pre-configured users with different password expiry states:
-  - `expired@example.com` / `expired123` - Password expired 100 days ago (triggers expiry listener)
-  - `demo@example.com` / `demo123` - Password expiring soon (85 days old, expires in 5 days)
-  - `admin@example.com` / `admin123` - Recently changed password (active)
+ - `expired@example.com` / `expired123` - Password expired 100 days ago (triggers expiry listener)
+ - `demo@example.com` / `demo123` - Password expiring soon (85 days old, expires in 5 days)
+ - `admin@example.com` / `admin123` - Recently changed password (active)
 - **Password History**: Complete password history tracking with timestamps
 - **Docker Setup**: Complete Docker Compose configuration
 
@@ -422,9 +426,9 @@ Users management: list with password status (Active, Expiring Soon, Expired), pa
 
 ```bash
 cd demo
-make up-symfony6      # Start Symfony 6.4 demo (includes automatic setup)
-make up-symfony7      # Start Symfony 7.0 demo
-make up-symfony8      # Start Symfony 8.0 demo
+make up-symfony6   # Start Symfony 6.4 demo (includes automatic setup)
+make up-symfony7   # Start Symfony 7.0 demo
+make up-symfony8   # Start Symfony 8.0 demo
 ```
 
 The `make up-*` commands automatically:
@@ -500,6 +504,13 @@ The bundle uses GitHub Actions for continuous integration:
 - **Coverage**: Validates code coverage requirements
 
 See `.github/workflows/ci.yml` for details.
+
+## Tests and coverage
+
+- Tests: PHPUnit (PHP)
+- PHP: 100%
+- TS/JS: N/A
+- Python: N/A
 
 ## License
 

@@ -32,7 +32,9 @@ up:
 	@echo "Setting up database (create, migrations, fixtures)..."
 	docker-compose exec -T php composer database
 	docker-compose exec -T php php bin/console cache:clear
-	@echo "Demo ready. Login: admin@example.com / admin123, demo@example.com / demo123, expired@example.com / expired123. Check .env for PORT (default 8001)."
+	@DEFAULT_URI=$$(grep "^DEFAULT_URI=" .env 2>/dev/null | cut -d= -f2- | head -1 || echo "http://localhost:8001"); \
+	echo "Demo ready. Login: admin@example.com / admin123, demo@example.com / demo123, expired@example.com / expired123."; \
+	echo "Demo started at: $$DEFAULT_URI"
 
 down:
 	docker-compose down

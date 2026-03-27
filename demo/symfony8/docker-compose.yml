@@ -9,7 +9,7 @@ services:
     container_name: password-policy-demo-symfony8-php
     working_dir: /app
     ports:
-      - "${PORT:-8001}:80"
+      - "${PORT:-8003}:80"
     volumes:
       - .:/app
       - ../..:/var/password-policy-bundle
@@ -41,8 +41,6 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "${MYSQL_PORT:-33063}:3306"
     networks:
       - password-policy-demo-network
     healthcheck:

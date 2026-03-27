@@ -13,7 +13,7 @@ get-version = $(shell echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | s
 # Helper function to get demo version for shell commands
 get-version-shell = $(shell echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/')
 
-.PHONY: help clean test-all test-coverage-all verify-all check-all release-check release-verify
+.PHONY: help clean test-all test-coverage-all verify-all check-all release-check release-verify update-bundle-all
 .PHONY: $(foreach demo,$(DEMOS),up-$(demo) down-$(demo) install-$(demo) database-$(demo) shell-$(demo) logs-$(demo) test-$(demo) test-coverage-$(demo) verify-$(demo))
 .PHONY: up down install database test shell logs test-coverage verify
 
@@ -411,7 +411,15 @@ check-all: verify-all
 # Pre-release: verify all demos (used by root make release-check)
 release-verify: verify-all
 
-release-check: test-coverage-all release-verify
+update-bundle-all:
+	@echo "🔄 Updating bundle in all demos..."
+	@for demo in $(DEMOS); do \
+		echo "Updating $$demo..."; \
+		$(MAKE) -C $$demo update-bundle; \
+	done
+	@echo "✅ Bundle update completed for all demos."
+
+release-check: update-bundle-all test-coverage-all release-verify
 	@echo "✅ All demos passed release-check."
 
 # Clean vendor and cache from all demos

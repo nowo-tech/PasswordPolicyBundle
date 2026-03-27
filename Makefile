@@ -6,7 +6,7 @@ COMPOSE_FILE := docker-compose.yml
 COMPOSE := docker-compose -f $(COMPOSE_FILE)
 SERVICE_PHP := php
 
-.PHONY: help up down build shell install test test-coverage cs-check cs-fix rector rector-dry phpstan qa release-check release-check-demos composer-sync clean update validate assets setup-hooks
+.PHONY: help up down build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan qa release-check release-check-demos composer-sync clean update validate validate-translations assets setup-hooks
 
 # Default target
 help:
@@ -33,6 +33,7 @@ help:
 	@echo "  clean         Remove vendor and cache"
 	@echo "  update        Update composer.lock (composer update)"
 	@echo "  validate      Run composer validate --strict"
+	@echo "  validate-translations Validate translation YAML files"
 	@echo "  assets        No-op (no frontend assets in this bundle)"
 	@echo "  setup-hooks   Install git pre-commit hooks"
 	@echo ""
@@ -80,7 +81,8 @@ test: ensure-up
 
 # Run tests with coverage (no -T so coverage is shown in console with colors)
 test-coverage: ensure-up
-	$(COMPOSE) exec $(SERVICE_PHP) composer test-coverage
+	$(COMPOSE) exec $(SERVICE_PHP) composer test-coverage | tee coverage-php.txt
+	./.scripts/php-coverage-percent.sh coverage-php.txt
 
 # Check code style
 cs-check: ensure-up
@@ -133,16 +135,21 @@ update: ensure-up
 validate: ensure-up
 	$(COMPOSE) exec -T $(SERVICE_PHP) composer validate --strict
 
+# Validate translation files when the bundle provides translations.
+validate-translations: ensure-up
+	$(COMPOSE) exec -T $(SERVICE_PHP) php -r "require 'vendor/autoload.php'; foreach (glob('src/Resources/translations/*.yaml') as \$file) { Symfony\\Component\\Yaml\\Yaml::parseFile(\$file); } echo 'Translation files are valid.' . PHP_EOL;"
+
 # No-op for bundles without frontend assets
 assets:
 	@echo "No frontend assets in this bundle."
 
 # Setup git hooks for pre-commit checks
 setup-hooks:
-	@if [ -d .githooks ]; then \
-		chmod +x .githooks/pre-commit; \
-		git config core.hooksPath .githooks; \
-		echo "✅ Git hooks installed! CS-check and tests will run before each commit."; \
+	@if [ -f .githooks/pre-commit ]; then \
+		mkdir -p .git/hooks; \
+		cp -f .githooks/pre-commit .git/hooks/pre-commit; \
+		chmod +x .git/hooks/pre-commit; \
+		echo "✅ pre-commit hook installed at .git/hooks/pre-commit."; \
 	else \
-		echo "⚠️  .githooks directory not found. Skipping hook installation."; \
+		echo "⚠️  .githooks/pre-commit not found. Skipping hook installation."; \
 	fi

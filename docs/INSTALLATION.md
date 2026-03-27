@@ -47,7 +47,7 @@ return [
 ];
 ```
 
-2. **Create configuration** (optional). Create `config/packages/nowo_password_policy.yaml` with your preferred defaults. See [CONFIGURATION.md](CONFIGURATION.md) for all options.
+2. **Create configuration.** Add `config/packages/nowo_password_policy.yaml` (or rely on the Flex recipe) with at least **`nowo_password_policy.entities`** — that node is **required** for the bundle to compile. See [CONFIGURATION.md](CONFIGURATION.md) for all options.
 
 ## Next steps
 
