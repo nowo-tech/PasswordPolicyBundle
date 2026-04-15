@@ -294,6 +294,73 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->extension->load($configs, $container);
     }
 
+    public function testLoadThrowsExceptionForInvalidPcreInNotifiedRoutes(): void
+    {
+        $container       = new ContainerBuilder();
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+
+        $configs = [
+            [
+                'entities' => [
+                    $mockEntityClass => [
+                        'reset_password_route_name' => 'reset',
+                        'notified_routes'           => ['~((~'],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Invalid PCRE pattern');
+
+        $this->extension->load($configs, $container);
+    }
+
+    public function testValidateDuplicateRoutesIgnoresPatternLikeNotifiedEntries(): void
+    {
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('validateDuplicateRoutes');
+
+        $entities = [
+            'Entity1' => [
+                'reset_password_route_name' => 'reset1',
+                'notified_routes'           => ['admin_*'],
+            ],
+            'Entity2' => [
+                'reset_password_route_name' => 'reset2',
+                'notified_routes'           => ['admin_*'],
+            ],
+        ];
+
+        $method->invoke($this->extension, $entities);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testLoadInjectsRouterReferenceWhenRouterServiceExists(): void
+    {
+        $container = new ContainerBuilder();
+        $container->register('router', \stdClass::class);
+
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+        $configs         = [
+            [
+                'entities' => [
+                    $mockEntityClass => [
+                        'reset_password_route_name' => 'user_reset_password',
+                    ],
+                ],
+            ],
+        ];
+
+        $this->extension->load($configs, $container);
+
+        $def  = $container->getDefinition(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryService::class);
+        $args = $def->getArguments();
+        $this->assertArrayHasKey('$router', $args);
+        $this->assertSame('router', (string) $args['$router']);
+    }
+
     /**
      * Covers load() when container has cache.app (cache service reference is set).
      */

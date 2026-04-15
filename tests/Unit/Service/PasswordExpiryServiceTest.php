@@ -15,6 +15,9 @@ use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionClass;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\Route;
+use Symfony\Component\Routing\RouteCollection;
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -427,7 +430,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                        ->twice()
                        ->andReturn(123);
 
-        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $cacheMock, true, 3600);
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null, $cacheMock, true, 3600);
 
         $config = new PasswordExpiryConfiguration($this->userMock::class, 90, ['lock'], [], 'reset');
         $service->addEntity($config);
@@ -478,7 +481,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
                        ->once()
                        ->andReturn(Carbon::now()->subDays(50));
 
-        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $cacheMock, true, 3600);
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null, $cacheMock, true, 3600);
 
         $config = new PasswordExpiryConfiguration($this->userMock::class, 90, ['lock'], [], 'reset');
         $service->addEntity($config);
@@ -508,7 +511,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $this->userMock->shouldReceive('getPasswordChangedAt')
                        ->andReturn(new DateTime());
 
-        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $cacheMock, true, 3600);
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null, $cacheMock, true, 3600);
 
         $cacheMock->shouldReceive('deleteItem')
                   ->once()
@@ -521,11 +524,124 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
     public function testInvalidateCacheWhenCacheDisabled(): void
     {
-        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null, false, 3600);
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null, null, false, 3600);
 
         // Should not throw exception when cache is disabled
         $service->invalidateCache($this->userMock);
 
         $this->addToAssertionCount(1);
     }
+
+    public function testIsLockedRouteMatchesGlobPattern(): void
+    {
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->andReturn($this->userMock);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->addEntity(
+            new PasswordExpiryConfiguration($this->userMock::class, 90, ['admin_*'], [], 'reset_password'),
+        );
+
+        $this->assertTrue($this->passwordExpiryServiceMock->isLockedRoute('admin_dashboard'));
+        $this->assertFalse($this->passwordExpiryServiceMock->isLockedRoute('user_dashboard'));
+    }
+
+    public function testIsRouteExcludedMatchesMixedLiteralsAndPatterns(): void
+    {
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->andReturn($this->userMock);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->addEntity(
+            new PasswordExpiryConfiguration(
+                $this->userMock::class,
+                90,
+                ['lock'],
+                ['exact_logout', 'prefix_*', '~^api_~'],
+                'reset_password',
+            ),
+        );
+
+        $this->assertTrue($this->passwordExpiryServiceMock->isRouteExcluded('exact_logout'));
+        $this->assertTrue($this->passwordExpiryServiceMock->isRouteExcluded('prefix_foo'));
+        $this->assertTrue($this->passwordExpiryServiceMock->isRouteExcluded('api_v1'));
+        $this->assertFalse($this->passwordExpiryServiceMock->isRouteExcluded('other'));
+    }
+
+    public function testGetResetPasswordRouteNameResolvesFirstAlphabeticalMatchFromRouter(): void
+    {
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->andReturn($this->userMock);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
+
+        $collection = new RouteCollection();
+        $collection->add('z_reset_password', new Route('/z'));
+        $collection->add('app_reset_password', new Route('/a'));
+
+        $routerMock = Mockery::mock(RouterInterface::class);
+        $routerMock->shouldReceive('getRouteCollection')->andReturn($collection);
+
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $routerMock);
+        $service->addEntity(
+            new PasswordExpiryConfiguration(
+                $this->userMock::class,
+                90,
+                [],
+                [],
+                'fallback_reset',
+                '*_reset_password',
+            ),
+        );
+
+        $this->assertSame('app_reset_password', $service->getResetPasswordRouteName());
+    }
+
+    public function testGetResetPasswordRouteNameFallsBackWhenRouterMissing(): void
+    {
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->andReturn($this->userMock);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
+
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null);
+        $service->addEntity(
+            new PasswordExpiryConfiguration(
+                $this->userMock::class,
+                90,
+                [],
+                [],
+                'fallback_reset',
+                '~app_.*~',
+            ),
+        );
+
+        $this->assertSame('fallback_reset', $service->getResetPasswordRouteName());
+    }
+
+    public function testGetResetPasswordRouteNameFallsBackWhenPatternMatchesNothing(): void
+    {
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->andReturn($this->userMock);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
+
+        $collection = new RouteCollection();
+        $collection->add('only_login', new Route('/login'));
+
+        $routerMock = Mockery::mock(RouterInterface::class);
+        $routerMock->shouldReceive('getRouteCollection')->andReturn($collection);
+
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, $routerMock);
+        $service->addEntity(
+            new PasswordExpiryConfiguration(
+                $this->userMock::class,
+                90,
+                [],
+                [],
+                'fallback_reset',
+                'missing_*',
+            ),
+        );
+
+        $this->assertSame('fallback_reset', $service->getResetPasswordRouteName());
+    }
 }
+

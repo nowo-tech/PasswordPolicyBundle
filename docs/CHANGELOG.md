@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[0.0.11] - 2026-04-15](#0011---2026-04-15)
 - [[0.0.10] - 2026-04-15](#010---2026-04-15)
 - [[0.0.9] - 2026-03-16](#009---2026-03-16)
 - [[0.0.8] - 2025-03-11](#008---2025-03-11)
@@ -220,6 +221,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [0.0.11] - 2026-04-15
+
+### Added
+
+- **Route name patterns**: `notified_routes` and `excluded_notified_routes` accept literal names, globs (`*`, `?`), or delimited PCRE (`~…~`, `#…#`, `/…/`). Optional `reset_password_route_pattern` resolves the reset route from the router (first alphabetical match among registered route names; fallback to `reset_password_route_name`). See [CONFIGURATION.md](CONFIGURATION.md#route-name-patterns).
+- **`PasswordExpiryServiceInterface::isRouteExcluded()`**: Exposes whether the current route matches any `excluded_notified_routes` entry (used by the expiry listener).
+
+### Changed
+
+- **Documentation**: [README.md](../README.md) and [CONFIGURATION.md](CONFIGURATION.md) describe route patterns, reset route resolution, and duplicate-route validation when using patterns across multiple entities.
 
 ## [0.0.2] - 2025-12-16
 

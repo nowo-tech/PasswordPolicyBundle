@@ -67,9 +67,10 @@ Each entity that implements `HasPasswordPolicyInterface` must be configured unde
 | `password_history_field` | `string` | `'passwordHistory'` | The name of the password history collection field in the entity. This should be a OneToMany or ManyToMany relationship to a PasswordHistoryInterface entity. |
 | `passwords_to_remember` | `int` | `3` | The maximum number of previous passwords to keep in history. When this limit is exceeded, the oldest passwords are automatically removed. |
 | `expiry_days` | `int` | `90` | Number of days after which a password expires. After this period, users will be notified or redirected to change their password. |
-| `reset_password_route_name` | `string` | **required** | The route name for password reset. This route will be used when `redirect_on_expiry` is enabled. Must be a valid route name in your application. |
-| `notified_routes` | `array` | `[]` | List of route names where users will be notified if their password is expired or about to expire. The expiry listener will check these routes and show flash messages. |
-| `excluded_notified_routes` | `array` | `[]` | List of route names excluded from password expiry checks. Useful for excluding login, logout, or password reset routes to prevent redirect loops. |
+| `reset_password_route_name` | `string` | **required** | Fallback route name used when generating the reset URL (required for backward compatibility). When `reset_password_route_pattern` is set and resolves a name from the router, that name is used instead. |
+| `reset_password_route_pattern` | `string` \| `null` | `null` | Optional pattern to select the reset route name from the application router: **first match in alphabetical order** among registered route names. Same syntax as entries in `notified_routes` (see [Route name patterns](#route-name-patterns)). If unset or no match, `reset_password_route_name` is used. |
+| `notified_routes` | `array` | `[]` | Entries where expiry is enforced (literals or patterns; see [Route name patterns](#route-name-patterns)). The listener compares the current request route name (`_route`) against each entry. |
+| `excluded_notified_routes` | `array` | `[]` | Entries where expiry handling is skipped if the current route matches any of them (literals or patterns). Use for login, logout, API auth, or routes that would cause redirect loops. |
 
 ### Expiry Listener Configuration
 
@@ -112,9 +113,21 @@ The expiry listener checks on each request:
 1. Calculates days since last password change
 2. Compares with configured `expiry_days`
 3. Shows flash message with configured text
-4. If `redirect_on_expiry` is `true`, redirects to `reset_password_route_name` automatically
+4. If `redirect_on_expiry` is `true`, redirects to the resolved reset route (see `reset_password_route_pattern` and `reset_password_route_name`)
 
 **Note**: By default, only a flash message is shown. To enable automatic redirection, set `redirect_on_expiry: true` in the configuration.
+
+#### Route name patterns
+
+Each entry in `notified_routes`, `excluded_notified_routes`, and optional `reset_password_route_pattern` can be:
+
+1. **Literal** — exact match on the Symfony route name (same as before).
+2. **Glob** — if the entry contains `*` or `?`, matching uses PHP `fnmatch()` against the route name (e.g. `admin_*`, `app_*_show`).
+3. **PCRE** — if the entry starts and ends with the same delimiter (`~`, `#`, or `/`), it is passed to `preg_match()` against the route name (e.g. `~^app_operator\.~` for routes like `app_operator.dashboard`).
+
+**Evaluation order in the listener**: the request must match a **notified** entry (`isLockedRoute`) before expiry logic runs. If the route is also **excluded**, expiry actions (flash, redirect) are not applied. **Exhaustive** listing of routes is no longer required when a prefix or naming convention applies.
+
+**Reset route resolution** (`reset_password_route_pattern`): when set, the bundle loads all route names from `RouterInterface`, sorts them alphabetically, and picks the **first** name that matches the pattern. If none match, or the router is unavailable, the URL is generated with `reset_password_route_name`.
 
 **Important**: The bundle uses Doctrine `onFlush` event. Any entity changes after password history recalculation will not be persisted.
 
@@ -202,9 +215,11 @@ The bundle supports configuring multiple entities with different password polici
 
 1. **Unique Routes**: Each entity must have a unique `reset_password_route_name`. The bundle validates this at configuration time and will throw an error if duplicates are found.
 
-2. **Route Conflicts**: While `notified_routes` can overlap between entities, it's recommended to use entity-specific routes or properly configure `excluded_notified_routes` to avoid conflicts.
+2. **Duplicate `notified_routes` across entities**: Literals must not be duplicated unless the same literal appears in `excluded_notified_routes` for both entities. Entries that are **glob or regex patterns** (wildcards or delimited PCRE) are **not** checked for duplicate literals across entities, because overlap can only be approximated at runtime.
 
-3. **Entity Matching**: The bundle automatically matches the current authenticated user to the correct entity configuration based on the user's class.
+3. **Route Conflicts**: While `notified_routes` can overlap between entities, it's recommended to use entity-specific routes or properly configure `excluded_notified_routes` to avoid conflicts.
+
+4. **Entity Matching**: The bundle automatically matches the current authenticated user to the correct entity configuration based on the user's class.
 
 ### Example: Multiple Entities
 

@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 0.0.11](#upgrading-to-0011)
   - [Upgrading to 0.0.10](#upgrading-to-0010)
   - [Upgrading to 0.0.9](#upgrading-to-009)
   - [Upgrading to 0.0.8](#upgrading-to-008)
@@ -31,6 +32,41 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 0.0.11
+
+**Release Date**: 2026-04-15
+
+#### What's New
+
+- **Route name patterns**: You can use globs (`*`, `?`) or delimited PCRE (`~…~`, `#…#`, `/…/`) in `notified_routes` and `excluded_notified_routes` instead of listing every route name. Optional `reset_password_route_pattern` picks the reset route name from the application router (first match in alphabetical order; see [CONFIGURATION.md](CONFIGURATION.md#route-name-patterns)).
+- **Configuration validation**: Invalid PCRE patterns in those fields fail at compile time. Duplicate `notified_routes` checks across multiple entities ignore **pattern-like** entries (wildcards or delimited regex), because overlap is only meaningful at runtime.
+
+#### Breaking Changes
+
+None for normal applications using the bundle’s services. If you maintain a **custom implementation** of `PasswordExpiryServiceInterface` (e.g. in tests), add `isRouteExcluded(string $routeName, ?string $entityClass = null): bool` to match the interface.
+
+#### Configuration Changes
+
+Optional. You can keep existing YAML-only lists of literal route names; behaviour is unchanged. To adopt patterns, see [CONFIGURATION.md](CONFIGURATION.md#route-name-patterns).
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Run your test suite.
+
+---
 
 ### Upgrading to 0.0.10
 
@@ -557,6 +593,8 @@ If you encounter issues during upgrade:
 
 | Bundle Version | Symfony Version | PHP Version |
 |---------------|-----------------|-------------|
+| 0.0.11        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
+| 0.0.10        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.6         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.5         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.4         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |

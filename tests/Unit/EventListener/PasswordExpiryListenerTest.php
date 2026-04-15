@@ -93,9 +93,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn(['/excluded-1', '/excluded-2']);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();
@@ -160,17 +161,13 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('excluded-2')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn(['excluded-1', 'excluded-2']);
-
-        // The code checks isPasswordExpired before checking if route is excluded
-        // So we need to allow it to be called, but since the route is excluded,
-        // the condition `!in_array($route, $excludeRoutes) && $isPasswordExpired` will be false
-        // So isPasswordExpired can be called but the result doesn't matter
+                                        ->with('excluded-2')
+                                        ->andReturn(true);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
-                                        ->andReturn(false);
+                                        ->andReturn(true);
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
@@ -196,9 +193,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn(['excluded-1', 'excluded-2']);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnFalse();
@@ -282,9 +280,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn([]);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();
@@ -352,7 +351,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $responseEventMock->shouldReceive('getRequest')->andReturn($requestMock);
 
         $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')->once()->with('route')->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')->once()->andReturn([]);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')->once()->with('route')->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')->once()->andReturnTrue();
         $this->passwordExpiryServiceMock->shouldReceive('getResetPasswordRouteName')->once()->andReturn('reset_password');
 
@@ -413,9 +412,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn([]);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();
@@ -566,9 +566,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn([]);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();
@@ -626,9 +627,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn([]);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();
@@ -743,9 +745,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn([]);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();
@@ -868,9 +871,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->with('route')
                                         ->andReturn(true);
-        $this->passwordExpiryServiceMock->shouldReceive('getExcludedRoutes')
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
                                         ->once()
-                                        ->andReturn([]);
+                                        ->with('route')
+                                        ->andReturn(false);
         $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
                                         ->once()
                                         ->andReturnTrue();

@@ -42,6 +42,11 @@ interface PasswordExpiryServiceInterface
     public function isLockedRoute(string $routeName, ?string $entityClass = null): bool;
 
     /**
+     * Whether the route is excluded from expiry checks (literal or pattern match).
+     */
+    public function isRouteExcluded(string $routeName, ?string $entityClass = null): bool;
+
+    /**
      * Gets the reset password route name for the specified entity class.
      *
      * @param string|null $entityClass The entity class name. If null, uses the current user's class

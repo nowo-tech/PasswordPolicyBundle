@@ -161,11 +161,11 @@ The bundle uses Doctrine lifecycle events to create password history and set las
 
 ### Password Expiry
 
-Expiry works by checking the last password change on **notified** routes, excluding routes listed in `excluded_notified_routes`:
+Expiry works by checking the last password change on **notified** routes (each entry can be a literal route name, a glob, or a regex; see [docs/CONFIGURATION.md](docs/CONFIGURATION.md)), excluding routes listed in `excluded_notified_routes` (same matching rules):
 
 1. On each main request to a **locked** (notified) route, the bundle checks if the password has expired
 2. If expired, a flash message is shown (with optional translation via `expiry_listener.error_msg`)
-3. If `expiry_listener.redirect_on_expiry` is **true**, the user is **redirected** to the entity’s **`reset_password_route_name`** (not the deprecated `lock_route`)
+3. If `expiry_listener.redirect_on_expiry` is **true**, the user is **redirected** to the resolved reset route (`reset_password_route_pattern` if configured, otherwise `reset_password_route_name`; not the deprecated `lock_route`)
 4. If `redirect_on_expiry` is **false**, only the flash is shown — the request continues (adjust routes/notifications to match your UX)
 
 **Important**: The library uses Doctrine lifecycle events (`onFlush`) to create password history and set last password change. You must be aware that any entity changes after the recalculation will not be persisted to the database.
@@ -198,13 +198,14 @@ The bundle prevents users from reusing old passwords and can optionally detect p
 | `password_history_field` | `string` | `'passwordHistory'` | The password history property name in the entity |
 | `passwords_to_remember` | `int` | `3` | How many previous passwords to track |
 | `expiry_days` | `int` | `90` | Number of days before password expires |
-| `reset_password_route_name` | `string` | **required** | Route name for password reset |
-| `notified_routes` | `array` | `[]` | Routes where users will be notified of expiry |
-| `excluded_notified_routes` | `array` | `[]` | Routes excluded from expiry check |
+| `reset_password_route_name` | `string` | **required** | Fallback route name for password reset (required) |
+| `reset_password_route_pattern` | `string` \| `null` | `null` | Optional pattern to pick the reset route from the router (first match, alphabetical order); see [CONFIGURATION.md](docs/CONFIGURATION.md) |
+| `notified_routes` | `array` | `[]` | Route names or patterns where expiry is enforced |
+| `excluded_notified_routes` | `array` | `[]` | Route names or patterns excluded from expiry handling |
 | `detect_password_extensions` | `bool` | `false` | Enable detection of password extensions (e.g., "password123" is extension of "password") |
 | `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
 | `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
-| `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to **`reset_password_route_name`** when password is expired |
+| `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to the resolved reset route when password is expired |
 | `expiry_listener.lock_route` | `string` | - | **Deprecated** — use `redirect_on_expiry` + `reset_password_route_name` |
 | `expiry_listener.error_msg.text` | `array` or `string` | keys `nowo_password_policy.title` / `.message` (defaults) | Flash title/message (supports translation keys) |
 | `expiry_listener.error_msg.type` | `string` | `'error'` | Flash message type |

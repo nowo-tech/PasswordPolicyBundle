@@ -23,6 +23,9 @@ use Symfony\Component\DependencyInjection\Reference;
 use function in_array;
 use function is_string;
 use function sprintf;
+use function str_contains;
+use function strlen;
+use function trim;
 
 /**
  * Dependency injection extension for the Password Policy Bundle.
@@ -68,6 +71,9 @@ class PasswordPolicyExtension extends Extension
         $definition->setArgument('$cache', $cacheService);
         $definition->setArgument('$cacheEnabled', $config['enable_cache'] ?? false);
         $definition->setArgument('$cacheTtl', $config['cache_ttl'] ?? 3600);
+        if ($containerBuilder->has('router')) {
+            $definition->setArgument('$router', new Reference('router'));
+        }
 
         foreach ($config['entities'] as $entityClass => $settings) {
             if (!class_exists($entityClass)) {
@@ -85,6 +91,7 @@ class PasswordPolicyExtension extends Extension
                     if (!is_string($route) || ($route === '' || $route === '0')) {
                         throw new ConfigurationException(sprintf('Invalid notified_route for entity %s: routes must be non-empty strings', $entityClass));
                     }
+                    $this->validateRoutePatternSyntax($route, $entityClass, 'notified_routes');
                 }
             }
 
@@ -94,7 +101,16 @@ class PasswordPolicyExtension extends Extension
                     if (!is_string($route) || ($route === '' || $route === '0')) {
                         throw new ConfigurationException(sprintf('Invalid excluded_notified_route for entity %s: routes must be non-empty strings', $entityClass));
                     }
+                    $this->validateRoutePatternSyntax($route, $entityClass, 'excluded_notified_routes');
                 }
+            }
+
+            $resetPattern = $settings['reset_password_route_pattern'] ?? null;
+            if ($resetPattern !== null && $resetPattern !== '' && $resetPattern !== '0') {
+                if (!is_string($resetPattern)) {
+                    throw new ConfigurationException(sprintf('reset_password_route_pattern for entity %s must be a string', $entityClass));
+                }
+                $this->validateRoutePatternSyntax($resetPattern, $entityClass, 'reset_password_route_pattern');
             }
 
             $this->addEntityListener($containerBuilder, $entityClass, $settings, $config);
@@ -106,9 +122,10 @@ class PasswordPolicyExtension extends Extension
             $passwordExpiryConfig->setArguments([
                 $entityClass,
                 $settings['expiry_days'],
-                $settings['notified_routes'],
-                $settings['excluded_notified_routes'],
+                $settings['notified_routes'] ?? [],
+                $settings['excluded_notified_routes'] ?? [],
                 $settings['reset_password_route_name'],
+                $settings['reset_password_route_pattern'] ?? null,
             ]);
 
             $definition->addMethodCall('addEntity', [$passwordExpiryConfig]);
@@ -184,6 +201,10 @@ class PasswordPolicyExtension extends Extension
             // Check notified_routes for duplicates (warn but allow if properly excluded)
             $notifiedRoutes = $settings['notified_routes'] ?? [];
             foreach ($notifiedRoutes as $route) {
+                if ($this->isRouteEntryPatternLike($route)) {
+                    continue;
+                }
+
                 if (isset($notifiedRouteMap[$route]) && $notifiedRouteMap[$route] !== $entityClass) {
                     // Check if the route is excluded in the other entity
                     $otherEntityClass      = $notifiedRouteMap[$route];
@@ -292,5 +313,49 @@ class PasswordPolicyExtension extends Extension
     public function getAlias(): string
     {
         return Configuration::ALIAS;
+    }
+
+    /**
+     * Validates delimited PCRE patterns used in route entries (same rules as RouteNameMatcher).
+     *
+     * @throws ConfigurationException When the pattern is not valid PCRE
+     */
+    private function validateRoutePatternSyntax(string $value, string $entityClass, string $fieldLabel): void
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return;
+        }
+
+        $len = strlen($value);
+        if ($len < 3) {
+            return;
+        }
+
+        $first = $value[0];
+        if (($first === '~' || $first === '#' || $first === '/') && $value[$len - 1] === $first) {
+            if (@preg_match($value, '') === false) {
+                throw new ConfigurationException(sprintf('Invalid PCRE pattern in %s for entity %s', $fieldLabel, $entityClass));
+            }
+        }
+    }
+
+    /**
+     * Whether the configuration entry is a glob or regex (not validated as duplicate literal across entities).
+     */
+    private function isRouteEntryPatternLike(string $route): bool
+    {
+        $route = trim($route);
+        if ($route === '') {
+            return false;
+        }
+
+        $len = strlen($route);
+        $first = $route[0];
+        if ($len >= 3 && ($first === '~' || $first === '#' || $first === '/') && $route[$len - 1] === $first) {
+            return true;
+        }
+
+        return str_contains($route, '*') || str_contains($route, '?');
     }
 }

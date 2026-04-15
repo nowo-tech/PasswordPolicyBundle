@@ -8,12 +8,15 @@ use Carbon\Carbon;
 use DateTime;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
+use Nowo\PasswordPolicyBundle\Util\RouteNameMatcher;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
-use function in_array;
+use function array_keys;
 use function is_object;
+use function sort;
 use function sprintf;
 
 /**
@@ -42,6 +45,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      *
      * @param TokenStorageInterface $tokenStorage The token storage service for accessing the current user
      * @param UrlGeneratorInterface $urlGenerator The URL generator service for generating routes
+     * @param RouterInterface|null $router The router (optional; used to resolve reset_password_route_pattern)
      * @param CacheItemPoolInterface|null $cache The cache pool (optional, only used if cache is enabled)
      * @param bool $cacheEnabled Whether caching is enabled
      * @param int $cacheTtl Cache time-to-live in seconds
@@ -49,6 +53,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     public function __construct(
         public TokenStorageInterface $tokenStorage,
         public UrlGeneratorInterface $urlGenerator,
+        private readonly ?RouterInterface $router = null,
         private readonly ?CacheItemPoolInterface $cache = null,
         bool $cacheEnabled = false,
         private readonly int $cacheTtl = 3600
@@ -175,8 +180,27 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     public function isLockedRoute(string $routeName, ?string $entityClass = null): bool
     {
         $lockedRoutes = $this->getLockedRoutes(entityClass: $entityClass);
+        foreach ($lockedRoutes as $pattern) {
+            if (RouteNameMatcher::matches($pattern, $routeName)) {
+                return true;
+            }
+        }
 
-        return in_array(needle: $routeName, haystack: $lockedRoutes);
+        return false;
+    }
+
+    /**
+     * Whether the current route is excluded from expiry handling (literal or pattern).
+     */
+    public function isRouteExcluded(string $routeName, ?string $entityClass = null): bool
+    {
+        foreach ($this->getExcludedRoutes($entityClass) as $pattern) {
+            if (RouteNameMatcher::matches($pattern, $routeName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -190,7 +214,40 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     {
         $entityClass = $this->prepareEntityClass(entityClass: $entityClass);
 
-        return isset($this->entities[$entityClass]) ? $this->entities[$entityClass]->getResetPasswordRouteName() : '';
+        if (!isset($this->entities[$entityClass])) {
+            return '';
+        }
+
+        $config = $this->entities[$entityClass];
+        $fallback = $config->getResetPasswordRouteName();
+        $pattern = $config->getResetPasswordRoutePattern();
+        if ($pattern === null || $pattern === '' || $pattern === '0') {
+            return $fallback;
+        }
+
+        $resolved = $this->resolveResetRouteNameFromPattern($pattern);
+
+        return $resolved ?? $fallback;
+    }
+
+    /**
+     * First registered route name that matches the pattern, in alphabetical order (deterministic).
+     */
+    private function resolveResetRouteNameFromPattern(string $pattern): ?string
+    {
+        if ($this->router === null) {
+            return null;
+        }
+
+        $names = array_keys($this->router->getRouteCollection()->all());
+        sort($names, SORT_STRING);
+        foreach ($names as $name) {
+            if (RouteNameMatcher::matches($pattern, $name)) {
+                return $name;
+            }
+        }
+
+        return null;
     }
 
     /**

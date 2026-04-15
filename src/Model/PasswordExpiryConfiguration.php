@@ -26,9 +26,10 @@ class PasswordExpiryConfiguration
      *
      * @param string $class The fully qualified class name of the entity
      * @param int $expiryDays The number of days before a password expires
-     * @param array<int, string> $lockRoutes Array of route names that are locked when password expires
-     * @param array<int, string> $excludedRoutes Array of route names excluded from expiry checks
-     * @param string $resetPasswordRouteName The route name for password reset
+     * @param array<int, string> $lockRoutes Route patterns or literal names for notified (locked) routes
+     * @param array<int, string> $excludedRoutes Route patterns or literal names excluded from expiry checks
+     * @param string $resetPasswordRouteName Fallback route name for password reset (required for BC)
+     * @param string|null $resetPasswordRoutePattern Optional pattern to resolve the reset route name from the router (first match, alphabetical order)
      *
      * @throws RuntimeException If the entity class does not implement HasPasswordPolicyInterface
      */
@@ -37,7 +38,8 @@ class PasswordExpiryConfiguration
         private readonly int $expiryDays,
         private readonly array $lockRoutes = [],
         private readonly array $excludedRoutes = [],
-        private readonly string $resetPasswordRouteName = ''
+        private readonly string $resetPasswordRouteName = '',
+        private readonly ?string $resetPasswordRoutePattern = null,
     ) {
         if (!is_a($class, HasPasswordPolicyInterface::class, true)) {
             throw new RuntimeException(sprintf('Entity %s must implement %s interface', $class, HasPasswordPolicyInterface::class));
@@ -94,5 +96,14 @@ class PasswordExpiryConfiguration
     public function getResetPasswordRouteName(): string
     {
         return $this->resetPasswordRouteName;
+    }
+
+    /**
+     * Optional pattern used with the router to resolve the actual reset route name.
+     * When null or empty, only {@see getResetPasswordRouteName()} is used.
+     */
+    public function getResetPasswordRoutePattern(): ?string
+    {
+        return $this->resetPasswordRoutePattern;
     }
 }

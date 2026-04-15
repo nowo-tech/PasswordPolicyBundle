@@ -27,6 +27,22 @@ final class PasswordExpiryConfigurationTest extends UnitTestCase
         $this->assertSame(['dashboard', 'profile'], $config->getLockRoutes());
         $this->assertSame(['login', 'logout'], $config->getExcludedRoutes());
         $this->assertSame('app_reset_password', $config->getResetPasswordRouteName());
+        $this->assertNull($config->getResetPasswordRoutePattern());
+    }
+
+    public function testOptionalResetPasswordRoutePattern(): void
+    {
+        $config = new PasswordExpiryConfiguration(
+            HasPasswordPolicyInterface::class,
+            60,
+            [],
+            [],
+            'fallback_reset',
+            'app_reset_*',
+        );
+
+        $this->assertSame('fallback_reset', $config->getResetPasswordRouteName());
+        $this->assertSame('app_reset_*', $config->getResetPasswordRoutePattern());
     }
 
     public function testConstructorWithInvalidEntityThrows(): void

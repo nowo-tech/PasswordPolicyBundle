@@ -18,7 +18,6 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-use function in_array;
 use function is_array;
 use function is_object;
 
@@ -92,10 +91,9 @@ class PasswordExpiryListener
             return;
         }
 
-        $excludeRoutes     = $this->passwordExpiryService->getExcludedRoutes();
         $isPasswordExpired = $this->passwordExpiryService->isPasswordExpired();
 
-        if (!in_array($route, $excludeRoutes) && $isPasswordExpired) {
+        if (!$this->passwordExpiryService->isRouteExcluded($route) && $isPasswordExpired) {
             $token = $this->tokenStorage->getToken();
             $user  = $token?->getUser();
             if (!is_object($user)) {
