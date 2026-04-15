@@ -6,6 +6,8 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 0.0.10](#upgrading-to-0010)
+  - [Upgrading to 0.0.9](#upgrading-to-009)
   - [Upgrading to 0.0.8](#upgrading-to-008)
   - [Upgrading to 0.0.6](#upgrading-to-006)
   - [Upgrading to 0.0.5](#upgrading-to-005)
@@ -30,6 +32,42 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
+### Upgrading to 0.0.10
+
+**Release Date**: 2026-04-15
+
+#### What's New
+
+- **Tooling & docs**: GitHub templates (`CODEOWNERS`, PR template, security policy), `sync-releases` workflow, `validate-translations` Makefile target, translation override notes in [USAGE.md](USAGE.md), and README/test wording aligned with project standards.
+- **Demos**: Stricter `.env.example` / `.gitignore` layout; per-demo `PORT` and `DEFAULT_URI`; MySQL only on the Docker network (no host port mapping). Demo `release-check` runs `update-bundle-all` before tests.
+- **Developer experience**: `make setup-hooks` installs a real `pre-commit` file under `.git/hooks/`; `php-coverage-percent.sh` works with colored PHPUnit output.
+
+#### Breaking Changes
+
+None for bundle runtime configuration. If you maintain a **fork of the demos**, refresh `.env` / `.env.example` from this release and remove any reliance on exposing MySQL on the host.
+
+#### Configuration Changes
+
+None required for `nowo_password_policy` YAML in your application.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Run your test suite.
+
+---
+
 ### Upgrading to 0.0.9
 
 **Release Date**: 2026-03-16
@@ -40,7 +78,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 - **Symfony Events**: New bundle events (`PasswordExpiredEvent`, `PasswordHistoryCreatedEvent`, `PasswordChangedEvent`, `PasswordReuseAttemptedEvent`) for extending behaviour in your application.
 - **Performance Cache**: Optional cache for password expiry checks (using `cache.app`) with TTL and automatic invalidation when the password changes.
 - **Multiple Entities Validation**: Stronger validation of `reset_password_route_name`, notified routes and duplicate route conflicts when configuring multiple entities.
-- **Documentation & Coverage**: Updated docs (configuration, events, coverage analysis) and **100% code coverage** across all bundle classes.
+- **Documentation & coverage**: Updated docs (configuration, events) and **100% line coverage** across bundle `src/` classes.
 
 #### Breaking Changes
 

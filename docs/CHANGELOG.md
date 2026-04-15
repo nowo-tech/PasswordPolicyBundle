@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[0.0.10] - 2026-04-15](#010---2026-04-15)
 - [[0.0.9] - 2026-03-16](#009---2026-03-16)
 - [[0.0.8] - 2025-03-11](#008---2025-03-11)
 - [[0.0.6] - 2025-03-10](#006---2025-03-10)
@@ -16,6 +17,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[Unreleased]](#unreleased)
 - [[0.0.2] - 2025-12-16](#002---2025-12-16)
 - [[0.0.1] - 2025-12-15](#001---2025-12-15)
+
+## [0.0.10] - 2026-04-15
+
+### Added
+
+- **Repository metadata**: `.github/CODEOWNERS`, pull request template, `.github/SECURITY.md`, and `sync-releases.yml` workflow to align GitHub releases with tags.
+- **Makefile**: `validate-translations` target to validate `src/Resources/translations/*.yaml` when running QA locally.
+- **Documentation**: Translation override procedure for domain `PasswordPolicyBundle` in [USAGE.md](USAGE.md); table of contents updates for long docs (`CHANGELOG.md`, `DEMO-FRANKENPHP.md`).
+
+### Changed
+
+- **Demos**: `.env.example` uses commented variables per Symfony-style templates; distinct `PORT` / `DEFAULT_URI` per demo; demo `.gitignore` grouped by category (local env, dependencies, archives). MySQL services no longer publish host ports (access via Docker network only).
+- **Demo orchestration**: Root `demo/Makefile` runs `update-bundle-all` before `release-check` test and verify steps.
+- **README**: Call-to-action uses the exact phrase `Found this useful?`; tests section lists PHP coverage and marks TS/JS and Python as N/A where applicable.
+- **`make setup-hooks`**: Installs `pre-commit` by copying `.githooks/pre-commit` to `.git/hooks/pre-commit` with execute permission.
+
+### Fixed
+
+- **Coverage script**: `.scripts/php-coverage-percent.sh` is executable and parses PHPUnit `Lines:` summary reliably (ANSI codes, spacing).
+- **Tests**: `PasswordPolicyBundleTest` relocated to `tests/Unit/`; unit test fixes for PHP 8.1+ `readonly` properties in mocks.
 
 ## [0.0.9] - 2026-03-16
 
@@ -199,145 +220,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
-
-### Added
-- **Logging System**: Complete logging implementation for important bundle events
-  - Integration with Symfony Logger (LoggerInterface)
-  - Configurable logging with levels (debug, info, notice, warning, error)
-  - Optional logging (can be disabled with `enable_logging: false`)
-  - Logged events:
-    - Password expiry detection (with user information and route)
-    - Password reuse attempt (with user information and days since use)
-    - Successful password change (with information about removed entries)
-    - Route generation errors
-  - Configuration in `nowo_password_policy.yaml`:
-    ```yaml
-    nowo_password_policy:
-        enable_logging: true
-        log_level: info
-    ```
-- **Symfony Events for Extensibility**: Complete custom events system
-  - `PasswordExpiredEvent` - Dispatched when password expiry is detected
-  - `PasswordHistoryCreatedEvent` - Dispatched when password history entry is created
-  - `PasswordChangedEvent` - Dispatched when password is changed
-  - `PasswordReuseAttemptedEvent` - Dispatched when password reuse is attempted
-  - Developers can listen to these events to extend functionality
-  - Optional EventDispatcher (doesn't break if not available)
-  - Usage example:
-    ```php
-    use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
-    
-    #[AsEventListener]
-    public function onPasswordExpired(PasswordExpiredEvent $event): void
-    {
-        // Custom logic when password expires
-    }
-    ```
-- **Configuration Documentation**: Enhanced configuration definitions with descriptive information
-  - Added `->info()` descriptions to all configuration nodes in `Configuration.php`
-  - Each configuration option now has clear, helpful descriptions explaining its purpose
-  - Improves developer experience when configuring the bundle
-  - Descriptions are visible in IDE autocomplete and configuration validation
-- **Cache System for Performance**: Implemented caching for password expiry checks
-  - Cache expiry status per user to improve performance
-  - Automatic cache invalidation when password changes
-  - Configurable cache TTL (default: 3600 seconds / 1 hour)
-  - Optional cache (disabled by default, enable with `enable_cache: true`)
-  - Integration with Symfony Cache Component (`cache.app` service)
-  - Smart cache key includes user ID, class, and password change timestamp
-  - Configuration:
-    ```yaml
-    nowo_password_policy:
-        enable_cache: true
-        cache_ttl: 3600
-    ```
-- **Multiple Entities Support**: Enhanced validation and documentation for multiple entities
-  - Automatic validation of duplicate routes across entities
-  - Validates unique `reset_password_route_name` per entity
-  - Validates `notified_routes` for conflicts
-  - Clear error messages indicating which entities have conflicts
-  - Comprehensive documentation with examples for different user types (User, Admin, ApiUser)
-  - Best practices guide for configuring multiple entities
-  - Validation occurs at container compilation time
-
-### Fixed
-- **Critical Bug Fixes**: Fixed several critical issues found during bundle review
-  - **NullPointerException Prevention**: Added null check for `$this->entities` in `PasswordExpiryService::isPasswordExpired()` to prevent errors when called before entities are configured
-  - **Route Null Handling**: Added null check for route name in `PasswordExpiryListener::onKernelRequest()` to prevent errors with anonymous or unnamed routes
-  - **Password History Cleanup Bug**: Fixed `PasswordHistoryService::getHistoryItemsForCleanup()` to correctly return removed items instead of empty array
-  - **Password Validation Robustness**: Improved `PasswordPolicyService::isPasswordValid()` with better error handling and fallback to `password_verify()` when cloning fails
-  - **Future Date Validation**: Added validation to skip password expiry check if `passwordChangedAt` is in the future (data error handling)
-  - **Code Cleanup**: Removed unused `PasswordPolicy.php` empty class file
-  - **Import Cleanup**: Removed unused `SessionInterface` import from `PasswordExpiryListener`
-
-### Added
-- **Critical Improvements - Phase 1**: Implemented critical functionality improvements
-  - **`getResetPasswordRouteName()` Implementation**: Complete implementation of reset password route name retrieval
-    - Added `resetPasswordRouteName` property to `PasswordExpiryConfiguration`
-    - Implemented `getResetPasswordRouteName()` method in `PasswordExpiryService`
-    - Updated interface to support entity class parameter
-    - Added comprehensive tests for the new functionality
-  - **Optional Redirect on Password Expiry**: Enhanced `PasswordExpiryListener` with optional redirection
-    - Added `redirect_on_expiry` configuration option (default: `false`)
-    - When enabled, automatically redirects to reset password route when password expires
-    - Maintains backward compatibility (only shows flash message by default)
-    - Graceful error handling if route doesn't exist
-  - **Configuration Validation**: Improved configuration validation
-    - Validates that `reset_password_route_name` is not empty
-    - Validates that `notified_routes` and `excluded_notified_routes` contain valid strings
-    - Clear error messages for invalid configuration
-    - Validation occurs at container compilation time
-- **PHPDoc Documentation**: Added comprehensive PHPDoc comments in English to all classes, interfaces, traits, and methods
-  - Complete class-level documentation describing purpose and functionality
-  - Method-level documentation with parameter and return type descriptions
-  - Property documentation with type information
-  - Improved code maintainability and IDE support
-- **Demo Authentication System**: Complete login system implemented in all demo projects
-  - Symfony Security configuration with form login
-  - User authentication with database-backed user provider
-  - Login and logout functionality
-  - User session management with visual indicators
-  - Login page with demo credentials information
-  - Flash messages showing available test users and their passwords
-- **Demo Password Expiry Notifications**: Enhanced demo projects with visual password expiry information
-  - Prominent banners showing password expiry status (expired, expiring soon, warning)
-  - Detailed expiry information in user list with days remaining
-  - Informative sections explaining password expiry policy
-  - Pre-configured demo users with different expiry states for testing
-  - Flash messages informing users about test credentials and how to trigger expiry warnings
-- **Demo Database Initialization**: Improved database setup in demos
-  - `init.sql` files now include initial data with password history
-  - Automatic password history creation for demo users
-  - Migrations updated to use `IF NOT EXISTS` for compatibility with init scripts
-  - Dynamic date calculations for realistic expiry scenarios
-  - Bcrypt password hashes documented with corresponding plain passwords
-
-### Changed
-- **PasswordExpiryListener Modernization**: Updated to use `RequestStack` instead of deprecated `SessionInterface`
-  - Better compatibility with modern Symfony versions (6, 7, 8)
-  - Improved session handling and request management
-  - Updated service configuration and dependency injection
-- **Demo UI Improvements**: Standardized layout and visual consistency
-  - All containers now use consistent width (1200px max-width)
-  - Unified styling across all demo templates
-  - Improved responsive design with proper box-sizing
-  - Better visual hierarchy and information display
-  - Fixed banner alignment issues for password expiry messages
-  - Improved flash message display with support for structured messages (title + body)
-- **Code Quality**: Enhanced code documentation and maintainability
-  - All PHP classes now have complete PHPDoc comments
-  - Improved type hints and documentation
-  - Better IDE autocomplete and static analysis support
-- **Test Suite Improvements**: Fixed and updated test cases
-  - Corrected `PasswordExpiryServiceTest` to use proper array format for `lockRoutes`
-  - Replaced non-existent `testGenerateLockedRoute()` with `testGetLockedRoutes()` and `testIsLockedRoute()`
-  - All tests now properly aligned with current implementation
-
-### Documentation
-- **README**: Clarified that **`nowo_password_policy.entities` is required**; corrected password-expiry behaviour (**`redirect_on_expiry`** + **`reset_password_route_name`**, not `lock_route`); expanded options table (`redirect_on_expiry`, `enable_cache`, `cache_ttl`); noted Doctrine is an app dependency; FrankenPHP demos use **`Caddyfile.dev`** without worker when `APP_ENV=dev`.
-- **demo/README.md**: FrankenPHP description aligned with dev **Caddyfile.dev** vs prod **worker**.
-- **DEMO-FRANKENPHP.md**: `bundles.php` example aligned with **demo/symfony8** (Doctrine, Security, Migrations, Fixtures, Twig Inspector).
-- **INSTALLATION.md**: Clarified that **`entities`** configuration is required, not optional.
 
 ## [0.0.2] - 2025-12-16
 
