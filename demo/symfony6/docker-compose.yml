@@ -24,6 +24,10 @@ services:
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}?serverVersion=8.0
       - XDEBUG_MODE=${XDEBUG_MODE:-develop}
       - XDEBUG_CONFIG=client_host=${XDEBUG_CLIENT_HOST:-host.docker.internal},client_port=${XDEBUG_CLIENT_PORT:-9003}
+    # Mitigate Docker/WSL DNS failures resolving repo.packagist.org (composer curl error 6).
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       mysql:
         condition: service_healthy

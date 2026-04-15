@@ -24,22 +24,18 @@ help:
 
 up:
 	@if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || true; fi
-	docker-compose build
 	docker-compose up -d
-	@echo "Waiting for containers..."
-	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do \
-		if docker-compose exec -T php true 2>/dev/null; then break; fi; \
-		sleep 2; \
-		if [ $$i -eq 15 ]; then echo "php container did not become ready"; exit 1; fi; \
-	done
-	docker-compose exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction
+	@echo "Waiting for container to be ready..."
+	@sleep 5
+	@echo "Installing dependencies..."
+	@docker-compose exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction
 	@echo "Setting up database (create, migrations, fixtures)..."
-	docker-compose exec -T php composer database
-	docker-compose exec -T php php bin/console cache:clear
-	@DEFAULT_URI=$$(grep "^DEFAULT_URI=" .env 2>/dev/null | cut -d= -f2- | head -1 || echo "http://localhost:8003"); \
-	echo "Demo ready. Login: admin@example.com / admin123, demo@example.com / demo123, expired@example.com / expired123."; \
-	echo "Demo started at: $$DEFAULT_URI"
-
+	@docker-compose exec -T php composer database
+	@docker-compose exec -T php php bin/console cache:clear
+	@echo "Demo ready. Login: admin@example.com / admin123, demo@example.com / demo123, expired@example.com / expired123."
+	@PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	[ -z "$$PORT" ] && PORT=$$(grep "^PORT=" .env.example 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	echo "Demo started at: http://localhost:$$PORT"
 down:
 	docker-compose down
 
