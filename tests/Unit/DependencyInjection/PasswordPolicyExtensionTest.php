@@ -10,6 +10,7 @@ use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionClass;
+use stdClass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
@@ -340,7 +341,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadInjectsRouterReferenceWhenRouterServiceExists(): void
     {
         $container = new ContainerBuilder();
-        $container->register('router', \stdClass::class);
+        $container->register('router', stdClass::class);
 
         $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
         $configs         = [

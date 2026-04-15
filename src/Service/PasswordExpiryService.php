@@ -19,6 +19,8 @@ use function is_object;
 use function sort;
 use function sprintf;
 
+use const SORT_STRING;
+
 /**
  * Service for handling password expiry checks and route locking.
  *
@@ -218,9 +220,9 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             return '';
         }
 
-        $config = $this->entities[$entityClass];
+        $config   = $this->entities[$entityClass];
         $fallback = $config->getResetPasswordRouteName();
-        $pattern = $config->getResetPasswordRoutePattern();
+        $pattern  = $config->getResetPasswordRoutePattern();
         if ($pattern === null || $pattern === '' || $pattern === '0') {
             return $fallback;
         }

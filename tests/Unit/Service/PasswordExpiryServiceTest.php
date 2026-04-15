@@ -644,4 +644,3 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $this->assertSame('fallback_reset', $service->getResetPasswordRouteName());
     }
 }
-
