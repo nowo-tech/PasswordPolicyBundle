@@ -9,6 +9,7 @@ use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -29,6 +30,12 @@ use function is_object;
  */
 class PasswordExpiryListener
 {
+    /**
+     * Request attribute used to avoid adding duplicate expiry flash messages
+     * when the listener is triggered multiple times within the same request lifecycle.
+     */
+    private const FLASH_ALREADY_ADDED_ATTRIBUTE = '_nowo_password_policy.expiry_flash_added';
+
     /**
      * PasswordExpiryListener constructor.
      *
@@ -85,6 +92,12 @@ class PasswordExpiryListener
             return;
         }
 
+        // Guard against duplicate handling in the same request (FrankenPHP-safe: request-scoped only).
+        // Restrict to concrete Request to keep backward compatibility with test doubles.
+        if ($request::class === Request::class && $this->isExpiryFlashAlreadyHandled($request)) {
+            return;
+        }
+
         $isLockedRoute = $this->passwordExpiryService->isLockedRoute($route);
 
         if (!$isLockedRoute) {
@@ -94,6 +107,10 @@ class PasswordExpiryListener
         $isPasswordExpired = $this->passwordExpiryService->isPasswordExpired();
 
         if (!$this->passwordExpiryService->isRouteExcluded($route) && $isPasswordExpired) {
+            if ($request::class === Request::class) {
+                $this->markExpiryFlashAsHandled($request);
+            }
+
             $token = $this->tokenStorage->getToken();
             $user  = $token?->getUser();
             if (!is_object($user)) {
@@ -170,6 +187,16 @@ class PasswordExpiryListener
                 }
             }
         }
+    }
+
+    private function isExpiryFlashAlreadyHandled(Request $request): bool
+    {
+        return true === $request->attributes->get(self::FLASH_ALREADY_ADDED_ATTRIBUTE, false);
+    }
+
+    private function markExpiryFlashAsHandled(Request $request): void
+    {
+        $request->attributes->set(self::FLASH_ALREADY_ADDED_ATTRIBUTE, true);
     }
 
     /**

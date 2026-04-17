@@ -115,6 +115,51 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->addToAssertionCount(1);
     }
 
+    public function testOnKernelRequestAddsFlashOnlyOncePerRequest(): void
+    {
+        $request = new Request();
+        $request->attributes->set('_route', 'route');
+
+        $responseEventMock = Mockery::mock(RequestEvent::class);
+        $responseEventMock->shouldReceive('isMainRequest')
+                          ->andReturn(true);
+        $responseEventMock->shouldReceive('getRequest')
+                          ->andReturn($request);
+
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')
+                  ->once()
+                  ->andReturn(null);
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->once()
+                               ->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
+                                        ->once()
+                                        ->with('route')
+                                        ->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
+                                        ->once()
+                                        ->with('route')
+                                        ->andReturn(false);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
+                                        ->once()
+                                        ->andReturnTrue();
+
+        $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('add')
+                     ->once()
+                     ->withArgs(['error', 'Your password expired. You need to change it']);
+        $this->sessionMock->shouldReceive('getFlashBag')
+                          ->once()
+                          ->andReturn($flashBagMock);
+
+        $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
+        $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
+
+        $this->addToAssertionCount(1);
+    }
+
     public function testOnKernelRequestAsLockedRoute(): void
     {
         $requestMock    = Mockery::mock(Request::class);
