@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[0.0.13] - 2026-04-17](#0013---2026-04-17)
 - [[0.0.12] - 2026-04-17](#0012---2026-04-17)
 - [[0.0.11] - 2026-04-15](#0011---2026-04-15)
 - [[0.0.10] - 2026-04-15](#010---2026-04-15)
@@ -222,6 +223,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [0.0.13] - 2026-04-17
+
+### Fixed
+
+- **Duplicate expiry flashes across dashboard/API bursts**: `PasswordExpiryListener` now checks existing flash entries (`FlashBag::peek`) before adding a new one, so equivalent PasswordPolicy expiry messages are not duplicated when multiple requests hit in quick succession.
+- **Dedup strategy hardening**: Combined request-scoped guard plus session flash dedup keeps behavior stable with FrankenPHP worker mode while avoiding repeated user-facing notifications.
 
 ## [0.0.12] - 2026-04-17
 
