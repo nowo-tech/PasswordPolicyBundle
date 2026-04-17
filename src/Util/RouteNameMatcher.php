@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Util;
 
+use function strlen;
+
 /**
  * Matches Symfony route names against configuration entries that may be literals,
  * globs (fnmatch), or PCRE patterns (same delimiter at start and end).
@@ -21,12 +23,12 @@ final class RouteNameMatcher
             return false;
         }
 
-        $len = strlen($pattern);
+        $len   = strlen($pattern);
         $first = $pattern[0];
         if ($len >= 3 && ($first === '~' || $first === '#' || $first === '/') && $pattern[$len - 1] === $first) {
             $matched = @preg_match($pattern, $routeName);
 
-            return 1 === $matched;
+            return $matched === 1;
         }
 
         if (str_contains($pattern, '*') || str_contains($pattern, '?')) {

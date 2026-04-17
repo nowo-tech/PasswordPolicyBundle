@@ -350,7 +350,7 @@ class PasswordPolicyExtension extends Extension
             return false;
         }
 
-        $len = strlen($route);
+        $len   = strlen($route);
         $first = $route[0];
         if ($len >= 3 && ($first === '~' || $first === '#' || $first === '/') && $route[$len - 1] === $first) {
             return true;

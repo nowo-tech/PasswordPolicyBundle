@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Util;
 
-use Nowo\PasswordPolicyBundle\Util\RouteNameMatcher;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use Nowo\PasswordPolicyBundle\Util\RouteNameMatcher;
 
 final class RouteNameMatcherTest extends UnitTestCase
 {
