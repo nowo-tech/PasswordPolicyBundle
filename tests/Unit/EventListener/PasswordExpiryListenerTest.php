@@ -102,6 +102,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->andReturnTrue();
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once()
                      ->withArgs(['error', 'Your password expired. You need to change it']);
@@ -147,6 +151,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->andReturnTrue();
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once()
                      ->withArgs(['error', 'Your password expired. You need to change it']);
@@ -155,6 +163,53 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($flashBagMock);
 
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
+        $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testOnKernelRequestDoesNotAddDuplicateFlashWhenAlreadyInSession(): void
+    {
+        $request = new Request();
+        $request->attributes->set('_route', 'route');
+
+        $responseEventMock = Mockery::mock(RequestEvent::class);
+        $responseEventMock->shouldReceive('isMainRequest')
+                          ->andReturn(true);
+        $responseEventMock->shouldReceive('getRequest')
+                          ->andReturn($request);
+
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')
+                  ->once()
+                  ->andReturn(null);
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->once()
+                               ->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')
+                                        ->once()
+                                        ->with('route')
+                                        ->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')
+                                        ->once()
+                                        ->with('route')
+                                        ->andReturn(false);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')
+                                        ->once()
+                                        ->andReturnTrue();
+
+        $existingFlash = 'Your password expired. You need to change it';
+        $flashBagMock  = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([$existingFlash]);
+        $flashBagMock->shouldNotReceive('add');
+        $this->sessionMock->shouldReceive('getFlashBag')
+                          ->once()
+                          ->andReturn($flashBagMock);
+
         $this->passwordExpiryListenerMock->onKernelRequest($responseEventMock);
 
         $this->addToAssertionCount(1);
@@ -337,6 +392,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->andReturn('reset_password');
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once();
         $this->sessionMock->shouldReceive('getFlashBag')
@@ -401,6 +460,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->passwordExpiryServiceMock->shouldReceive('getResetPasswordRouteName')->once()->andReturn('reset_password');
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')->once()->with('error', [])->andReturn([]);
         $flashBagMock->shouldReceive('add')->once();
         $this->sessionMock->shouldReceive('getFlashBag')->once()->andReturn($flashBagMock);
         $this->urlGeneratorMock->shouldReceive('generate')->once()->with('reset_password')->andReturn('/reset-password');
@@ -469,6 +529,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->andReturn('invalid_route');
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once();
         $this->sessionMock->shouldReceive('getFlashBag')
@@ -631,6 +695,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once()
                      ->with('error', ['title' => 'Expired', 'message' => 'Change password']);
@@ -702,6 +770,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once();
         $this->sessionMock->shouldReceive('getFlashBag')
@@ -823,6 +895,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once();
         $this->sessionMock->shouldReceive('getFlashBag')
@@ -949,6 +1025,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')
+                     ->once()
+                     ->with('error', [])
+                     ->andReturn([]);
         $flashBagMock->shouldReceive('add')
                      ->once();
         $this->sessionMock->shouldReceive('getFlashBag')

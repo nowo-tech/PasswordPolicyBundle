@@ -21,6 +21,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 use function is_array;
 use function is_object;
+use function in_array;
 
 /**
  * Event listener for handling password expiry checks on kernel requests.
@@ -150,7 +151,11 @@ class PasswordExpiryListener
                     $translatedMessage = $this->translator->trans($translatedMessage, [], 'PasswordPolicyBundle');
                 }
 
-                $session->getFlashBag()->add($this->errorMessageType, $translatedMessage);
+                $flashBag = $session->getFlashBag();
+                $existingMessages = $flashBag->peek($this->errorMessageType, []);
+                if (!in_array($translatedMessage, $existingMessages, true)) {
+                    $flashBag->add($this->errorMessageType, $translatedMessage);
+                }
             }
 
             // Redirect to reset password route if configured
