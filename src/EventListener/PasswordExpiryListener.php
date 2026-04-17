@@ -9,8 +9,8 @@ use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -191,7 +191,7 @@ class PasswordExpiryListener
 
     private function isExpiryFlashAlreadyHandled(Request $request): bool
     {
-        return true === $request->attributes->get(self::FLASH_ALREADY_ADDED_ATTRIBUTE, false);
+        return $request->attributes->get(self::FLASH_ALREADY_ADDED_ATTRIBUTE, false) === true;
     }
 
     private function markExpiryFlashAsHandled(Request $request): void
