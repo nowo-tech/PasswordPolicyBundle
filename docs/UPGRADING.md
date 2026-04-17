@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 0.0.12](#upgrading-to-0012)
   - [Upgrading to 0.0.11](#upgrading-to-0011)
   - [Upgrading to 0.0.10](#upgrading-to-0010)
   - [Upgrading to 0.0.9](#upgrading-to-009)
@@ -32,6 +33,41 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 0.0.12
+
+**Release Date**: 2026-04-17
+
+#### What's New
+
+- **Single flash per request**: Password expiry notification flash messages are now emitted only once per request lifecycle by `PasswordExpiryListener`.
+- **FrankenPHP-safe behavior**: The guard is request-scoped (request attribute) and does not use static/shared process state, which keeps behavior predictable under persistent workers.
+
+#### Breaking Changes
+
+None. This is a backward-compatible bug fix.
+
+#### Configuration Changes
+
+None required.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Run your test suite.
+
+---
 
 ### Upgrading to 0.0.11
 
@@ -593,6 +629,7 @@ If you encounter issues during upgrade:
 
 | Bundle Version | Symfony Version | PHP Version |
 |---------------|-----------------|-------------|
+| 0.0.12        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.11        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.10        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.6         | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[0.0.12] - 2026-04-17](#0012---2026-04-17)
 - [[0.0.11] - 2026-04-15](#0011---2026-04-15)
 - [[0.0.10] - 2026-04-15](#010---2026-04-15)
 - [[0.0.9] - 2026-03-16](#009---2026-03-16)
@@ -221,6 +222,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [0.0.12] - 2026-04-17
+
+### Fixed
+
+- **Password expiry flash duplication**: `PasswordExpiryListener` now guarantees that the expiry flash is added at most once per HTTP request, preventing repeated identical notifications during a single request lifecycle.
+- **FrankenPHP compatibility**: The duplicate-guard is request-scoped (stored in request attributes), so it does not rely on static/global state and remains safe with persistent workers.
 
 ## [0.0.11] - 2026-04-15
 

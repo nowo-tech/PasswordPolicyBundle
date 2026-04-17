@@ -6,15 +6,15 @@
 4. Commit all changes, create an annotated tag (e.g. `v1.2.1`), and push branch and tag. **The GitHub Release is created automatically by the CI when you push the tag** (workflow `Create Release` on `push: tags: - 'v*'`). Do not create the release from the GitHub UI before pushing the tag, or the workflow may conflict.
 5. Publish the package to Packagist if applicable (usually automatic when the tag is pushed).
 
-## Example for v0.0.11
+## Example for v0.0.12
 
 ```bash
 git add -A
 git status   # review: CHANGELOG, UPGRADING, any last-minute fixes
-git commit -m "Release 0.0.11"
-git tag -a v0.0.11 -m "Release 0.0.11 — see docs/CHANGELOG.md"
+git commit -m "Release 0.0.12"
+git tag -a v0.0.12 -m "Release 0.0.12 — see docs/CHANGELOG.md"
 git push origin main
-git push origin v0.0.11
+git push origin v0.0.12
 ```
 
 The `Create Release` workflow will open a GitHub Release from the annotated tag message and, when present, append the matching section from `docs/CHANGELOG.md`.
