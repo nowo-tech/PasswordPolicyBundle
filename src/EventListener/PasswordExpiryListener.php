@@ -19,9 +19,9 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+use function in_array;
 use function is_array;
 use function is_object;
-use function in_array;
 
 /**
  * Event listener for handling password expiry checks on kernel requests.
@@ -151,7 +151,7 @@ class PasswordExpiryListener
                     $translatedMessage = $this->translator->trans($translatedMessage, [], 'PasswordPolicyBundle');
                 }
 
-                $flashBag = $session->getFlashBag();
+                $flashBag         = $session->getFlashBag();
                 $existingMessages = $flashBag->peek($this->errorMessageType, []);
                 if (!in_array($translatedMessage, $existingMessages, true)) {
                     $flashBag->add($this->errorMessageType, $translatedMessage);
