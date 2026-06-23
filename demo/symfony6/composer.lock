@@ -1680,7 +1680,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/password-policy-bundle",
-                "reference": "efdd8816ba468f05f339c8b2a8560237e8f471b2"
+                "reference": "aff002a343433cf93dc8c7d0222513ba14355039"
             },
             "require": {
                 "nesbot/carbon": "^3.9",
@@ -1771,7 +1771,7 @@
                 }
             ],
             "description": "Symfony bundle for password policy enforcements including password history, expiry, and validation",
-            "homepage": "https://github.com/nowo-tech/password-policy-bundle",
+            "homepage": "https://github.com/nowo-tech/PasswordPolicyBundle",
             "keywords": [
                 "bundle",
                 "expiry",
@@ -1783,8 +1783,8 @@
                 "validation"
             ],
             "support": {
-                "issues": "https://github.com/nowo-tech/password-policy-bundle/issues",
-                "source": "https://github.com/nowo-tech/password-policy-bundle"
+                "issues": "https://github.com/nowo-tech/PasswordPolicyBundle/issues",
+                "source": "https://github.com/nowo-tech/PasswordPolicyBundle"
             },
             "transport-options": {
                 "relative": false

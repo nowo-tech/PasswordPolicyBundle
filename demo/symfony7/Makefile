@@ -88,3 +88,8 @@ verify:
 		sleep 3; \
 	done; \
 	docker-compose down; echo "Verify failed: no HTTP 200"; exit 1
+
+
+# REQ-MAKE-008: update-deps (REQ-MAKE-008)
+BUNDLE_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../..)
+include $(BUNDLE_ROOT)/../.scripts/Makefile.demo-update-deps.mk

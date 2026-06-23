@@ -1,6 +1,6 @@
 {
     "name": "nowo-tech/password-policy-demo-symfony8",
-    "description": "Demo project for Password Policy Bundle - Symfony 8.0",
+    "description": "Demo project for Password Policy Bundle - Symfony 8.1",
     "type": "project",
     "license": "MIT",
     "require": {
@@ -25,8 +25,8 @@
     "require-dev": {
         "nowo-tech/twig-inspector-bundle": "*",
         "phpunit/phpunit": "^10.0 || ^11.0",
-        "symfony/browser-kit": "8.0.*",
-        "symfony/css-selector": "8.0.*",
+        "symfony/browser-kit": "8.1.*",
+        "symfony/css-selector": "8.1.*",
         "symfony/web-profiler-bundle": "^8.0"
     },
     "config": {
@@ -87,7 +87,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "8.0.*"
+            "require": "8.1.*"
         }
     },
     "repositories": [
