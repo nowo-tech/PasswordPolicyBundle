@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Util;
 
+use function in_array;
 use function strlen;
 
 /**
@@ -25,7 +26,7 @@ final class RouteNameMatcher
 
         $len   = strlen($pattern);
         $first = $pattern[0];
-        if ($len >= 3 && ($first === '~' || $first === '#' || $first === '/') && $pattern[$len - 1] === $first) {
+        if ($len >= 3 && in_array($first, ['~', '#', '/'], true) && $pattern[$len - 1] === $first) {
             $matched = @preg_match($pattern, $routeName);
 
             return $matched === 1;

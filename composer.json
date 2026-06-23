@@ -13,10 +13,10 @@
         "expiry",
         "history"
     ],
-    "homepage": "https://github.com/nowo-tech/password-policy-bundle",
+    "homepage": "https://github.com/nowo-tech/PasswordPolicyBundle",
     "support": {
-        "issues": "https://github.com/nowo-tech/password-policy-bundle/issues",
-        "source": "https://github.com/nowo-tech/password-policy-bundle"
+        "issues": "https://github.com/nowo-tech/PasswordPolicyBundle/issues",
+        "source": "https://github.com/nowo-tech/PasswordPolicyBundle"
     },
     "authors": [
         {

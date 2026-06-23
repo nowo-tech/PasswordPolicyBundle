@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[0.0.14] - 2026-06-23](#0014---2026-06-23)
 - [[0.0.13] - 2026-04-17](#0013---2026-04-17)
 - [[0.0.12] - 2026-04-17](#0012---2026-04-17)
 - [[0.0.11] - 2026-04-15](#0011---2026-04-15)
@@ -223,6 +224,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [0.0.14] - 2026-06-23
+
+### Added
+
+- **CodeRabbit integration**: `.coderabbit.yaml` and GitHub Actions workflow for automated pull request reviews.
+- **Spec-driven development**: New [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) with repository-local product spec and `REQ-*` traceability; linked from [ENGRAM.md](ENGRAM.md) and [README.md](../README.md).
+- **Makefile `update-deps` targets**: Bundle and demo Makefiles include shared update-deps recipes (`REQ-MAKE-008`).
+
+### Changed
+
+- **CI matrix**: Symfony test matrix extended to 7.4 and 8.1 with PHP version exclusions aligned to Symfony requirements.
+- **Demos**: Symfony 7 demo targets 7.4; Symfony 8 demo targets 8.1; per-demo Makefiles include `update-deps` includes.
+- **README**: Symfony compatibility badge updated (6.0+, 7.4+, 8.0+, 8.1+).
+- **Repository URLs**: Corrected GitHub links in `composer.json`, [CONTRIBUTING.md](CONTRIBUTING.md), and [UPGRADING.md](UPGRADING.md) (`PasswordPolicyBundle` canonical repo name).
+
+### Fixed
+
+- **PHP 8.4 deprecation (null array offset)**: `PasswordExpiryService` resolves entity configuration via `getEntityConfiguration()` and no longer uses `null` as an array key when there is no authenticated user. Fixes `Deprecated: Using null as an array offset is deprecated` triggered from `PasswordExpiryListener::isLockedRoute()` on anonymous requests.
 
 ## [0.0.13] - 2026-04-17
 

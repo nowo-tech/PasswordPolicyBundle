@@ -538,6 +538,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
                 return 'u';
             }
 
+            /** @return array<int, string> */
             public function getRoles(): array
             {
                 return [];
@@ -663,6 +664,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
                 return 'user';
             }
 
+            /** @return array<int, string> */
             public function getRoles(): array
             {
                 return ['ROLE_USER'];
@@ -773,6 +775,9 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $entity        = new class($historyHash, new ArrayCollection([$history1])) implements HasPasswordPolicyInterface, PasswordAuthenticatedUserInterface {
             public string $password = 'original';
 
+            /**
+             * @param \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> $passwordHistory
+             */
             public function __construct(
                 private readonly string $hashToSet,
                 private readonly \Doctrine\Common\Collections\Collection $passwordHistory,
@@ -829,6 +834,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
                 return 'user';
             }
 
+            /** @return array<int, string> */
             public function getRoles(): array
             {
                 return ['ROLE_USER'];
@@ -870,6 +876,9 @@ final class CloneableTestUser implements HasPasswordPolicyInterface, PasswordAut
         $this->passwordHistory = new ArrayCollection();
     }
 
+    /**
+     * @param \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> $history
+     */
     public function setPasswordHistory(\Doctrine\Common\Collections\Collection $history): void
     {
         $this->passwordHistory = $history;
@@ -920,6 +929,7 @@ final class CloneableTestUser implements HasPasswordPolicyInterface, PasswordAut
         return 'user';
     }
 
+    /** @return array<int, string> */
     public function getRoles(): array
     {
         return ['ROLE_USER'];
