@@ -106,7 +106,7 @@ class PasswordPolicyExtension extends Extension
             }
 
             $resetPattern = $settings['reset_password_route_pattern'] ?? null;
-            if ($resetPattern !== null && $resetPattern !== '' && $resetPattern !== '0') {
+            if (!in_array($resetPattern, [null, '', '0'], true)) {
                 if (!is_string($resetPattern)) {
                     throw new ConfigurationException(sprintf('reset_password_route_pattern for entity %s must be a string', $entityClass));
                 }
@@ -333,10 +333,8 @@ class PasswordPolicyExtension extends Extension
         }
 
         $first = $value[0];
-        if (($first === '~' || $first === '#' || $first === '/') && $value[$len - 1] === $first) {
-            if (@preg_match($value, '') === false) {
-                throw new ConfigurationException(sprintf('Invalid PCRE pattern in %s for entity %s', $fieldLabel, $entityClass));
-            }
+        if (in_array($first, ['~', '#', '/'], true) && $value[$len - 1] === $first && @preg_match($value, '') === false) {
+            throw new ConfigurationException(sprintf('Invalid PCRE pattern in %s for entity %s', $fieldLabel, $entityClass));
         }
     }
 
@@ -352,7 +350,7 @@ class PasswordPolicyExtension extends Extension
 
         $len   = strlen($route);
         $first = $route[0];
-        if ($len >= 3 && ($first === '~' || $first === '#' || $first === '/') && $route[$len - 1] === $first) {
+        if ($len >= 3 && in_array($first, ['~', '#', '/'], true) && $route[$len - 1] === $first) {
             return true;
         }
 

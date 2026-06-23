@@ -1,6 +1,6 @@
 {
     "name": "nowo-tech/password-policy-demo-symfony7",
-    "description": "Demo project for Password Policy Bundle - Symfony 7.0",
+    "description": "Demo project for Password Policy Bundle - Symfony 7.4",
     "type": "project",
     "license": "MIT",
     "require": {
@@ -25,8 +25,8 @@
     "require-dev": {
         "nowo-tech/twig-inspector-bundle": "*",
         "phpunit/phpunit": "^10.0 || ^11.0",
-        "symfony/browser-kit": "7.0.*",
-        "symfony/css-selector": "7.0.*",
+        "symfony/browser-kit": "7.4.*",
+        "symfony/css-selector": "7.4.*",
         "symfony/web-profiler-bundle": "^7.0"
     },
     "config": {
@@ -85,7 +85,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "7.0.*"
+            "require": "7.4.*"
         }
     },
     "repositories": [
