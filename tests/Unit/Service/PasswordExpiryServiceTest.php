@@ -145,6 +145,19 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $this->assertEquals('reset_password', $routeName);
     }
 
+    public function testIsLockedRouteReturnsFalseWhenNoAuthenticatedUser(): void
+    {
+        $this->tokenStorageMock->shouldReceive('getToken')
+                               ->andReturn(null);
+
+        $this->passwordExpiryServiceMock->addEntity(
+            new PasswordExpiryConfiguration($this->userMock::class, 90, ['lock', 'dashboard'], [], 'reset_password'),
+        );
+
+        $this->assertFalse($this->passwordExpiryServiceMock->isLockedRoute('lock'));
+        $this->assertSame([], $this->passwordExpiryServiceMock->getLockedRoutes());
+    }
+
     public function testGetResetPasswordRouteNameReturnsEmptyWhenNoEntity(): void
     {
         $legacyMock = Mockery::mock(TokenInterface::class)
@@ -602,7 +615,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
         $tokenMock->shouldReceive('getUser')->andReturn($this->userMock);
         $this->tokenStorageMock->shouldReceive('getToken')->andReturn($tokenMock);
 
-        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, null);
+        $service = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
         $service->addEntity(
             new PasswordExpiryConfiguration(
                 $this->userMock::class,

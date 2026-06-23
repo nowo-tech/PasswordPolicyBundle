@@ -15,6 +15,7 @@ use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 use function array_keys;
+use function in_array;
 use function is_object;
 use function sort;
 use function sprintf;
@@ -166,9 +167,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function getLockedRoutes(?string $entityClass = null): array
     {
-        $entityClass = $this->prepareEntityClass(entityClass: $entityClass);
-
-        return isset($this->entities[$entityClass]) ? $this->entities[$entityClass]->getLockRoutes() : [];
+        return $this->getEntityConfiguration($entityClass)?->getLockRoutes() ?? [];
     }
 
     /**
@@ -214,16 +213,13 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function getResetPasswordRouteName(?string $entityClass = null): string
     {
-        $entityClass = $this->prepareEntityClass(entityClass: $entityClass);
-
-        if (!isset($this->entities[$entityClass])) {
+        $config = $this->getEntityConfiguration($entityClass);
+        if (!$config instanceof PasswordExpiryConfiguration) {
             return '';
         }
-
-        $config   = $this->entities[$entityClass];
         $fallback = $config->getResetPasswordRouteName();
         $pattern  = $config->getResetPasswordRoutePattern();
-        if ($pattern === null || $pattern === '' || $pattern === '0') {
+        if (in_array($pattern, [null, '', '0'], true)) {
             return $fallback;
         }
 
@@ -237,7 +233,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     private function resolveResetRouteNameFromPattern(string $pattern): ?string
     {
-        if ($this->router === null) {
+        if (!$this->router instanceof RouterInterface) {
             return null;
         }
 
@@ -261,9 +257,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function getExcludedRoutes(?string $entityClass = null): array
     {
-        $entityClass = $this->prepareEntityClass(entityClass: $entityClass);
-
-        return isset($this->entities[$entityClass]) ? $this->entities[$entityClass]->getExcludedRoutes() : [];
+        return $this->getEntityConfiguration($entityClass)?->getExcludedRoutes() ?? [];
     }
 
     /**
@@ -316,5 +310,22 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
         }
 
         return $entityClass;
+    }
+
+    /**
+     * Resolves the password expiry configuration for the given entity class.
+     */
+    private function getEntityConfiguration(?string $entityClass): ?PasswordExpiryConfiguration
+    {
+        if ($this->entities === null) {
+            return null;
+        }
+
+        $entityClass = $this->prepareEntityClass($entityClass);
+        if ($entityClass === null) {
+            return null;
+        }
+
+        return $this->entities[$entityClass] ?? null;
     }
 }

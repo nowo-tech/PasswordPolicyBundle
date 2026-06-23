@@ -153,3 +153,8 @@ setup-hooks:
 	else \
 		echo "⚠️  .githooks/pre-commit not found. Skipping hook installation."; \
 	fi
+
+
+# REQ-MAKE-008: update-deps (REQ-MAKE-008)
+BUNDLE_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+include $(BUNDLE_ROOT)/../.scripts/Makefile.update-deps.mk
