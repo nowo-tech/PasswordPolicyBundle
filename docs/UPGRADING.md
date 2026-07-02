@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.0.0](#upgrading-to-100)
   - [Upgrading to 0.0.14](#upgrading-to-0014)
   - [Upgrading to 0.0.13](#upgrading-to-0013)
   - [Upgrading to 0.0.12](#upgrading-to-0012)
@@ -35,6 +36,47 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.0.0
+
+**Release Date**: 2026-06-23
+
+#### What's New
+
+- **First stable release (1.0.0)**: The bundle API and configuration are considered stable. Upgrading from **0.0.14** (or any 0.0.x release) requires no code or configuration changes.
+- **Demo tooling fix**: `make update-deps` in demo projects now runs `docker-compose` correctly (see [CHANGELOG.md](CHANGELOG.md)).
+
+#### Breaking Changes
+
+None. This release is backward-compatible with the entire 0.0.x series.
+
+#### Configuration Changes
+
+None required.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer require nowo-tech/password-policy-bundle:^1.0
+   ```
+
+   Or, if you already use a 0.0.x constraint:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Run your test suite.
+
+---
 
 ### Upgrading to 0.0.14
 
@@ -702,6 +744,7 @@ If you encounter issues during upgrade:
 
 | Bundle Version | Symfony Version | PHP Version |
 |---------------|-----------------|-------------|
+| 1.0.0         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.14        | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.13        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.12        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
@@ -722,5 +765,5 @@ If you encounter issues during upgrade:
 - Keep backups of your configuration files
 - Review breaking changes in the changelog before upgrading
 - Some features may require additional Symfony components (e.g., cache, event dispatcher)
-- The bundle maintains backward compatibility within major versions (0.x.x)
+- The bundle maintains backward compatibility within major versions (1.x.x)
 

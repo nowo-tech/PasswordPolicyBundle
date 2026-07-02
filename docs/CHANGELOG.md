@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[1.0.0] - 2026-06-23](#100---2026-06-23)
 - [[0.0.14] - 2026-06-23](#0014---2026-06-23)
 - [[0.0.13] - 2026-04-17](#0013---2026-04-17)
 - [[0.0.12] - 2026-04-17](#0012---2026-04-17)
@@ -224,6 +225,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [1.0.0] - 2026-06-23
+
+First stable release. The public API, configuration schema, and runtime behavior are unchanged from **0.0.14**; this version marks semver stability for production use.
+
+### Fixed
+
+- **Demo `update-deps` target**: Demo Makefiles (`symfony6`, `symfony7`, `symfony8`) now define `COMPOSE` and `SERVICE_PHP` before including the shared `Makefile.demo-update-deps.mk`, fixing `run: not found` when running `make update-deps` from the bundle or demo aggregator.
 
 ## [0.0.14] - 2026-06-23
 
