@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[1.1.0] - 2026-07-09](#110---2026-07-09)
 - [[1.0.0] - 2026-06-23](#100---2026-06-23)
 - [[0.0.14] - 2026-06-23](#0014---2026-06-23)
 - [[0.0.13] - 2026-04-17](#0013---2026-04-17)
@@ -225,6 +226,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [1.1.0] - 2026-07-09
+
+### Added
+
+- **GitHub Spec Kit baseline**: `.specify/` scaffolding, Cursor Agent skills (`.cursor/skills/speckit-*`), and `specs/001-baseline/` with full-product `spec.md` and `code-inventory.md` (100% of `src/` mapped).
+- **Spec Kit operator manual**: New [SPEC-KIT.md](SPEC-KIT.md) (install, init, structure, Cursor workflow, maintainer checklist).
+
+### Changed
+
+- **Spec-driven development docs**: [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) documents three layers (Spec Kit baseline, product behavior, `REQ-*` traceability), refined user stories, and explicit scope note (history/expiry/reuse — not password complexity).
+- **README**: Link to [SPEC-KIT.md](SPEC-KIT.md) in the documentation index.
+
+### Fixed
+
+- **Demo Docker images (Symfony 6 and 7)**: FrankenPHP images now install the PHP `intl` extension (aligned with Symfony 8 demo and Symfony recommendations).
 
 ## [1.0.0] - 2026-06-23
 
