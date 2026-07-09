@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.1.0](#upgrading-to-110)
   - [Upgrading to 1.0.0](#upgrading-to-100)
   - [Upgrading to 0.0.14](#upgrading-to-0014)
   - [Upgrading to 0.0.13](#upgrading-to-0013)
@@ -36,6 +37,42 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.1.0
+
+**Release Date**: 2026-07-09
+
+#### What's New
+
+- **GitHub Spec Kit** for maintainers: baseline spec and code inventory under `specs/001-baseline/`, plus [SPEC-KIT.md](SPEC-KIT.md) for installation and Cursor Agent workflow.
+- **Documentation**: Updated [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) with clearer scope (password history, expiry, reuse — not complexity rules).
+- **Demos**: Symfony 6 and 7 Docker images include PHP `intl`.
+
+#### Breaking Changes
+
+None. Runtime bundle API and configuration are unchanged from **1.0.0**.
+
+#### Configuration Changes
+
+None required.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Run your test suite.
+
+---
 
 ### Upgrading to 1.0.0
 
@@ -744,6 +781,7 @@ If you encounter issues during upgrade:
 
 | Bundle Version | Symfony Version | PHP Version |
 |---------------|-----------------|-------------|
+| 1.1.0         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 1.0.0         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.14        | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 0.0.13        | 6.0, 7.0, 8.0   | 8.1, 8.2, 8.3, 8.4, 8.5 |
