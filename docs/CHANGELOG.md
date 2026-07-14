@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[1.1.1] - 2026-07-14](#111---2026-07-14)
 - [[1.1.0] - 2026-07-09](#110---2026-07-09)
 - [[1.0.0] - 2026-06-23](#100---2026-06-23)
 - [[0.0.14] - 2026-06-23](#0014---2026-06-23)
@@ -226,6 +227,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [1.1.1] - 2026-07-14
+
+### Fixed
+
+- **Extension detection performance**: `PasswordPolicyService::getHistoryByPasswordExtension()` deduplicates candidate base passwords and replaces 0–999 scan loops with bounded prefix/suffix extraction. Same behaviour when `detect_password_extensions` is enabled; runs only on password change validation, not on every HTTP request.
+
+### Changed
+
+- **Documentation — route configuration**: [CONFIGURATION.md](CONFIGURATION.md) adds [Route configuration recommendations](CONFIGURATION.md#route-configuration-recommendations) (literal routes, minimal `notified_routes`, exclusions for login/logout/reset/API). [USAGE.md](USAGE.md) and [README.md](../README.md) cross-link the guidance.
+- **Documentation — validation cost**: [CONFIGURATION.md](CONFIGURATION.md#password-history) documents password-history verification and extension-detection cost on password change.
 
 ## [1.1.0] - 2026-07-09
 

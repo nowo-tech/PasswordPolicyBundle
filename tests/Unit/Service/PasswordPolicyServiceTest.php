@@ -267,6 +267,20 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $this->assertEquals($history1, $actual);
     }
 
+    public function testGetHistoryByPasswordExtensionWithThreeDigitNumericSuffix(): void
+    {
+        $basePwd     = 'secret';
+        $extendedPwd = 'secret123';
+        $hash        = password_hash($basePwd, PASSWORD_BCRYPT);
+        $history1    = $this->makePasswordHistoryMock($hash);
+        $this->entityMock->shouldReceive('getPasswordHistory')
+                         ->once()
+                         ->andReturn(new ArrayCollection([$history1]));
+
+        $actual = $this->passwordPolicyService->getHistoryByPasswordExtension($extendedPwd, $this->entityMock, 4);
+        $this->assertEquals($history1, $actual);
+    }
+
     public function testIsPasswordValidWithUserInterfaceCloneAndSetPassword(): void
     {
         $plainPassword  = 'pwd';

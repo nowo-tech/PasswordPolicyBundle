@@ -161,7 +161,7 @@ The bundle uses Doctrine lifecycle events to create password history and set las
 
 ### Password Expiry
 
-Expiry works by checking the last password change on **notified** routes (each entry can be a literal route name, a glob, or a regex; see [docs/CONFIGURATION.md](docs/CONFIGURATION.md)), excluding routes listed in `excluded_notified_routes` (same matching rules):
+Expiry works by checking the last password change on **notified** routes (each entry can be a literal route name, a glob, or a regex; see [docs/CONFIGURATION.md](docs/CONFIGURATION.md#route-name-patterns)). Prefer **literal** route names, keep `notified_routes` minimal, and use `excluded_notified_routes` for login, logout, reset, and API routes — see [route configuration recommendations](docs/CONFIGURATION.md#route-configuration-recommendations).
 
 1. On each main request to a **locked** (notified) route, the bundle checks if the password has expired
 2. If expired, a flash message is shown (with optional translation via `expiry_listener.error_msg`)
@@ -200,9 +200,9 @@ The bundle prevents users from reusing old passwords and can optionally detect p
 | `expiry_days` | `int` | `90` | Number of days before password expires |
 | `reset_password_route_name` | `string` | **required** | Fallback route name for password reset (required) |
 | `reset_password_route_pattern` | `string` \| `null` | `null` | Optional pattern to pick the reset route from the router (first match, alphabetical order); see [CONFIGURATION.md](docs/CONFIGURATION.md) |
-| `notified_routes` | `array` | `[]` | Route names or patterns where expiry is enforced |
-| `excluded_notified_routes` | `array` | `[]` | Route names or patterns excluded from expiry handling |
-| `detect_password_extensions` | `bool` | `false` | Enable detection of password extensions (e.g., "password123" is extension of "password") |
+| `notified_routes` | `array` | `[]` | Route names or patterns where expiry is enforced. Keep the list minimal; see [route configuration recommendations](docs/CONFIGURATION.md#route-configuration-recommendations) |
+| `excluded_notified_routes` | `array` | `[]` | Routes excluded from expiry handling (login, logout, reset, APIs). See [CONFIGURATION.md](docs/CONFIGURATION.md#route-configuration-recommendations) |
+| `detect_password_extensions` | `bool` | `false` | Detect trivial extensions (e.g. `password123` from `password`). Each check runs password verification against history; keep disabled unless required (see [Password History](docs/CONFIGURATION.md#password-history)) |
 | `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
 | `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
 | `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to the resolved reset route when password is expired |

@@ -1356,16 +1356,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "3.13.0",
+            "version": "3.13.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon.git",
-                "reference": "40f6618f052df16b545f626fbf9a878e6497d16a"
+                "reference": "2937ad3d1d2c506fd2bc97d571438a95641f44e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/40f6618f052df16b545f626fbf9a878e6497d16a",
-                "reference": "40f6618f052df16b545f626fbf9a878e6497d16a",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/2937ad3d1d2c506fd2bc97d571438a95641f44e2",
+                "reference": "2937ad3d1d2c506fd2bc97d571438a95641f44e2",
                 "shasum": ""
             },
             "require": {
@@ -1457,7 +1457,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-18T13:49:15+00:00"
+            "time": "2026-07-09T18:23:49+00:00"
         },
         {
             "name": "nowo-tech/password-policy-bundle",
@@ -1465,7 +1465,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/password-policy-bundle",
-                "reference": "0f810dff2116fe226aa3aa0cf4c535419010663f"
+                "reference": "d3c4d2ae397c3edb70e36b3462d66bc19ff5f431"
             },
             "require": {
                 "nesbot/carbon": "^3.9",
@@ -6120,16 +6120,16 @@
         },
         {
             "name": "nowo-tech/twig-inspector-bundle",
-            "version": "v1.0.34",
+            "version": "v1.0.35",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/TwigInspectorBundle.git",
-                "reference": "e926c092b6df59edaded71ec011075e67190c783"
+                "reference": "08e29d6f4e226440c2125e0b9a3f896ce58aa07b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/TwigInspectorBundle/zipball/e926c092b6df59edaded71ec011075e67190c783",
-                "reference": "e926c092b6df59edaded71ec011075e67190c783",
+                "url": "https://api.github.com/repos/nowo-tech/TwigInspectorBundle/zipball/08e29d6f4e226440c2125e0b9a3f896ce58aa07b",
+                "reference": "08e29d6f4e226440c2125e0b9a3f896ce58aa07b",
                 "shasum": ""
             },
             "require": {
@@ -6218,7 +6218,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-07-07T14:45:27+00:00"
+            "time": "2026-07-13T11:13:24+00:00"
         },
         {
             "name": "phar-io/manifest",
