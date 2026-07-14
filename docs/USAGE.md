@@ -33,6 +33,8 @@ class User implements HasPasswordPolicyInterface
 
 When `expiry_days` is set for an entity, the bundle checks password age on each request (according to `notified_routes` and `excluded_notified_routes`). If the password has expired, the user can be redirected to the reset route or shown a flash message (see `expiry_listener` in configuration).
 
+For performance and predictable behaviour, prefer **literal** route names in `notified_routes`, keep that list **minimal**, and exclude login, logout, password reset, and API routes via `excluded_notified_routes`. See [Route configuration recommendations](CONFIGURATION.md#route-configuration-recommendations).
+
 ## Password history
 
 The bundle stores hashed passwords in the history entity when the user changes password. The validator prevents reusing any of the last N passwords (configurable via `passwords_to_remember`).

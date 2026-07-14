@@ -13,6 +13,8 @@ This document describes how to configure the Password Policy Bundle.
 - [How It Works](#how-it-works)
   - [Password History](#password-history)
   - [Password Expiry](#password-expiry)
+    - [Route name patterns](#route-name-patterns)
+    - [Route configuration recommendations](#route-configuration-recommendations)
   - [Caching](#caching)
 - [Examples](#examples)
   - [Basic Configuration](#basic-configuration)
@@ -107,6 +109,10 @@ The bundle uses Doctrine lifecycle events (`onFlush`) to:
 3. Update `passwordChangedAt` timestamp
 4. Limit history to configured number of passwords
 
+**Validation cost**: On password change, the `PasswordPolicy` validator compares the new plain password against each stored hash (`password_verify` / Symfony hasher). Keep `passwords_to_remember` low (default `3`).
+
+**Extension detection** (`detect_password_extensions: true`): the service strips allowed single-character and numeric (0–999) prefixes/suffixes, deduplicates candidate base passwords, then verifies each candidate against history. Work is bounded by password length and history size—not by scanning 0–999 on every hash. Leave extension detection disabled unless required; each verification still invokes the password hasher.
+
 ### Password Expiry
 
 The expiry listener checks on each request:
@@ -128,6 +134,51 @@ Each entry in `notified_routes`, `excluded_notified_routes`, and optional `reset
 **Evaluation order in the listener**: the request must match a **notified** entry (`isLockedRoute`) before expiry logic runs. If the route is also **excluded**, expiry actions (flash, redirect) are not applied. **Exhaustive** listing of routes is no longer required when a prefix or naming convention applies.
 
 **Reset route resolution** (`reset_password_route_pattern`): when set, the bundle loads all route names from `RouterInterface`, sorts them alphabetically, and picks the **first** name that matches the pattern. If none match, or the router is unavailable, the URL is generated with `reset_password_route_name`.
+
+#### Route configuration recommendations
+
+The expiry listener evaluates `notified_routes` on **every main HTTP request** that has a named route (`_route`). Keep the configuration tight so matching stays fast and behaviour stays predictable.
+
+1. **Prefer literal route names** — use exact Symfony route names (e.g. `admin_dashboard`, `user_profile`) whenever you know the target routes. Literals are the cheapest match (string equality).
+
+2. **Use globs and regex only for real prefixes** — reserve `fnmatch` globs (e.g. `admin_*`) or delimited PCRE (e.g. `~^app_admin\.~`) for groups of routes that genuinely share a naming convention. Avoid broad patterns such as `*` or `~.*~` that match almost every route; they force pattern matching on every request and make exclusions harder to reason about.
+
+3. **Keep `notified_routes` minimal** — list only routes where an expired password should trigger expiry handling (flash and optional redirect). Do not add routes “just in case”; empty `notified_routes` means expiry is never enforced on HTTP requests for that entity.
+
+4. **Use `excluded_notified_routes` for auth and escape hatches** — even when a route matches `notified_routes`, exclusions skip expiry actions. Always exclude routes such as **login**, **logout**, **password reset**, and **stateless API** endpoints so users can authenticate, sign out, recover access, or call APIs without redirect loops or blocked flows.
+
+Example (literals + targeted exclusions):
+
+```yaml
+nowo_password_policy:
+    entities:
+        App\Entity\User:
+            expiry_days: 90
+            reset_password_route_name: user_reset_password
+            notified_routes:
+                - user_dashboard
+                - user_settings
+                - user_profile
+            excluded_notified_routes:
+                - login
+                - logout
+                - user_reset_password
+                - api_login
+                - api_logout
+```
+
+When many admin routes share a prefix, a single glob in `notified_routes` plus explicit exclusions is acceptable:
+
+```yaml
+            notified_routes:
+                - admin_*          # only when admin routes truly share this prefix
+            excluded_notified_routes:
+                - admin_login
+                - admin_logout
+                - admin_reset_password
+```
+
+See also [Best Practices](#best-practices) for cache and logging recommendations.
 
 **Important**: The bundle uses Doctrine `onFlush` event. Any entity changes after password history recalculation will not be persisted.
 
@@ -293,18 +344,19 @@ See [Events Documentation](EVENTS.md) for complete details, examples, and best p
 ## Best Practices
 
 1. **Set appropriate expiry days**: Balance security with user experience
-2. **Configure notified routes**: Help users understand when password is about to expire
-3. **Exclude logout routes**: Prevent redirect loops
-4. **Use meaningful route names**: Make configuration self-documenting
-5. **Enable redirect on expiry**: Set `redirect_on_expiry: true` to automatically redirect users to password reset page
-6. **Validate route names**: Ensure `reset_password_route_name` and all route names in `notified_routes` exist in your application
-7. **Enable logging**: Use `enable_logging: true` and configure appropriate `log_level` for debugging and auditing
-8. **Enable cache for performance**: Use `enable_cache: true` in production to improve performance. Cache is automatically invalidated on password changes.
-9. **Unique routes for multiple entities**: When configuring multiple entities, ensure each has a unique `reset_password_route_name` to avoid conflicts.
-10. **Listen to events**: Use custom events to extend functionality (notifications, external logging, etc.)
-11. **Test expiry behavior**: Ensure expiry works correctly in your application flow
-12. **Use Symfony Flex Recipe**: Let Flex automatically create the configuration file
-13. **Test with demos**: Use the included demo projects to understand bundle behavior
+2. **Keep `notified_routes` minimal**: Enforce expiry only on routes where users must change an expired password (see [Route configuration recommendations](#route-configuration-recommendations))
+3. **Prefer literal route names**: Use exact route names in `notified_routes`; reserve globs and regex for genuine shared prefixes
+4. **Exclude auth and API routes**: Add login, logout, password reset, and API routes to `excluded_notified_routes` to avoid redirect loops and blocked flows
+5. **Use meaningful route names**: Make configuration self-documenting
+6. **Enable redirect on expiry**: Set `redirect_on_expiry: true` to automatically redirect users to password reset page
+7. **Validate route names**: Ensure `reset_password_route_name` and all route names in `notified_routes` exist in your application
+8. **Enable logging**: Use `enable_logging: true` and configure appropriate `log_level` for debugging and auditing
+9. **Enable cache for performance**: Use `enable_cache: true` in production to improve performance. Cache is automatically invalidated on password changes.
+10. **Unique routes for multiple entities**: When configuring multiple entities, ensure each has a unique `reset_password_route_name` to avoid conflicts.
+11. **Listen to events**: Use custom events to extend functionality (notifications, external logging, etc.)
+12. **Test expiry behaviour**: Ensure expiry works correctly in your application flow
+13. **Use Symfony Flex Recipe**: Let Flex automatically create the configuration file
+14. **Test with demos**: Use the included demo projects to understand bundle behaviour
 
 ## Demo Projects
 

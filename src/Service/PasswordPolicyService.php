@@ -12,6 +12,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+use function ctype_digit;
 use function function_exists;
 use function strlen;
 
@@ -23,6 +24,18 @@ use function strlen;
  */
 class PasswordPolicyService implements PasswordPolicyServiceInterface
 {
+    /**
+     * Single-character extensions checked when extension detection is enabled.
+     *
+     * @var list<string>
+     */
+    private const EXTENSION_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@', '#', '$', '%'];
+
+    /**
+     * Maximum length of a numeric prefix/suffix candidate (matches 0–999 semantics).
+     */
+    private const MAX_NUMERIC_EXTENSION_LENGTH = 3;
+
     /**
      * Optional closure to determine if an entity can be cloned. Signature: (object): bool.
      * If null, defaults to method_exists($entity, '__clone').
@@ -151,12 +164,9 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
     /**
      * Checks if the given password is an extension of any password in history.
      *
-     * This method attempts to detect if a new password is an extension of an old password
-     * by trying common extension patterns (adding numbers, characters, etc. to the end or beginning).
-     * Since passwords in history are hashed, we use a heuristic approach:
-     * - Try common suffixes (numbers 0-999, common characters)
-     * - Try common prefixes
-     * - Check if removing common patterns from the new password matches an old password
+     * Attempts to detect if a new password is an extension of an old password by stripping
+     * allowed prefix/suffix patterns and verifying the remaining base against history hashes.
+     * Candidate bases are deduplicated so each hash is checked at most once per base string.
      *
      * @param string $password The plain password to check
      * @param HasPasswordPolicyInterface $hasPasswordPolicy The entity to check password history for
@@ -169,70 +179,92 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
         HasPasswordPolicyInterface $hasPasswordPolicy,
         int $minLength = 4
     ): ?PasswordHistoryInterface {
+        $candidates = $this->collectExtensionBaseCandidates($password, $minLength);
+        if ($candidates === []) {
+            return null;
+        }
+
         $collection = $hasPasswordPolicy->getPasswordHistory();
 
-        // Common extension patterns to try
-        $commonSuffixes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '!', '@', '#', '$', '%'];
-        $commonPrefixes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '!', '@', '#', '$', '%'];
-
-        // Try removing common suffixes from the new password and check if it matches an old password
-        foreach ($commonSuffixes as $suffix) {
-            if (str_ends_with($password, $suffix)) {
-                $basePassword = substr($password, 0, -strlen($suffix));
-                if (strlen($basePassword) >= $minLength) {
-                    foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
-                            return $passwordHistory;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Try removing common prefixes from the new password and check if it matches an old password
-        foreach ($commonPrefixes as $prefix) {
-            if (str_starts_with($password, $prefix)) {
-                $basePassword = substr($password, strlen($prefix));
-                if (strlen($basePassword) >= $minLength) {
-                    foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
-                            return $passwordHistory;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Try removing numeric suffixes (0-999)
-        for ($i = 0; $i <= 999; ++$i) {
-            $suffix = (string) $i;
-            if (str_ends_with($password, $suffix)) {
-                $basePassword = substr($password, 0, -strlen($suffix));
-                if (strlen($basePassword) >= $minLength) {
-                    foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
-                            return $passwordHistory;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Try removing numeric prefixes (0-999)
-        for ($i = 0; $i <= 999; ++$i) {
-            $prefix = (string) $i;
-            if (str_starts_with($password, $prefix)) {
-                $basePassword = substr($password, strlen($prefix));
-                if (strlen($basePassword) >= $minLength) {
-                    foreach ($collection as $passwordHistory) {
-                        if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
-                            return $passwordHistory;
-                        }
-                    }
+        foreach ($candidates as $basePassword) {
+            foreach ($collection as $passwordHistory) {
+                if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $basePassword)) {
+                    return $passwordHistory;
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Builds deduplicated base-password candidates by stripping allowed extensions.
+     *
+     * Preserves previous semantics (single special/digit chars and numeric prefixes/suffixes 0–999)
+     * without re-verifying the same base password or scanning 0–999 when no digits are present.
+     *
+     * @return list<string>
+     */
+    private function collectExtensionBaseCandidates(string $password, int $minLength): array
+    {
+        /** @var array<string, true> $candidates */
+        $candidates = [];
+        $length     = strlen($password);
+
+        if ($length <= $minLength) {
+            return [];
+        }
+
+        foreach (self::EXTENSION_CHARS as $char) {
+            if (str_ends_with($password, $char)) {
+                $this->addExtensionBaseCandidate($candidates, substr($password, 0, -1), $minLength);
+            }
+            if (str_starts_with($password, $char)) {
+                $this->addExtensionBaseCandidate($candidates, substr($password, 1), $minLength);
+            }
+        }
+
+        $this->addNumericExtensionCandidates($candidates, $password, $minLength, suffix: true);
+        $this->addNumericExtensionCandidates($candidates, $password, $minLength, suffix: false);
+
+        return array_keys($candidates);
+    }
+
+    /**
+     * @param array<string, true> $candidates
+     */
+    private function addExtensionBaseCandidate(array &$candidates, string $basePassword, int $minLength): void
+    {
+        if (strlen($basePassword) >= $minLength) {
+            $candidates[$basePassword] = true;
+        }
+    }
+
+    /**
+     * Adds bases obtained by removing numeric prefixes or suffixes up to three digits (0–999).
+     *
+     * @param array<string, true> $candidates
+     */
+    private function addNumericExtensionCandidates(
+        array &$candidates,
+        string $password,
+        int $minLength,
+        bool $suffix
+    ): void {
+        $length = strlen($password);
+
+        for ($size = 1; $size <= self::MAX_NUMERIC_EXTENSION_LENGTH && $size < $length; ++$size) {
+            $part = $suffix ? substr($password, -$size) : substr($password, 0, $size);
+            if (!ctype_digit($part)) {
+                continue;
+            }
+
+            if ((int) $part > 999) {
+                continue;
+            }
+
+            $basePassword = $suffix ? substr($password, 0, -$size) : substr($password, $size);
+            $this->addExtensionBaseCandidate($candidates, $basePassword, $minLength);
+        }
     }
 }
