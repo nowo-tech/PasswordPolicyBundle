@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\DependencyInjection;
 
+use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
+use Nowo\PasswordPolicyBundle\Model\ExpiryFlashThrottleStorageType;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -35,6 +37,10 @@ class Configuration implements ConfigurationInterface
     ];
 
     private const DEFAULT_ERROR_TYPE = 'error';
+
+    private const DEFAULT_FLASH_INTERVAL_MINUTES = 30;
+
+    private const DEFAULT_FLASH_THROTTLE_CACHE_TTL = 86400;
 
     /**
      * Generates the configuration tree builder.
@@ -119,6 +125,34 @@ class Configuration implements ConfigurationInterface
                 ->booleanNode('redirect_on_expiry')
                   ->defaultFalse()
                   ->info('If true, automatically redirects users to the reset_password_route_name when their password expires. If false, only shows a flash message without redirecting.')
+                ->end()
+                ->enumNode('flash_strategy')
+                  ->values(ExpiryFlashStrategy::values())
+                  ->defaultValue(ExpiryFlashStrategy::ALWAYS)
+                  ->info('Controls how often the expiry flash is added: always (every locked request after the flash was consumed), once_per_session, interval, or never.')
+                ->end()
+                ->integerNode('flash_interval_minutes')
+                  ->defaultValue(self::DEFAULT_FLASH_INTERVAL_MINUTES)
+                  ->min(1)
+                  ->info('Minutes between expiry flash messages when flash_strategy is interval. Default is 30.')
+                ->end()
+                ->enumNode('flash_throttle_storage')
+                  ->values(ExpiryFlashThrottleStorageType::values())
+                  ->defaultValue(ExpiryFlashThrottleStorageType::SESSION)
+                  ->info('Where to store expiry flash throttle state for once_per_session and interval. Use cache (Redis/Memcached via cache.app) for FrankenPHP workers or Kubernetes multi-pod.')
+                ->end()
+                ->scalarNode('flash_throttle_cache_service')
+                  ->defaultValue('cache.app')
+                  ->info('Symfony cache pool service id used when flash_throttle_storage is cache. Point to a Redis or Memcached adapter (framework.cache.app).')
+                ->end()
+                ->integerNode('flash_throttle_cache_ttl')
+                  ->defaultValue(self::DEFAULT_FLASH_THROTTLE_CACHE_TTL)
+                  ->min(60)
+                  ->info('TTL in seconds for cache-backed throttle entries. For once_per_session, align with session lifetime (default 86400).')
+                ->end()
+                ->scalarNode('flash_throttle_storage_service')
+                  ->defaultNull()
+                  ->info('Optional custom service id implementing ExpiryFlashThrottleStorageInterface. When set, flash_throttle_storage is ignored.')
                 ->end()
                 ->arrayNode('error_msg')
                   ->addDefaultsIfNotSet()

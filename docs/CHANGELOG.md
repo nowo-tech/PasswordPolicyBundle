@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Table of contents
 
+- [[Unreleased]](#unreleased)
+- [[1.2.0] - 2026-07-15](#120---2026-07-15)
 - [[1.1.1] - 2026-07-14](#111---2026-07-14)
 - [[1.1.0] - 2026-07-09](#110---2026-07-09)
 - [[1.0.0] - 2026-06-23](#100---2026-06-23)
@@ -21,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[0.0.5] - 2025-12-17](#005---2025-12-17)
 - [[0.0.4] - 2025-12-17](#004---2025-12-17)
 - [[0.0.3] - 2025-12-17](#003---2025-12-17)
-- [[Unreleased]](#unreleased)
 - [[0.0.2] - 2025-12-16](#002---2025-12-16)
 - [[0.0.1] - 2025-12-15](#001---2025-12-15)
 
@@ -227,6 +228,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [1.2.0] - 2026-07-15
+
+### Added
+
+- **Configurable expiry flash strategies**: `expiry_listener.flash_strategy` (`always`, `once_per_session`, `interval`, `never`) and `flash_interval_minutes` control how often the password expiry flash is added. Default remains `always` for backward compatibility.
+- **Shared flash throttle storage**: `flash_throttle_storage` (`session` or `cache`) with optional Redis/Memcached via `flash_throttle_cache_service`, for FrankenPHP workers and Kubernetes multi-pod. Custom backends via `ExpiryFlashThrottleStorageInterface`.
+- **Example configurations**: [docs/examples/expiry-flash-and-cache.yaml](examples/expiry-flash-and-cache.yaml) with session, Redis, Memcached, and custom storage recipes.
+
+### Changed
+
+- **Documentation**: [CONFIGURATION.md](CONFIGURATION.md) documents flash strategies, throttle storage, and FrankenPHP/Kubernetes guidance; [README.md](../README.md) lists new options and links to the examples file.
+- **Demos**: Symfony 6/7/8 demo `nowo_password_policy.yaml` and `cache.yaml` include inline comments and optional Redis/Memcached pools for flash throttle testing.
 
 ## [1.1.1] - 2026-07-14
 

@@ -7,6 +7,9 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 use DateTime;
 use Mockery;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
+use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
+use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
+use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStorage;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionClass;
@@ -39,6 +42,8 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     private \Mockery\MockInterface&TokenStorageInterface $tokenStorageMock;
 
+    private SessionExpiryFlashThrottleStorage $flashThrottleStorage;
+
     /**
      * Setup..
      */
@@ -53,6 +58,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
         $this->requestStackMock->shouldReceive('getSession')
                                ->andReturn($this->sessionMock);
+        $this->sessionMock->shouldReceive('getId')
+                          ->andReturn('test-session-id');
+
+        $this->flashThrottleStorage = new SessionExpiryFlashThrottleStorage($this->requestStackMock);
 
         $this->translatorMock->shouldReceive('trans')
                              ->andReturnUsing(static fn ($id, $parameters = [], $domain = null) => $id);
@@ -65,6 +74,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Your password expired. You need to change it',
+            $this->flashThrottleStorage,
         ])->makePartial();
     }
 
@@ -360,7 +370,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Your password expired',
+            $this->flashThrottleStorage,
             true, // redirect_on_expiry
+            ExpiryFlashStrategy::ALWAYS,
+            30,
         );
 
         $requestMock    = Mockery::mock(Request::class);
@@ -439,7 +452,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Your password expired',
+            $this->flashThrottleStorage,
             true,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             $loggerMock,
             true,
             'info',
@@ -494,7 +510,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Your password expired',
+            $this->flashThrottleStorage,
             true, // redirect_on_expiry
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             $loggerMock,
             true,
             'info',
@@ -571,7 +590,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Error message',
+            $this->flashThrottleStorage,
             false,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             $loggerMock,
             true,
             'debug',
@@ -630,7 +652,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Error message',
+            $this->flashThrottleStorage,
             false,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             null,
             true,
             'info',
@@ -692,6 +717,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             ['title' => 'Expired', 'message' => 'Change password'],
+            $this->flashThrottleStorage,
+            false,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
         );
 
         $flashBagMock = Mockery::mock(FlashBagInterface::class);
@@ -762,7 +791,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Error message',
+            $this->flashThrottleStorage,
             false,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             null,
             true,
             'info',
@@ -888,7 +920,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Error message',
+            $this->flashThrottleStorage,
             false,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             $loggerMock,
             true,
             'info',
@@ -1018,7 +1053,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
             $this->translatorMock,
             'error',
             'Error message',
+            $this->flashThrottleStorage,
             false,
+            ExpiryFlashStrategy::ALWAYS,
+            30,
             $loggerMock,
             true,
             'info',
@@ -1034,6 +1072,171 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->sessionMock->shouldReceive('getFlashBag')
                           ->once()
                           ->andReturn($flashBagMock);
+
+        $listener->onKernelRequest($responseEventMock);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testOnKernelRequestDoesNotAddFlashWhenStrategyIsNever(): void
+    {
+        $request = new Request();
+        $request->attributes->set('_route', 'route');
+
+        $responseEventMock = Mockery::mock(RequestEvent::class);
+        $responseEventMock->shouldReceive('isMainRequest')->andReturn(true);
+        $responseEventMock->shouldReceive('getRequest')->andReturn($request);
+
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->once()->andReturn(null);
+        $this->tokenStorageMock->shouldReceive('getToken')->once()->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')->once()->with('route')->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')->once()->with('route')->andReturn(false);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')->once()->andReturnTrue();
+
+        $listener = new PasswordExpiryListener(
+            $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
+            $this->requestStackMock,
+            $this->urlGeneratorMock,
+            $this->translatorMock,
+            'error',
+            'Your password expired. You need to change it',
+            $this->flashThrottleStorage,
+            false,
+            ExpiryFlashStrategy::NEVER,
+            30,
+        );
+
+        $this->sessionMock->shouldNotReceive('getFlashBag');
+
+        $listener->onKernelRequest($responseEventMock);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testOnKernelRequestAddsFlashOncePerSession(): void
+    {
+        $responseEventMock = Mockery::mock(RequestEvent::class);
+        $responseEventMock->shouldReceive('isMainRequest')->andReturn(true);
+
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->twice()->andReturn(null);
+        $this->tokenStorageMock->shouldReceive('getToken')->twice()->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')->twice()->with('route')->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')->twice()->with('route')->andReturn(false);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')->twice()->andReturnTrue();
+
+        $storageMock = Mockery::mock(ExpiryFlashThrottleStorageInterface::class);
+        $storageMock->shouldReceive('getLastShownAt')
+                    ->once()
+                    ->with('session:test-session-id')
+                    ->andReturnNull();
+        $storageMock->shouldReceive('markShown')
+                    ->once()
+                    ->with('session:test-session-id', Mockery::type('int'));
+
+        $listener = new PasswordExpiryListener(
+            $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
+            $this->requestStackMock,
+            $this->urlGeneratorMock,
+            $this->translatorMock,
+            'error',
+            'Your password expired. You need to change it',
+            $storageMock,
+            false,
+            ExpiryFlashStrategy::ONCE_PER_SESSION,
+            30,
+        );
+
+        $firstRequest = new Request();
+        $firstRequest->attributes->set('_route', 'route');
+        $responseEventMock->shouldReceive('getRequest')->once()->andReturn($firstRequest);
+
+        $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')->once()->with('error', [])->andReturn([]);
+        $flashBagMock->shouldReceive('add')->once()->with('error', 'Your password expired. You need to change it');
+        $this->sessionMock->shouldReceive('getFlashBag')->once()->andReturn($flashBagMock);
+
+        $listener->onKernelRequest($responseEventMock);
+
+        $secondRequest = new Request();
+        $secondRequest->attributes->set('_route', 'route');
+        $responseEventMock->shouldReceive('getRequest')->once()->andReturn($secondRequest);
+
+        $storageMock->shouldReceive('getLastShownAt')
+                    ->once()
+                    ->with('session:test-session-id')
+                    ->andReturn(time());
+        $this->sessionMock->shouldNotReceive('getFlashBag');
+
+        $listener->onKernelRequest($responseEventMock);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testOnKernelRequestRespectsFlashIntervalStrategy(): void
+    {
+        $responseEventMock = Mockery::mock(RequestEvent::class);
+        $responseEventMock->shouldReceive('isMainRequest')->andReturn(true);
+
+        $tokenMock = Mockery::mock(TokenInterface::class);
+        $tokenMock->shouldReceive('getUser')->twice()->andReturn(null);
+        $this->tokenStorageMock->shouldReceive('getToken')->twice()->andReturn($tokenMock);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')->twice()->with('route')->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')->twice()->with('route')->andReturn(false);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')->twice()->andReturnTrue();
+
+        $storageMock      = Mockery::mock(ExpiryFlashThrottleStorageInterface::class);
+        $recentTimestamp  = time() - 60;
+        $elapsedTimestamp = time() - (31 * 60);
+
+        $storageMock->shouldReceive('getLastShownAt')
+                    ->once()
+                    ->with('session:test-session-id')
+                    ->andReturn($recentTimestamp);
+        $storageMock->shouldReceive('getLastShownAt')
+                    ->once()
+                    ->with('session:test-session-id')
+                    ->andReturn($elapsedTimestamp);
+        $storageMock->shouldReceive('markShown')
+                    ->once()
+                    ->with('session:test-session-id', Mockery::type('int'));
+
+        $listener = new PasswordExpiryListener(
+            $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
+            $this->requestStackMock,
+            $this->urlGeneratorMock,
+            $this->translatorMock,
+            'error',
+            'Your password expired. You need to change it',
+            $storageMock,
+            false,
+            ExpiryFlashStrategy::INTERVAL,
+            30,
+        );
+
+        $firstRequest = new Request();
+        $firstRequest->attributes->set('_route', 'route');
+        $responseEventMock->shouldReceive('getRequest')->once()->andReturn($firstRequest);
+
+        $this->sessionMock->shouldNotReceive('getFlashBag');
+
+        $listener->onKernelRequest($responseEventMock);
+
+        $secondRequest = new Request();
+        $secondRequest->attributes->set('_route', 'route');
+        $responseEventMock->shouldReceive('getRequest')->once()->andReturn($secondRequest);
+
+        $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')->once()->with('error', [])->andReturn([]);
+        $flashBagMock->shouldReceive('add')->once()->with('error', 'Your password expired. You need to change it');
+        $this->sessionMock->shouldReceive('getFlashBag')->once()->andReturn($flashBagMock);
 
         $listener->onKernelRequest($responseEventMock);
 

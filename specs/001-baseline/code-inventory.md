@@ -2,7 +2,7 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/password-policy-bundle`  
-**Last audited**: 2026-07-07
+**Last audited**: 2026-07-15
 
 This file proves that **every production source artifact** under `src/` is referenced by the baseline specification. Test-only files under `tests/` and demo trees are out of Packagist scope unless promoted in the spec.
 
@@ -12,10 +12,12 @@ This file proves that **every production source artifact** under `src/` is refer
 | --- | --- | --- |
 | `PasswordPolicyBundle.php` | Bundle entry | FR-BUNDLE-001 |
 | `DependencyInjection/Configuration.php` | Config tree | FR-CFG-001 |
-| `DependencyInjection/PasswordPolicyExtension.php` | DI extension, listeners | FR-CFG-002, FR-LIST-002 |
+| `DependencyInjection/PasswordPolicyExtension.php` | DI extension, listeners, throttle storage | FR-CFG-002, FR-LIST-002, FR-FLASH-001 |
 | `Model/HasPasswordPolicyInterface.php` | Entity contract | FR-MODEL-001 |
 | `Model/PasswordHistoryInterface.php` | History entity contract | FR-MODEL-002 |
 | `Model/PasswordExpiryConfiguration.php` | Per-entity expiry DTO | FR-MODEL-003 |
+| `Model/ExpiryFlashStrategy.php` | Flash strategy enum values | FR-MODEL-004 |
+| `Model/ExpiryFlashThrottleStorageType.php` | Throttle storage backend values | FR-MODEL-005 |
 | `Service/PasswordPolicyService.php` | Reuse & extension checks | FR-POL-001 |
 | `Service/PasswordPolicyServiceInterface.php` | Policy service contract | FR-POL-001 |
 | `Service/PasswordHistoryService.php` | History cleanup | FR-HIST-001 |
@@ -23,6 +25,9 @@ This file proves that **every production source artifact** under `src/` is refer
 | `Service/PasswordExpiryService.php` | Expiry detection & cache | FR-EXP-001 |
 | `Service/PasswordExpiryServiceInterface.php` | Expiry service contract | FR-EXP-001 |
 | `Service/PasswordPolicyConfigurationService.php` | Per-entity config lookup | FR-CFG-003 |
+| `Service/ExpiryFlash/ExpiryFlashThrottleStorageInterface.php` | Flash throttle contract | FR-FLASH-001 |
+| `Service/ExpiryFlash/SessionExpiryFlashThrottleStorage.php` | Session-backed throttle | FR-FLASH-002 |
+| `Service/ExpiryFlash/CacheExpiryFlashThrottleStorage.php` | Cache-backed throttle | FR-FLASH-003 |
 | `Validator/PasswordPolicy.php` | Constraint definition | FR-VAL-001 |
 | `Validator/PasswordPolicyValidator.php` | Reuse validation | FR-VAL-002 |
 | `EventListener/PasswordEntityListener.php` | Doctrine onFlush history | FR-LIST-001 |
@@ -91,7 +96,7 @@ All locale files expose validator violation messages and expiry flash copy under
 
 | Category | Files | Mapped |
 | --- | ---: | ---: |
-| PHP classes | 26 | 26 |
+| PHP classes | 31 | 31 |
 | Symfony config | 1 | 1 |
 | Translations | 37 | 37 |
-| **Total production sources** | **64** | **64** |
+| **Total production sources** | **69** | **69** |

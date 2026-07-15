@@ -90,6 +90,12 @@ The project follows these standards:
 **Before committing**:
 
 ```bash
+# Install git hooks (strips accidental Cursor co-author trailers from messages)
+make setup-hooks
+
+# Optional: verify git history has no Cursor co-author trailers (also runs in release-check)
+make check-no-cursor-coauthor
+
 # Check code style
 make cs-check
 # or

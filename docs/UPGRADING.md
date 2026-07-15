@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.2.0](#upgrading-to-120)
   - [Upgrading to 1.1.1](#upgrading-to-111)
   - [Upgrading to 1.1.0](#upgrading-to-110)
   - [Upgrading to 1.0.0](#upgrading-to-100)
@@ -38,6 +39,59 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.2.0
+
+**Release Date**: 2026-07-15
+
+#### What's New
+
+- **Expiry flash strategies**: `expiry_listener.flash_strategy` controls how often the password expiry flash is shown (`always`, `once_per_session`, `interval`, `never`). Use `flash_throttle_storage: cache` with Redis/Memcached for FrankenPHP workers or Kubernetes multi-pod.
+
+#### Breaking Changes
+
+None. Default remains `flash_strategy: always` (same behaviour as before).
+
+#### Configuration Changes
+
+Optional — to stop the flash on every page navigation after login:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+```
+
+Or remind on a timer (shared cache recommended in production clusters):
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: interval
+        flash_interval_minutes: 15
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.app
+```
+
+See [Flash notification strategies](CONFIGURATION.md#flash-notification-strategies) and [FrankenPHP, Kubernetes, and shared storage](CONFIGURATION.md#frankenphp-kubernetes-and-shared-storage).
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. Set `flash_strategy` if the default `always` is too noisy for your UX.
+
+---
 
 ### Upgrading to 1.1.1
 
@@ -817,6 +871,7 @@ If you encounter issues during upgrade:
 
 | Bundle Version | Symfony Version | PHP Version |
 |---------------|-----------------|-------------|
+| 1.2.0         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 1.1.1         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 1.1.0         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |
 | 1.0.0         | 6.0, 7.0, 7.4, 8.0, 8.1 | 8.1, 8.2, 8.3, 8.4, 8.5 |

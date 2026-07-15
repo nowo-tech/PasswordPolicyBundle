@@ -2,6 +2,7 @@
 
 **Feature Branch**: `001-baseline`  
 **Created**: 2026-07-07  
+**Last updated**: 2026-07-15  
 **Status**: Active  
 **Input**: Backfill GitHub Spec Kit baseline documenting 100% of production code in `src/`.
 
@@ -51,15 +52,20 @@ As an integrator, I rely on Doctrine `onFlush` so password changes automatically
 
 ### User Story 3 — Enforce password expiry on routes (Priority: P1)
 
-As an integrator, I define notified routes and optional redirect so expired passwords surface flash messages or redirect to reset password.
+As an integrator, I define notified routes and optional redirect so expired passwords surface flash messages or redirect to reset password. I can control how often the flash reappears and where throttle state is stored (session vs shared cache for multi-pod / FrankenPHP).
 
-**Independent Test**: Authenticated user with expired password hits a notified route → flash message; with `redirect_on_expiry=true` → redirect to resolved reset route.
+**Independent Test**: Authenticated user with expired password hits a notified route → flash message according to `flash_strategy`; with `redirect_on_expiry=true` → redirect to resolved reset route; with `flash_throttle_storage=cache` → throttle state shared across workers via `cache.app`.
 
 **Acceptance Scenarios**:
 
-1. **Given** route matches `notified_routes` and not `excluded_notified_routes`, **When** password is expired, **Then** `PasswordExpiredEvent` fires and flash is added once per request.
-2. **Given** `reset_password_route_pattern` set, **When** resolving reset URL, **Then** `RouteNameMatcher` picks first alphabetical matching route or falls back to `reset_password_route_name`.
-3. **Given** `redirect_on_expiry=true`, **When** expiry detected on main request, **Then** `RedirectResponse` to generated reset URL.
+1. **Given** route matches `notified_routes` and not `excluded_notified_routes`, **When** password is expired, **Then** `PasswordExpiredEvent` fires and flash is added at most once per HTTP request (request attribute guard).
+2. **Given** `flash_strategy=always` (default), **When** user navigates after the flash was consumed, **Then** flash is re-added on the next locked-route request.
+3. **Given** `flash_strategy=once_per_session` or `interval`, **When** throttle storage says the flash was already shown within the window, **Then** no new flash is added (logging, event, and redirect still apply).
+4. **Given** `flash_strategy=never`, **When** password is expired on a locked route, **Then** no flash is added.
+5. **Given** `flash_throttle_storage=cache` and a configured cache pool (`cache.app` or custom service id), **When** extension compiles, **Then** `CacheExpiryFlashThrottleStorage` is wired; **When** pool is missing, **Then** `ConfigurationException` at compile time.
+6. **Given** `flash_throttle_storage_service` set, **When** extension loads, **Then** custom `ExpiryFlashThrottleStorageInterface` is used instead of built-in session/cache backends.
+7. **Given** `reset_password_route_pattern` set, **When** resolving reset URL, **Then** `RouteNameMatcher` picks first alphabetical matching route or falls back to `reset_password_route_name`.
+8. **Given** `redirect_on_expiry=true`, **When** expiry detected on main request, **Then** `RedirectResponse` to generated reset URL.
 
 ---
 
@@ -80,7 +86,10 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - Null/empty password in validator: skipped (no violation).
 - Password verification tries `password_verify()` first, then Symfony hasher via cloned user or temporary `setPassword` fallback — never plain hash comparison.
 - Sub-requests: expiry listener processes only main requests.
-- FrankenPHP / duplicate kernel events: request attribute prevents duplicate flash messages.
+- FrankenPHP / duplicate kernel events: request attribute prevents duplicate flash messages within the same request lifecycle.
+- FrankenPHP worker mode / Kubernetes multi-pod: `flash_throttle_storage=session` is unreliable unless sessions are shared; `cache` (Redis/Memcached via `cache.app`) is recommended for `once_per_session` and `interval`.
+- Flash bag peek: identical message already in flash bag is not duplicated before render.
+- Missing cache service when `flash_throttle_storage=cache`: compile-time `ConfigurationException` with integrator guidance.
 - Missing entity class at compile time: configuration exception during container build.
 
 ---
@@ -91,8 +100,8 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 
 - **FR-BUNDLE-001**: `PasswordPolicyBundle` MUST expose `PasswordPolicyExtension` as container extension.
 - **FR-DI-001**: `services.yml` MUST autowire services under `Service\`, wire `PasswordPolicyValidator`, and register `PasswordExpiryListener` manually (autowire disabled) with explicit arguments from extension.
-- **FR-CFG-001**: `Configuration` MUST define `nowo_password_policy` tree: required `entities` map, `expiry_listener`, `log_level`, `enable_logging`, `enable_cache`, `cache_ttl`.
-- **FR-CFG-002**: `PasswordPolicyExtension` MUST load services, register per-entity listeners, configure validator logging/events, inject cache into `PasswordExpiryService`, and validate entity classes exist.
+- **FR-CFG-001**: `Configuration` MUST define `nowo_password_policy` tree: required `entities` map, `expiry_listener` (including `flash_strategy`, `flash_interval_minutes`, `flash_throttle_storage`, `flash_throttle_cache_service`, `flash_throttle_cache_ttl`, `flash_throttle_storage_service`), `log_level`, `enable_logging`, `enable_cache`, `cache_ttl`.
+- **FR-CFG-002**: `PasswordPolicyExtension` MUST load services, register per-entity listeners, configure validator logging/events, inject cache into `PasswordExpiryService`, register expiry flash throttle storage, wire `PasswordExpiryListener` with explicit arguments, and validate entity classes exist.
 - **FR-CFG-003**: `PasswordPolicyConfigurationService` MUST resolve per-entity settings (extension detection, field names) for validator and listeners.
 
 ### Domain model
@@ -100,7 +109,15 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - **FR-MODEL-001**: `HasPasswordPolicyInterface` MUST define password, history collection, change timestamp, and identity accessors consumed by services and listeners.
 - **FR-MODEL-002**: `PasswordHistoryInterface` MUST expose hashed password and `createdAt` for reuse messaging.
 - **FR-MODEL-003**: `PasswordExpiryConfiguration` MUST carry per-entity expiry days, notified/excluded routes, and reset route resolution settings.
+- **FR-MODEL-004**: `ExpiryFlashStrategy` MUST define allowed `flash_strategy` values: `always`, `once_per_session`, `interval`, `never`.
+- **FR-MODEL-005**: `ExpiryFlashThrottleStorageType` MUST define built-in throttle backends: `session`, `cache`.
 - **FR-TRAIT-001**: `PasswordHistoryTrait` MUST provide default history collection helpers for Doctrine entities.
+
+### Expiry flash throttling
+
+- **FR-FLASH-001**: `ExpiryFlashThrottleStorageInterface` MUST expose `getLastShownAt(subjectKey)` and `markShown(subjectKey, timestamp)` for per-user (or session fallback) throttle state.
+- **FR-FLASH-002**: `SessionExpiryFlashThrottleStorage` MUST persist throttle timestamps in the HTTP session (namespaced by subject key).
+- **FR-FLASH-003**: `CacheExpiryFlashThrottleStorage` MUST persist throttle timestamps in a PSR-6 pool with configurable TTL (shared Redis/Memcached for multi-pod).
 
 ### Password history
 
@@ -116,7 +133,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 ### Password expiry
 
 - **FR-EXP-001**: `PasswordExpiryService` MUST determine expiry from `passwordChangedAt` + `expiry_days`, optionally cache per user, invalidate on password change, and resolve reset route names.
-- **FR-LIST-002**: `PasswordExpiryListener` on `kernel.request` MUST match routes via `RouteNameMatcher`, add configurable flash messages, optionally redirect, and dispatch `PasswordExpiredEvent`.
+- **FR-LIST-002**: `PasswordExpiryListener` on `kernel.request` MUST match routes via `RouteNameMatcher`, add configurable flash messages according to `flash_strategy` and throttle storage, optionally redirect, and dispatch `PasswordExpiredEvent`. Subject key MUST prefer authenticated user id/identifier; fallback to session id when user is unavailable.
 - **FR-ROUTE-001**: `RouteNameMatcher` MUST support literal names, globs (`*`, `?`), and delimited PCRE patterns.
 
 ### Events & errors
@@ -140,12 +157,13 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - **HasPasswordPolicyInterface**: Application user (or account) entity contract.
 - **PasswordHistoryInterface**: Stored prior password hash with timestamp.
 - **PasswordExpiryConfiguration**: Runtime DTO assembled from YAML per entity class.
+- **ExpiryFlashThrottleStorageInterface**: Pluggable store for “last expiry flash shown” timestamps (session or shared cache).
 
 ---
 
 ## Success Criteria
 
-- **SC-001**: **64/64** production files mapped in [`code-inventory.md`](code-inventory.md).
+- **SC-001**: **69/69** production files mapped in [`code-inventory.md`](code-inventory.md).
 - **SC-002**: Configuration keys in `docs/CONFIGURATION.md` match `Configuration.php`.
 - **SC-003**: PHPUnit + PHPStan pass (`composer qa`).
 - **SC-004**: Reuse and expiry flows covered by tests under `tests/`.
@@ -165,6 +183,12 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 | `entities.*.detect_password_extensions` | `false` | Extension heuristic |
 | `entities.*.extension_min_length` | `4` | Min base length for extensions |
 | `expiry_listener.redirect_on_expiry` | `false` | Flash-only vs redirect |
+| `expiry_listener.flash_strategy` | `always` | `always`, `once_per_session`, `interval`, `never` |
+| `expiry_listener.flash_interval_minutes` | `30` | Minutes between flashes when strategy is `interval` |
+| `expiry_listener.flash_throttle_storage` | `session` | `session` or `cache` (shared pool for multi-pod) |
+| `expiry_listener.flash_throttle_cache_service` | `cache.app` | Symfony cache pool service id when storage is `cache` |
+| `expiry_listener.flash_throttle_cache_ttl` | `86400` | Cache entry TTL seconds for throttle state |
+| `expiry_listener.flash_throttle_storage_service` | `null` | Optional custom `ExpiryFlashThrottleStorageInterface` service id |
 | `expiry_listener.priority` | `0` | Kernel listener priority |
 | `enable_logging` | `true` | PSR-3 logging of policy events |
 | `enable_cache` | `false` | Expiry check caching |

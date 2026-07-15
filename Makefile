@@ -6,7 +6,7 @@ COMPOSE_FILE := docker-compose.yml
 COMPOSE := docker-compose -f $(COMPOSE_FILE)
 SERVICE_PHP := php
 
-.PHONY: help up down build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan qa release-check release-check-demos composer-sync clean update validate validate-translations assets setup-hooks
+.PHONY: help up down build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan qa release-check release-check-demos composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor
 
 # Default target
 help:
@@ -28,7 +28,7 @@ help:
 	@echo "  rector-dry    Run Rector in dry-run mode"
 	@echo "  phpstan       Run PHPStan static analysis"
 	@echo "  qa            Run all QA checks (cs-check + test)"
-	@echo "  release-check Pre-release: cs-fix, cs-check, rector-dry, phpstan, test-coverage, demo healthchecks"
+	@echo "  release-check Pre-release: co-author audit, cs-fix, cs-check, rector-dry, phpstan, test-coverage, demo healthchecks"
 	@echo "  composer-sync Validate composer.json and align composer.lock (no install)"
 	@echo "  clean         Remove vendor and cache"
 	@echo "  update        Update composer.lock (composer update)"
@@ -109,7 +109,11 @@ qa: ensure-up
 	$(COMPOSE) exec -T $(SERVICE_PHP) composer qa
 
 # Pre-release checks (demos: release-verify if demo/Makefile has it)
-release-check: ensure-up composer-sync cs-fix cs-check rector-dry phpstan test-coverage release-check-demos
+release-check: ensure-up check-no-cursor-coauthor composer-sync cs-fix cs-check rector-dry phpstan test-coverage release-check-demos
+
+check-no-cursor-coauthor:
+	@chmod +x .scripts/check-no-cursor-coauthor.sh
+	@./.scripts/check-no-cursor-coauthor.sh HEAD
 
 release-check-demos:
 	@if [ -f demo/Makefile ]; then $(MAKE) -C demo release-check 2>/dev/null || true; else true; fi
@@ -143,15 +147,22 @@ validate-translations: ensure-up
 assets:
 	@echo "No frontend assets in this bundle."
 
-# Setup git hooks for pre-commit checks
+# Setup git hooks (pre-commit checks + strip Cursor co-author trailers)
 setup-hooks:
+	@mkdir -p .git/hooks
 	@if [ -f .githooks/pre-commit ]; then \
-		mkdir -p .git/hooks; \
 		cp -f .githooks/pre-commit .git/hooks/pre-commit; \
 		chmod +x .git/hooks/pre-commit; \
 		echo "✅ pre-commit hook installed at .git/hooks/pre-commit."; \
 	else \
-		echo "⚠️  .githooks/pre-commit not found. Skipping hook installation."; \
+		echo "⚠️  .githooks/pre-commit not found. Skipping pre-commit hook."; \
+	fi
+	@if [ -f .githooks/commit-msg ]; then \
+		cp -f .githooks/commit-msg .git/hooks/commit-msg; \
+		chmod +x .git/hooks/commit-msg; \
+		echo "✅ commit-msg hook installed at .git/hooks/commit-msg."; \
+	else \
+		echo "⚠️  .githooks/commit-msg not found. Skipping commit-msg hook."; \
 	fi
 
 

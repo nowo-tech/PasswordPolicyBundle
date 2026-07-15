@@ -1,0 +1,204 @@
+# Reference: expiry flash strategies, throttle storage, and Symfony cache backends
+# Copy the block you need into config/packages/nowo_password_policy.yaml
+# and (when using cache storage) config/packages/cache.yaml
+#
+# See docs/CONFIGURATION.md#expiry-flash-and-throttle-storage--complete-examples
+
+# ---------------------------------------------------------------------------
+# 1) flash_strategy: always (default — legacy behaviour)
+# Flash reappears on every locked-route request after the layout consumed it.
+# Throttle storage is not used.
+# ---------------------------------------------------------------------------
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: always
+#         flash_throttle_storage: session
+
+# ---------------------------------------------------------------------------
+# 2) flash_strategy: once_per_session + session storage (single node / dev)
+# ---------------------------------------------------------------------------
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage: session
+
+# ---------------------------------------------------------------------------
+# 3) flash_strategy: interval + session storage (single node / dev)
+# ---------------------------------------------------------------------------
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: interval
+#         flash_interval_minutes: 15
+#         flash_throttle_storage: session
+
+# ---------------------------------------------------------------------------
+# 4) flash_strategy: never (flash disabled; event + redirect still work)
+# ---------------------------------------------------------------------------
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: never
+#         redirect_on_expiry: true
+
+# ---------------------------------------------------------------------------
+# 5) once_per_session + shared cache via cache.app (Redis)
+# Application cache.yaml:
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.redis
+#         default_redis_provider: '%env(REDIS_URL)%'
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.app
+#         flash_throttle_cache_ttl: 86400
+
+# ---------------------------------------------------------------------------
+# 6) once_per_session + shared cache via cache.app (Memcached)
+# Application cache.yaml:
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.memcached
+#         default_memcached_provider: '%env(MEMCACHED_URL)%'
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.app
+#         flash_throttle_cache_ttl: 86400
+
+# ---------------------------------------------------------------------------
+# 7) interval + dedicated Redis pool (recommended production — isolate keys)
+# Application cache.yaml:
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         pools:
+#             password_policy.flash_throttle:
+#                 adapter: cache.adapter.redis
+#                 provider: '%env(REDIS_URL)%'
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: interval
+#         flash_interval_minutes: 30
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.password_policy.flash_throttle
+#         flash_throttle_cache_ttl: 86400
+
+# ---------------------------------------------------------------------------
+# 8) interval + dedicated Memcached pool
+# Application cache.yaml:
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         pools:
+#             password_policy.flash_throttle:
+#                 adapter: cache.adapter.memcached
+#                 provider: '%env(MEMCACHED_URL)%'
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: interval
+#         flash_interval_minutes: 30
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.password_policy.flash_throttle
+#         flash_throttle_cache_ttl: 86400
+
+# ---------------------------------------------------------------------------
+# 9) Custom throttle storage service (any backend — DynamoDB, DB, etc.)
+# services.yaml:
+# ---------------------------------------------------------------------------
+# services:
+#     App\Security\ExpiryFlashThrottleStorage:
+#         autowire: true
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage_service: App\Security\ExpiryFlashThrottleStorage
+
+# ---------------------------------------------------------------------------
+# 10) FrankenPHP worker / Kubernetes multi-pod (full bundle snippet)
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.redis
+#         default_redis_provider: '%env(REDIS_URL)%'
+#
+# nowo_password_policy:
+#     entities:
+#         App\Entity\User:
+#             expiry_days: 90
+#             reset_password_route_name: user_reset_password
+#             notified_routes:
+#                 - app_dashboard
+#             excluded_notified_routes:
+#                 - login
+#                 - logout
+#                 - user_reset_password
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.app
+#         flash_throttle_cache_ttl: 86400
+#         redirect_on_expiry: false
+#     enable_cache: true
+#     cache_ttl: 3600
+
+# ---------------------------------------------------------------------------
+# 11) Expiry status cache (enable_cache) — Redis — separate from flash throttle
+# Caches isPasswordExpired() per user; uses cache.app automatically.
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.redis
+#         default_redis_provider: '%env(REDIS_URL)%'
+#
+# nowo_password_policy:
+#     enable_cache: true
+#     cache_ttl: 3600
+
+# ---------------------------------------------------------------------------
+# 12) Expiry status cache (enable_cache) — Memcached
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.memcached
+#         default_memcached_provider: '%env(MEMCACHED_URL)%'
+#
+# nowo_password_policy:
+#     enable_cache: true
+#     cache_ttl: 3600
+
+# ---------------------------------------------------------------------------
+# 13) Filesystem cache (dev / single pod only — NOT for multi-pod throttle)
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.filesystem
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.app
+#         flash_throttle_cache_ttl: 3600
+
+# ---------------------------------------------------------------------------
+# 14) APCu cache (single server, in-memory — NOT for Kubernetes multi-pod)
+# ---------------------------------------------------------------------------
+# framework:
+#     cache:
+#         app: cache.adapter.apcu
+#
+# nowo_password_policy:
+#     expiry_listener:
+#         flash_strategy: once_per_session
+#         flash_throttle_storage: cache
+#         flash_throttle_cache_service: cache.app
+#         flash_throttle_cache_ttl: 3600

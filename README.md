@@ -206,6 +206,10 @@ The bundle prevents users from reusing old passwords and can optionally detect p
 | `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
 | `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
 | `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to the resolved reset route when password is expired |
+| `expiry_listener.flash_strategy` | `string` | `'always'` | How often to add the expiry flash: `always`, `once_per_session`, `interval`, `never` |
+| `expiry_listener.flash_interval_minutes` | `int` | `30` | Minutes between flashes when `flash_strategy` is `interval` |
+| `expiry_listener.flash_throttle_storage` | `string` | `'session'` | `session` or `cache` (Redis/Memcached) for multi-pod / FrankenPHP |
+| `expiry_listener.flash_throttle_cache_service` | `string` | `'cache.app'` | Cache pool service id when using `cache` storage |
 | `expiry_listener.lock_route` | `string` | - | **Deprecated** — use `redirect_on_expiry` + `reset_password_route_name` |
 | `expiry_listener.error_msg.text` | `array` or `string` | keys `nowo_password_policy.title` / `.message` (defaults) | Flash title/message (supports translation keys) |
 | `expiry_listener.error_msg.type` | `string` | `'error'` | Flash message type |
@@ -533,6 +537,7 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
 - [Installation](docs/INSTALLATION.md)
 - [Configuration](docs/CONFIGURATION.md)
+- [Expiry flash & cache examples](docs/examples/expiry-flash-and-cache.yaml) (Redis, Memcached, session, custom storage)
 - [Usage](docs/USAGE.md)
 - [Contributing](docs/CONTRIBUTING.md)
 - [Changelog](docs/CHANGELOG.md)

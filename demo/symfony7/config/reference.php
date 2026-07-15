@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 // This file is auto-generated and is for apps only. Bundles SHOULD NOT rely on its content.
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
@@ -1273,6 +1271,12 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         priority?: int|Param, // Priority of the expiry listener. Higher values mean the listener runs earlier. Default is 0. // Default: 0
  *         lock_route?: scalar|Param|null, // (Deprecated) Route to redirect when password is expired. Use redirect_on_expiry and reset_password_route_name instead.
  *         redirect_on_expiry?: bool|Param, // If true, automatically redirects users to the reset_password_route_name when their password expires. If false, only shows a flash message without redirecting. // Default: false
+ *         flash_strategy?: "always"|"once_per_session"|"interval"|"never"|Param, // Controls how often the expiry flash is added: always (every locked request after the flash was consumed), once_per_session, interval, or never. // Default: "always"
+ *         flash_interval_minutes?: int|Param, // Minutes between expiry flash messages when flash_strategy is interval. Default is 30. // Default: 30
+ *         flash_throttle_storage?: "session"|"cache"|Param, // Where to store expiry flash throttle state for once_per_session and interval. Use cache (Redis/Memcached via cache.app) for FrankenPHP workers or Kubernetes multi-pod. // Default: "session"
+ *         flash_throttle_cache_service?: scalar|Param|null, // Symfony cache pool service id used when flash_throttle_storage is cache. Point to a Redis or Memcached adapter (framework.cache.app). // Default: "cache.app"
+ *         flash_throttle_cache_ttl?: int|Param, // TTL in seconds for cache-backed throttle entries. For once_per_session, align with session lifetime (default 86400). // Default: 86400
+ *         flash_throttle_storage_service?: scalar|Param|null, // Optional custom service id implementing ExpiryFlashThrottleStorageInterface. When set, flash_throttle_storage is ignored. // Default: null
  *         error_msg?: array{ // Configuration for error messages displayed when password expires.
  *             text?: mixed, // Error message text. Can be a string or an array with "title" and "message" keys. Supports translation keys. // Default: {"title":"nowo_password_policy.title","message":"nowo_password_policy.message"}
  *             type?: scalar|Param|null, // Flash message type. Common values: "error", "warning", "info", "success". This determines the CSS class and styling of the flash message. // Default: "error"

@@ -8,8 +8,12 @@ use Exception;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
+use Nowo\PasswordPolicyBundle\Model\ExpiryFlashThrottleStorageType;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
+use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\CacheExpiryFlashThrottleStorage;
+use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
+use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStorage;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
@@ -166,7 +170,10 @@ class PasswordPolicyExtension extends Extension
               new Reference('translator'), // $translator
               $config['expiry_listener']['error_msg']['type'], // $errorMessageType
               $config['expiry_listener']['error_msg']['text'], // $errorMessage
+              $this->registerFlashThrottleStorage($containerBuilder, $config), // $flashThrottleStorage
               $config['expiry_listener']['redirect_on_expiry'] ?? false, // $redirectOnExpiry
+              $config['expiry_listener']['flash_strategy'] ?? 'always', // $flashStrategy
+              $config['expiry_listener']['flash_interval_minutes'] ?? 30, // $flashIntervalMinutes
               $containerBuilder->has('logger') ? new Reference('logger') : null, // $logger (optional)
               $config['enable_logging'] ?? true, // $enableLogging
               $config['log_level'] ?? 'info', // $logLevel
@@ -174,6 +181,47 @@ class PasswordPolicyExtension extends Extension
           ]);
 
         return $definition;
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function registerFlashThrottleStorage(ContainerBuilder $containerBuilder, array $config): Reference
+    {
+        $expiryListenerConfig = $config['expiry_listener'] ?? [];
+        $customService        = $expiryListenerConfig['flash_throttle_storage_service'] ?? null;
+
+        if (is_string($customService) && $customService !== '') {
+            if (!$containerBuilder->has($customService)) {
+                throw new ConfigurationException(sprintf('flash_throttle_storage_service "%s" was not found. Register a service implementing %s.', $customService, ExpiryFlashThrottleStorageInterface::class));
+            }
+
+            return new Reference($customService);
+        }
+
+        $storageType = $expiryListenerConfig['flash_throttle_storage'] ?? ExpiryFlashThrottleStorageType::SESSION;
+
+        if ($storageType === ExpiryFlashThrottleStorageType::CACHE) {
+            $cacheServiceId = $expiryListenerConfig['flash_throttle_cache_service'] ?? 'cache.app';
+            if (!$containerBuilder->has($cacheServiceId)) {
+                throw new ConfigurationException(sprintf('flash_throttle_storage is "cache" but service "%s" was not found. Configure Symfony Cache with a Redis or Memcached adapter (framework.cache.app) or set flash_throttle_storage to "session". See docs/CONFIGURATION.md#flash-notification-strategies.', $cacheServiceId));
+            }
+
+            $serviceId = 'nowo_password_policy.expiry_flash_throttle_storage.cache';
+            $containerBuilder->register($serviceId, CacheExpiryFlashThrottleStorage::class)
+                ->setArguments([
+                    new Reference($cacheServiceId),
+                    $expiryListenerConfig['flash_throttle_cache_ttl'] ?? 86400,
+                ]);
+
+            return new Reference($serviceId);
+        }
+
+        $serviceId = 'nowo_password_policy.expiry_flash_throttle_storage.session';
+        $containerBuilder->register($serviceId, SessionExpiryFlashThrottleStorage::class)
+            ->setArguments([new Reference('request_stack')]);
+
+        return new Reference($serviceId);
     }
 
     /**

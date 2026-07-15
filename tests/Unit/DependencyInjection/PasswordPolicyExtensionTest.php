@@ -11,6 +11,7 @@ use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use ReflectionClass;
 use stdClass;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
@@ -368,7 +369,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
     public function testLoadWithCacheAppService(): void
     {
         $container = new ContainerBuilder();
-        $container->register('cache.app', \Symfony\Component\Cache\Adapter\ArrayAdapter::class);
+        $container->register('cache.app', ArrayAdapter::class);
 
         $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
         $configs         = [
@@ -426,5 +427,44 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->assertTrue($container->hasDefinition(\Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener::class));
         $this->assertNotEmpty($definition->getTags());
         $this->addToAssertionCount(1);
+    }
+
+    public function testRegisterFlashThrottleStorageUsesCacheWhenConfigured(): void
+    {
+        $container = new ContainerBuilder();
+        $container->register('cache.app', ArrayAdapter::class);
+
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('registerFlashThrottleStorage');
+        $config     = [
+            'expiry_listener' => [
+                'flash_throttle_storage'       => 'cache',
+                'flash_throttle_cache_service' => 'cache.app',
+                'flash_throttle_cache_ttl'     => 7200,
+            ],
+        ];
+
+        $reference = $method->invoke($this->extension, $container, $config);
+
+        $this->assertSame('nowo_password_policy.expiry_flash_throttle_storage.cache', (string) $reference);
+        $this->assertTrue($container->hasDefinition('nowo_password_policy.expiry_flash_throttle_storage.cache'));
+    }
+
+    public function testRegisterFlashThrottleStorageThrowsWhenCacheServiceMissing(): void
+    {
+        $container = new ContainerBuilder();
+
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('registerFlashThrottleStorage');
+        $config     = [
+            'expiry_listener' => [
+                'flash_throttle_storage' => 'cache',
+            ],
+        ];
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('flash_throttle_storage is "cache"');
+
+        $method->invoke($this->extension, $container, $config);
     }
 }

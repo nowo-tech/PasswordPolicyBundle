@@ -6,6 +6,9 @@ namespace Nowo\PasswordPolicyBundle\EventListener;
 
 use Exception;
 use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
+use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
+use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -16,6 +19,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -47,7 +51,10 @@ class PasswordExpiryListener
      * @param TranslatorInterface $translator The translator service for translating messages
      * @param string $errorMessageType The type of flash message (e.g., 'error', 'warning', 'info')
      * @param array<string, string>|string $errorMessage The error message(s) to display when password is expired
+     * @param ExpiryFlashThrottleStorageInterface $flashThrottleStorage Shared or session storage for throttle state
      * @param bool $redirectOnExpiry Whether to redirect to reset password route when password expires
+     * @param string $flashStrategy How often to add the expiry flash (see ExpiryFlashStrategy)
+     * @param int $flashIntervalMinutes Minutes between flashes when flash_strategy is interval
      * @param LoggerInterface|null $logger The logger service (optional, uses NullLogger if not provided)
      * @param bool $enableLogging Whether logging is enabled
      * @param string $logLevel The logging level to use
@@ -62,7 +69,10 @@ class PasswordExpiryListener
         private readonly string $errorMessageType,
         /** @var array<string, string>|string */
         private readonly string|array $errorMessage,
+        private readonly ExpiryFlashThrottleStorageInterface $flashThrottleStorage,
         private readonly bool $redirectOnExpiry = false,
+        private readonly string $flashStrategy = ExpiryFlashStrategy::ALWAYS,
+        private readonly int $flashIntervalMinutes = 30,
         private readonly ?LoggerInterface $logger = null,
         private readonly bool $enableLogging = true,
         private readonly string $logLevel = 'info',
@@ -119,15 +129,16 @@ class PasswordExpiryListener
             }
 
             // Dispatch PasswordExpiredEvent if user is available and event dispatcher is set
-            if ($user instanceof \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface && $this->eventDispatcher) {
+            if ($user instanceof HasPasswordPolicyInterface && $this->eventDispatcher) {
                 $event = new PasswordExpiredEvent($user, $route, $this->redirectOnExpiry);
                 $this->eventDispatcher->dispatch($event);
             }
 
-            $userId         = $user instanceof \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface ? (string) $user->getId() : 'unknown';
-            $userIdentifier = $user instanceof \Symfony\Component\Security\Core\User\UserInterface
+            $userId         = $user instanceof HasPasswordPolicyInterface ? (string) $user->getId() : 'unknown';
+            $userIdentifier = $user instanceof UserInterface
                 ? $user->getUserIdentifier()
                 : 'unknown';
+            $subjectKey = $this->resolveSubjectKey($user);
 
             // Log password expiry detection
             if ($this->enableLogging && $this->logger) {
@@ -140,7 +151,7 @@ class PasswordExpiryListener
             }
 
             $session = $this->requestStack->getSession();
-            if ($session instanceof Session) {
+            if ($session instanceof Session && $this->shouldAddExpiryFlash($subjectKey)) {
                 // Translate error message(s) - use local variable to avoid modifying property
                 $translatedMessage = $this->errorMessage;
                 if (is_array($translatedMessage)) {
@@ -155,6 +166,7 @@ class PasswordExpiryListener
                 $existingMessages = $flashBag->peek($this->errorMessageType, []);
                 if (!in_array($translatedMessage, $existingMessages, true)) {
                     $flashBag->add($this->errorMessageType, $translatedMessage);
+                    $this->markExpiryFlashShown($subjectKey);
                 }
             }
 
@@ -202,6 +214,58 @@ class PasswordExpiryListener
     private function markExpiryFlashAsHandled(Request $request): void
     {
         $request->attributes->set(self::FLASH_ALREADY_ADDED_ATTRIBUTE, true);
+    }
+
+    private function shouldAddExpiryFlash(?string $subjectKey): bool
+    {
+        if ($subjectKey === null) {
+            return $this->flashStrategy === ExpiryFlashStrategy::ALWAYS;
+        }
+
+        return match ($this->flashStrategy) {
+            ExpiryFlashStrategy::NEVER            => false,
+            ExpiryFlashStrategy::ONCE_PER_SESSION => $this->flashThrottleStorage->getLastShownAt($subjectKey) === null,
+            ExpiryFlashStrategy::INTERVAL         => $this->isFlashIntervalElapsed($subjectKey),
+            default                               => true,
+        };
+    }
+
+    private function isFlashIntervalElapsed(string $subjectKey): bool
+    {
+        $lastShown = $this->flashThrottleStorage->getLastShownAt($subjectKey);
+        if ($lastShown === null) {
+            return true;
+        }
+
+        return (time() - $lastShown) >= ($this->flashIntervalMinutes * 60);
+    }
+
+    private function markExpiryFlashShown(?string $subjectKey): void
+    {
+        if ($subjectKey === null
+            || $this->flashStrategy === ExpiryFlashStrategy::ALWAYS
+            || $this->flashStrategy === ExpiryFlashStrategy::NEVER) {
+            return;
+        }
+
+        $this->flashThrottleStorage->markShown($subjectKey, time());
+    }
+
+    private function resolveSubjectKey(?object $user): ?string
+    {
+        if ($user instanceof HasPasswordPolicyInterface) {
+            return $user::class . ':' . $user->getId();
+        }
+
+        if ($user instanceof UserInterface) {
+            return 'user:' . $user->getUserIdentifier();
+        }
+
+        try {
+            return 'session:' . $this->requestStack->getSession()->getId();
+        } catch (Exception) {
+            return null;
+        }
     }
 
     /**

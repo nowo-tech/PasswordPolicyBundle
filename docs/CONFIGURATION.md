@@ -15,6 +15,8 @@ This document describes how to configure the Password Policy Bundle.
   - [Password Expiry](#password-expiry)
     - [Route name patterns](#route-name-patterns)
     - [Route configuration recommendations](#route-configuration-recommendations)
+    - [Flash notification strategies](#flash-notification-strategies)
+    - [Expiry flash and throttle storage — complete examples](#expiry-flash-and-throttle-storage--complete-examples)
   - [Caching](#caching)
 - [Examples](#examples)
   - [Basic Configuration](#basic-configuration)
@@ -26,6 +28,7 @@ This document describes how to configure the Password Policy Bundle.
 - [Events](#events)
 - [Best Practices](#best-practices)
 - [Demo Projects](#demo-projects)
+- [Configuration examples reference](#configuration-examples-reference)
 
 ## Configuration File
 
@@ -48,6 +51,8 @@ nowo_password_policy:
     expiry_listener:
         priority: 0
         redirect_on_expiry: false
+        flash_strategy: once_per_session
+        flash_interval_minutes: 30
         error_msg:
             text:
                 title: 'Your password expired.'
@@ -81,6 +86,12 @@ Each entity that implements `HasPasswordPolicyInterface` must be configured unde
 | `priority` | `int` | `0` | Priority of the expiry listener. Higher values mean the listener runs earlier. Default is 0. |
 | `lock_route` | `string` | - | (Deprecated) Route to redirect when password is expired. Use `redirect_on_expiry` and `reset_password_route_name` instead. |
 | `redirect_on_expiry` | `bool` | `false` | If `true`, automatically redirects users to the `reset_password_route_name` when their password expires. If `false`, only shows a flash message without redirecting. |
+| `flash_strategy` | `string` | `'always'` | How often the expiry flash is added. See [Flash notification strategies](#flash-notification-strategies). |
+| `flash_interval_minutes` | `int` | `30` | Minutes between flashes when `flash_strategy` is `interval`. Minimum is `1`. |
+| `flash_throttle_storage` | `string` | `'session'` | Backend for throttle state: `session` or `cache`. Use `cache` with Redis/Memcached for FrankenPHP workers or Kubernetes multi-pod. |
+| `flash_throttle_cache_service` | `string` | `'cache.app'` | Symfony cache pool service id when `flash_throttle_storage` is `cache`. |
+| `flash_throttle_cache_ttl` | `int` | `86400` | TTL (seconds) for cache entries. For `once_per_session`, align with session lifetime. |
+| `flash_throttle_storage_service` | `string` \| `null` | `null` | Custom service implementing `ExpiryFlashThrottleStorageInterface`. Overrides built-in session/cache backends. |
 | `error_msg.text.title` | `string` | - | Error message title. Can be a string or translation key. Supports translation keys. |
 | `error_msg.text.message` | `string` | - | Error message body. Can be a string or translation key. Supports translation keys. |
 | `error_msg.type` | `string` | `'error'` | Flash message type. Common values: "error", "warning", "info", "success". This determines the CSS class and styling of the flash message. |
@@ -118,10 +129,328 @@ The bundle uses Doctrine lifecycle events (`onFlush`) to:
 The expiry listener checks on each request:
 1. Calculates days since last password change
 2. Compares with configured `expiry_days`
-3. Shows flash message with configured text
+3. Shows flash message with configured text (according to `flash_strategy`)
 4. If `redirect_on_expiry` is `true`, redirects to the resolved reset route (see `reset_password_route_pattern` and `reset_password_route_name`)
 
-**Note**: By default, only a flash message is shown. To enable automatic redirection, set `redirect_on_expiry: true` in the configuration.
+**Note**: By default (`flash_strategy: always`), the flash is re-added on every locked-route request after the previous message was consumed by the layout. To show it only once per session or on a timer, change `flash_strategy`. To enable automatic redirection, set `redirect_on_expiry: true` in the configuration.
+
+#### Flash notification strategies
+
+| Value | Behaviour |
+|-------|-----------|
+| `always` | Adds the flash whenever the user hits a locked route and the message is not already in the flash bag (default; same as before v1.2.0). |
+| `once_per_session` | Adds the flash at most once per session (recommended for most apps). Resets on logout or session expiry. |
+| `interval` | Re-adds the flash only after `flash_interval_minutes` have passed since the last time it was shown in this session. |
+| `never` | Never adds a flash. Logging, `PasswordExpiredEvent`, and optional redirect still run. |
+
+Example — show the message once per login session:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: session
+```
+
+Example — remind every 15 minutes while the password remains expired:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: interval
+        flash_interval_minutes: 15
+        flash_throttle_storage: session
+```
+
+#### Expiry flash and throttle storage — complete examples
+
+All copy-paste examples also live in [`docs/examples/expiry-flash-and-cache.yaml`](examples/expiry-flash-and-cache.yaml).
+
+##### Flash strategies (`flash_strategy`)
+
+**`always`** — default; flash on every locked route after the previous one was consumed:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: always
+```
+
+**`once_per_session`** — at most one flash per user/session window:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: session
+```
+
+**`interval`** — flash again only after `flash_interval_minutes`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: interval
+        flash_interval_minutes: 30
+        flash_throttle_storage: session
+```
+
+**`never`** — no flash; use with redirect or custom UX via `PasswordExpiredEvent`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: never
+        redirect_on_expiry: true
+```
+
+##### Throttle storage: `session` (default)
+
+Single node, local dev, or when Symfony sessions are already stored in Redis/Memcached via `framework.session.handler_id`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: session
+```
+
+##### Throttle storage: `cache` + Redis (`cache.app`)
+
+Recommended for **FrankenPHP workers** and **Kubernetes multi-pod**.
+
+`config/packages/cache.yaml`:
+
+```yaml
+framework:
+    cache:
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
+```
+
+`config/packages/nowo_password_policy.yaml`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.app
+        flash_throttle_cache_ttl: 86400
+```
+
+Environment (`.env`):
+
+```dotenv
+REDIS_URL=redis://redis:6379
+```
+
+##### Throttle storage: `cache` + Memcached (`cache.app`)
+
+`config/packages/cache.yaml`:
+
+```yaml
+framework:
+    cache:
+        app: cache.adapter.memcached
+        default_memcached_provider: '%env(MEMCACHED_URL)%'
+```
+
+`config/packages/nowo_password_policy.yaml`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.app
+        flash_throttle_cache_ttl: 86400
+```
+
+Environment (`.env`):
+
+```dotenv
+MEMCACHED_URL=memcached://memcached:11211
+```
+
+##### Dedicated cache pool (Redis) — isolate flash throttle keys
+
+`config/packages/cache.yaml`:
+
+```yaml
+framework:
+    cache:
+        pools:
+            password_policy.flash_throttle:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_URL)%'
+```
+
+`config/packages/nowo_password_policy.yaml`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: interval
+        flash_interval_minutes: 15
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.password_policy.flash_throttle
+        flash_throttle_cache_ttl: 86400
+```
+
+##### Dedicated cache pool (Memcached)
+
+`config/packages/cache.yaml`:
+
+```yaml
+framework:
+    cache:
+        pools:
+            password_policy.flash_throttle:
+                adapter: cache.adapter.memcached
+                provider: '%env(MEMCACHED_URL)%'
+```
+
+`config/packages/nowo_password_policy.yaml`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: interval
+        flash_interval_minutes: 15
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.password_policy.flash_throttle
+        flash_throttle_cache_ttl: 86400
+```
+
+##### Custom throttle storage service
+
+Implement `Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface`:
+
+`config/services.yaml`:
+
+```yaml
+services:
+    App\Security\ExpiryFlashThrottleStorage:
+        autowire: true
+```
+
+`config/packages/nowo_password_policy.yaml`:
+
+```yaml
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage_service: App\Security\ExpiryFlashThrottleStorage
+```
+
+When `flash_throttle_storage_service` is set, `flash_throttle_storage` and `flash_throttle_cache_*` are ignored.
+
+##### Expiry check cache (`enable_cache`) — Redis / Memcached
+
+Separate from flash throttle: caches `isPasswordExpired()` per user via `cache.app` (wired automatically by the extension).
+
+Redis:
+
+```yaml
+# config/packages/cache.yaml
+framework:
+    cache:
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
+
+# config/packages/nowo_password_policy.yaml
+nowo_password_policy:
+    enable_cache: true
+    cache_ttl: 3600
+```
+
+Memcached:
+
+```yaml
+framework:
+    cache:
+        app: cache.adapter.memcached
+        default_memcached_provider: '%env(MEMCACHED_URL)%'
+
+nowo_password_policy:
+    enable_cache: true
+    cache_ttl: 3600
+```
+
+##### Adapters not suitable for multi-pod (reference only)
+
+**Filesystem** — single pod / dev only:
+
+```yaml
+framework:
+    cache:
+        app: cache.adapter.filesystem
+
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.app
+```
+
+**APCu** — single server, in-process memory only:
+
+```yaml
+framework:
+    cache:
+        app: cache.adapter.apcu
+
+nowo_password_policy:
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.app
+```
+
+##### Production stack (FrankenPHP / Kubernetes) — combined example
+
+```yaml
+# config/packages/cache.yaml
+framework:
+    cache:
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
+
+# config/packages/nowo_password_policy.yaml
+nowo_password_policy:
+    entities:
+        App\Entity\User:
+            expiry_days: 90
+            reset_password_route_name: user_reset_password
+            notified_routes:
+                - app_dashboard
+            excluded_notified_routes:
+                - login
+                - logout
+                - user_reset_password
+    expiry_listener:
+        flash_strategy: once_per_session
+        flash_throttle_storage: cache
+        flash_throttle_cache_service: cache.app
+        flash_throttle_cache_ttl: 86400
+        redirect_on_expiry: false
+    enable_cache: true
+    cache_ttl: 3600
+```
+
+#### FrankenPHP, Kubernetes, and shared storage
+
+The listener deduplicates flashes **within a single request** using request attributes (safe with FrankenPHP workers). For `once_per_session` and `interval`, throttle state must be **shared across workers/pods** when more than one PHP process serves traffic.
+
+| Deployment | Recommended `flash_throttle_storage` | Recommended cache adapter |
+|------------|--------------------------------------|---------------------------|
+| Single pod / dev | `session` | — |
+| FrankenPHP worker mode | `cache` | Redis or Memcached |
+| Kubernetes (multiple pods) | `cache` | Redis or Memcached |
+| Sessions already in Redis | `session` or `cache` | Either works if shared |
+
+If `flash_throttle_storage: cache` is set but `flash_throttle_cache_service` (default `cache.app`) is missing, the container fails at compile time with a clear configuration error.
 
 #### Route name patterns
 
@@ -357,6 +686,15 @@ See [Events Documentation](EVENTS.md) for complete details, examples, and best p
 12. **Test expiry behaviour**: Ensure expiry works correctly in your application flow
 13. **Use Symfony Flex Recipe**: Let Flex automatically create the configuration file
 14. **Test with demos**: Use the included demo projects to understand bundle behaviour
+15. **Multi-pod / FrankenPHP**: Use `flash_throttle_storage: cache` with Redis or Memcached for `once_per_session` and `interval` (see [complete examples](#expiry-flash-and-throttle-storage--complete-examples))
+
+## Configuration examples reference
+
+| Example | Location |
+|---------|----------|
+| All flash strategies + Redis/Memcached/session/custom | [`docs/examples/expiry-flash-and-cache.yaml`](examples/expiry-flash-and-cache.yaml) |
+| Inline documentation | [Expiry flash and throttle storage — complete examples](#expiry-flash-and-throttle-storage--complete-examples) |
+| Demo (commented snippets) | `demo/symfony6\|7\|8/config/packages/nowo_password_policy.yaml` and `cache.yaml` |
 
 ## Demo Projects
 
@@ -365,6 +703,7 @@ The bundle includes demo projects for Symfony 6.4, 7.0, and 8.0 that demonstrate
 - Password change functionality with validation
 - Visual password expiry status indicators
 - Password history tracking
+- Commented configuration examples for expiry flash strategies and cache backends (Redis, Memcached)
 - Database setup with migrations and fixtures
 
 See [demo/README.md](../demo/README.md) for more information on running the demos.
