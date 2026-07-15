@@ -540,6 +540,7 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 - [Expiry flash & cache examples](docs/examples/expiry-flash-and-cache.yaml) (Redis, Memcached, session, custom storage)
 - [Usage](docs/USAGE.md)
 - [Contributing](docs/CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Changelog](docs/CHANGELOG.md)
 - [Upgrading](docs/UPGRADING.md)
 - [Release](docs/RELEASE.md)

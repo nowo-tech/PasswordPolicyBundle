@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.2.1] - 2026-07-15](#121---2026-07-15)
 - [[1.2.0] - 2026-07-15](#120---2026-07-15)
 - [[1.1.1] - 2026-07-14](#111---2026-07-14)
 - [[1.1.0] - 2026-07-09](#110---2026-07-09)
@@ -229,6 +230,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-15
+
+### Added
+
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) at the repository root (Contributor Covenant 2.1).
+
+### Changed
+
+- **Documentation**: Root [README.md](../README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) link to the Code of Conduct; enforcement contact aligned with [.github/SECURITY.md](../.github/SECURITY.md).
+
 ## [1.2.0] - 2026-07-15
 
 ### Added
@@ -241,6 +252,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Documentation**: [CONFIGURATION.md](CONFIGURATION.md) documents flash strategies, throttle storage, and FrankenPHP/Kubernetes guidance; [README.md](../README.md) lists new options and links to the examples file.
 - **Demos**: Symfony 6/7/8 demo `nowo_password_policy.yaml` and `cache.yaml` include inline comments and optional Redis/Memcached pools for flash throttle testing.
+- **Maintainer tooling**: `.githooks/commit-msg` strips accidental Cursor co-author trailers; `make setup-hooks` installs hooks; `make check-no-cursor-coauthor` runs in `release-check` (REQ-GIT-001).
 
 ## [1.1.1] - 2026-07-14
 

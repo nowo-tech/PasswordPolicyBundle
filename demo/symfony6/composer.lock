@@ -1681,7 +1681,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/password-policy-bundle",
-                "reference": "e026e399369d80c072991d08848b8e83ac21a5cf"
+                "reference": "bb9eb70480a9c913cc93e5ad6000e82d2a0555b2"
             },
             "require": {
                 "nesbot/carbon": "^3.9",

@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.2.1](#upgrading-to-121)
   - [Upgrading to 1.2.0](#upgrading-to-120)
   - [Upgrading to 1.1.1](#upgrading-to-111)
   - [Upgrading to 1.1.0](#upgrading-to-110)
@@ -39,6 +40,34 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.2.1
+
+**Release Date**: 2026-07-15
+
+#### What's New
+
+- **Code of Conduct**: Contributor Covenant 2.1 at the repository root for community standards and reporting guidelines.
+
+#### Breaking Changes
+
+None. Documentation-only patch release.
+
+#### Configuration Changes
+
+None required.
+
+#### Upgrade Steps
+
+1. Update the bundle (optional — no runtime changes):
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+No cache clear or configuration changes are required.
+
+---
 
 ### Upgrading to 1.2.0
 
