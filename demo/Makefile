@@ -1,8 +1,8 @@
 # Makefile for Password Policy Bundle Demo
 # Each demo has its own docker-compose.yml and can be run independently
 
-# Define available demos (directory names: symfony6, symfony7, symfony8)
-DEMOS := symfony6 symfony7 symfony8
+# Define available demos (directory names: symfony8)
+DEMOS := symfony8
 
 # Helper function to get port from .env file (defaults to 8001)
 get-port = $(shell grep -E '^PORT=' $(1)/.env 2>/dev/null | cut -d '=' -f2 || echo "8001")
@@ -43,15 +43,15 @@ help:
 	@echo ""
 	@echo "Verification:"
 	@echo "  verify-all         Start all demos and verify they respond correctly"
-	@echo "  verify <demo>      Start a specific demo and verify it responds (e.g., make verify DEMO=symfony6)"
+	@echo "  verify <demo>      Start a specific demo and verify it responds (e.g., make verify DEMO=symfony8)"
 	@echo ""
 	@echo "Generic commands (use with DEMO=<name>):"
-	@echo "  up <demo>         Start a specific demo (e.g., make up DEMO=symfony6)"
-	@echo "  down <demo>        Stop a specific demo (e.g., make down DEMO=symfony6)"
-	@echo "  install <demo>     Install dependencies (e.g., make install DEMO=symfony6)"
-	@echo "  database <demo>   Setup database (e.g., make database DEMO=symfony6)"
-	@echo "  test <demo>        Run tests (e.g., make test DEMO=symfony6)"
-	@echo "  test-coverage <demo>  Run tests with coverage (e.g., make test-coverage DEMO=symfony6)"
+	@echo "  up <demo>         Start a specific demo (e.g., make up DEMO=symfony8)"
+	@echo "  down <demo>        Stop a specific demo (e.g., make down DEMO=symfony8)"
+	@echo "  install <demo>     Install dependencies (e.g., make install DEMO=symfony8)"
+	@echo "  database <demo>   Setup database (e.g., make database DEMO=symfony8)"
+	@echo "  test <demo>        Run tests (e.g., make test DEMO=symfony8)"
+	@echo "  test-coverage <demo>  Run tests with coverage (e.g., make test-coverage DEMO=symfony8)"
 	@echo "  shell <demo>       Open shell in a specific demo container"
 	@echo "  logs <demo>        Show logs of a specific demo"
 	@echo ""

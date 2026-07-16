@@ -6,7 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
-  - [Unreleased](#unreleased)
+  - [Upgrading to 1.2.3](#upgrading-to-123)
   - [Upgrading to 1.2.2](#upgrading-to-122)
   - [Upgrading to 1.2.1](#upgrading-to-121)
   - [Upgrading to 1.2.0](#upgrading-to-120)
@@ -43,11 +43,38 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
-### Unreleased
+### Upgrading to 1.2.3
 
-#### Removed
+**Release Date**: 2026-07-16
 
-- **Demo projects**: Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`) were removed. Use `demo/symfony8` only.
+#### What's New
+
+- **Demo layout**: Only the Symfony 8 demo remains under `demo/symfony8`. Symfony 6 and 7 demo trees were removed to reduce maintenance.
+
+#### Breaking Changes
+
+None for applications using the bundle from Composer. This change affects only the repository demo projects.
+
+#### Configuration Changes
+
+None required.
+
+#### Upgrade Steps
+
+1. Update the bundle (optional for consumers — no runtime API change):
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. If you previously ran local demos from this repository:
+
+   ```bash
+   cd demo
+   make up-symfony8
+   ```
+
+   Do not use `make up-symfony6` / `make up-symfony7` (targets removed).
 
 ---
 

@@ -21,9 +21,9 @@ Symfony bundle for password policy enforcements including password history, expi
 - ✅ **Flexible Configuration** - Works out of the box with sensible defaults
 - ✅ **Modern Symfony Support** - Compatible with Symfony 6, 7, and 8
 - ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English
-- ✅ **Demo Projects** - Full-featured demos with visual expiry indicators
+- ✅ **Demo Project** - Full-featured Symfony 8 demo with visual expiry indicators
 
-**FrankenPHP:** Demos use a **single PHP service** (FrankenPHP, no nginx). With **`APP_ENV=dev`** (default), the Docker **entrypoint swaps in `Caddyfile.dev`** — **`php_server` without workers** for comfortable local development. The baked-in production `Caddyfile` can use **`php_server { worker … }`**; see [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md). Access each demo at `http://localhost:PORT` (see `demo/README.md` and `.env`).
+**FrankenPHP:** The demo uses a **single PHP service** (FrankenPHP, no nginx). With **`APP_ENV=dev`** (default), the Docker **entrypoint swaps in `Caddyfile.dev`** — **`php_server` without workers** for comfortable local development. The baked-in production `Caddyfile` can use **`php_server { worker … }`**; see [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md). Access the demo at `http://localhost:PORT` (see `demo/README.md` and `.env`).
 
 ## Installation
 
@@ -547,5 +547,5 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 ### Additional documentation
 
 - [GitHub Actions CI requirements](docs/GITHUB_CI.md) — REQ-GIT-001 CI hygiene and history cleanup
-- [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run demos in dev (no cache) or production (worker)
+- [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run the Symfony 8 demo in dev (no cache) or production (worker)
 - [Events](docs/EVENTS.md) — Custom events and event listeners

@@ -694,11 +694,11 @@ See [Events Documentation](EVENTS.md) for complete details, examples, and best p
 |---------|----------|
 | All flash strategies + Redis/Memcached/session/custom | [`docs/examples/expiry-flash-and-cache.yaml`](examples/expiry-flash-and-cache.yaml) |
 | Inline documentation | [Expiry flash and throttle storage — complete examples](#expiry-flash-and-throttle-storage--complete-examples) |
-| Demo (commented snippets) | `demo/symfony6\|7\|8/config/packages/nowo_password_policy.yaml` and `cache.yaml` |
+| Demo (commented snippets) | `demo/symfony8/config/packages/nowo_password_policy.yaml` and `cache.yaml` |
 
 ## Demo Projects
 
-The bundle includes demo projects for Symfony 6.4, 7.0, and 8.0 that demonstrate:
+The bundle includes a demo project for Symfony 8 that demonstrates:
 - Complete CRUD interface for user management
 - Password change functionality with validation
 - Visual password expiry status indicators

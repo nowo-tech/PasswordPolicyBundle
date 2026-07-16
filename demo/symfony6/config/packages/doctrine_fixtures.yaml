@@ -1,4 +1,0 @@
-doctrine_fixtures:
-    orm:
-        entity_manager: default
-

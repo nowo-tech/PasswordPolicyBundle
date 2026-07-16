@@ -67,15 +67,15 @@ Enhancement suggestions are welcome:
    composer install
    ```
 
-4. **Run the demos** (optional, for testing):
+4. **Run the demo** (optional, for testing):
    ```bash
    cd demo
-   make up-symfony6
-   make install-symfony6
-   make database-symfony6
+   make up-symfony8
+   make install-symfony8
+   make database-symfony8
    ```
-
-   Access the demo at `http://localhost:8001` to see the CRUD interface in action.
+   
+   Access the demo at `http://localhost:8003` to see the CRUD interface in action.
 
 #### Code Standards
 

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.2.3] - 2026-07-16](#123---2026-07-16)
 - [[1.2.2] - 2026-07-16](#122---2026-07-16)
 - [[1.2.1] - 2026-07-15](#121---2026-07-15)
 - [[1.2.0] - 2026-07-15](#120---2026-07-15)
@@ -231,9 +232,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-07-16
+
 ### Removed
 
-- **Demo projects**: Removed Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`). The Symfony 8 demo (`demo/symfony8`) remains.
+- **Demo projects**: Removed Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`). The Symfony 8 demo (`demo/symfony8`) remains as the reference demo.
+
+### Changed
+
+- **Documentation**: [CONFIGURATION.md](CONFIGURATION.md), [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [demo/README.md](../demo/README.md) updated for the single Symfony 8 demo.
 
 ## [1.2.2] - 2026-07-16
 
