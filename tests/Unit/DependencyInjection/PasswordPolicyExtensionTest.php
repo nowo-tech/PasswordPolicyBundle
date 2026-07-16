@@ -467,4 +467,95 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $method->invoke($this->extension, $container, $config);
     }
+
+    public function testLoadThrowsWhenResetPasswordRoutePatternIsNotString(): void
+    {
+        $container       = new ContainerBuilder();
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('reset_password_route_pattern');
+
+        $this->extension->load([[
+            'entities' => [
+                $mockEntityClass => [
+                    'reset_password_route_name'    => 'reset',
+                    'reset_password_route_pattern' => 123,
+                ],
+            ],
+        ]], $container);
+    }
+
+    public function testRegisterFlashThrottleStorageThrowsWhenCustomServiceMissing(): void
+    {
+        $container  = new ContainerBuilder();
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('registerFlashThrottleStorage');
+        $config     = [
+            'expiry_listener' => [
+                'flash_throttle_storage_service' => 'missing.storage',
+            ],
+        ];
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('flash_throttle_storage_service "missing.storage" was not found');
+
+        $method->invoke($this->extension, $container, $config);
+    }
+
+    public function testValidateRoutePatternSyntaxIgnoresEmptyAndShortPatterns(): void
+    {
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('validateRoutePatternSyntax');
+
+        $method->invoke($this->extension, '   ', 'Entity', 'notified_routes');
+        $method->invoke($this->extension, 'ab', 'Entity', 'notified_routes');
+        $this->addToAssertionCount(1);
+    }
+
+    public function testValidateRoutePatternSyntaxThrowsForInvalidPcre(): void
+    {
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('validateRoutePatternSyntax');
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Invalid PCRE pattern');
+
+        $method->invoke($this->extension, '/(/', 'Entity', 'notified_routes');
+    }
+
+    public function testLoadValidatesResetPasswordRoutePatternSyntax(): void
+    {
+        $container       = new ContainerBuilder();
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+
+        $this->extension->load([[
+            'entities' => [
+                $mockEntityClass => [
+                    'reset_password_route_name'    => 'reset',
+                    'reset_password_route_pattern' => '#^app_reset_#',
+                ],
+            ],
+        ]], $container);
+
+        $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
+    }
+
+    public function testRegisterFlashThrottleStorageUsesCustomServiceWhenPresent(): void
+    {
+        $container = new ContainerBuilder();
+        $container->register('app.custom_flash_throttle', stdClass::class);
+
+        $reflection = new ReflectionClass($this->extension);
+        $method     = $reflection->getMethod('registerFlashThrottleStorage');
+        $config     = [
+            'expiry_listener' => [
+                'flash_throttle_storage_service' => 'app.custom_flash_throttle',
+            ],
+        ];
+
+        $reference = $method->invoke($this->extension, $container, $config);
+
+        $this->assertSame('app.custom_flash_throttle', (string) $reference);
+    }
 }

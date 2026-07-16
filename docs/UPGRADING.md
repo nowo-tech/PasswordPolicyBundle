@@ -6,6 +6,8 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Unreleased](#unreleased)
+  - [Upgrading to 1.2.2](#upgrading-to-122)
   - [Upgrading to 1.2.1](#upgrading-to-121)
   - [Upgrading to 1.2.0](#upgrading-to-120)
   - [Upgrading to 1.1.1](#upgrading-to-111)
@@ -40,6 +42,50 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Unreleased
+
+#### Removed
+
+- **Demo projects**: Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`) were removed. Use `demo/symfony8` only.
+
+---
+
+### Upgrading to 1.2.2
+
+**Release Date**: 2026-07-16
+
+#### What's New
+
+- **CI / maintainer tooling**: GitHub Actions enforces REQ-GIT-001 (`git-hygiene` job). Optional local cleanup via `make strip-cursor-coauthor-from-history`. See [GITHUB_CI.md](GITHUB_CI.md).
+- **Tests**: Broader coverage for configuration validation and expiry flash throttle paths (no public API change).
+- **Hardening**: Password expiry flash is skipped when no session is available (no exception).
+
+#### Breaking Changes
+
+None. Backward-compatible patch release.
+
+#### Configuration Changes
+
+None required.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache if you refresh container definitions after pull:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+No application configuration changes are required.
+
+---
 
 ### Upgrading to 1.2.1
 

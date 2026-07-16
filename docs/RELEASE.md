@@ -2,19 +2,22 @@
 
 1. Update [CHANGELOG.md](CHANGELOG.md): move entries from `[Unreleased]` to a new `[X.Y.Z] - YYYY-MM-DD` section. (This project does not store version in `composer.json`; Packagist uses the git tag.)
 2. Update [UPGRADING.md](UPGRADING.md) if the release has upgrade notes.
-3. Run pre-release checks: `make release-check` (cs-fix, cs-check, rector-dry, phpstan, test-coverage, and optionally demo healthchecks).
+3. Run pre-release checks: `make release-check` (includes `check-no-cursor-coauthor`, cs-fix, cs-check, rector-dry, phpstan, test-coverage, and optionally demo healthchecks).
 4. Commit all changes, create an annotated tag (e.g. `v1.2.1`), and push branch and tag. **The GitHub Release is created automatically by the CI when you push the tag** (workflow `Create Release` on `push: tags: - 'v*'`). Do not create the release from the GitHub UI before pushing the tag, or the workflow may conflict.
 5. Publish the package to Packagist if applicable (usually automatic when the tag is pushed).
 
-## Example for v1.2.1
+After creating the release commit and tag, run `make check-no-cursor-coauthor` again **before** `git push` (REQ-GIT-001). The release commit itself is not covered by an earlier `release-check` run.
+
+## Example for v1.2.2
 
 ```bash
 git add -A
-git status   # review: CHANGELOG, UPGRADING, CODE_OF_CONDUCT.md, any last-minute fixes
-git commit -m "Release 1.2.1"
-git tag -a v1.2.1 -m "Release 1.2.1 — see docs/CHANGELOG.md"
+git status   # review: CHANGELOG, UPGRADING, GITHUB_CI.md, any last-minute fixes
+git commit -m "Release 1.2.2"
+make check-no-cursor-coauthor
+git tag -a v1.2.2 -m "Release 1.2.2 — see docs/CHANGELOG.md"
 git push origin main
-git push origin v1.2.1
+git push origin v1.2.2
 ```
 
 The `Create Release` workflow will open a GitHub Release from the annotated tag message and, when present, append the matching section from `docs/CHANGELOG.md`.

@@ -259,10 +259,6 @@ class PasswordPolicyService implements PasswordPolicyServiceInterface
                 continue;
             }
 
-            if ((int) $part > 999) {
-                continue;
-            }
-
             $basePassword = $suffix ? substr($password, 0, -$size) : substr($password, $size);
             $this->addExtensionBaseCandidate($candidates, $basePassword, $minLength);
         }

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.2.2] - 2026-07-16](#122---2026-07-16)
 - [[1.2.1] - 2026-07-15](#121---2026-07-15)
 - [[1.2.0] - 2026-07-15](#120---2026-07-15)
 - [[1.1.1] - 2026-07-14](#111---2026-07-14)
@@ -229,6 +230,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+### Removed
+
+- **Demo projects**: Removed Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`). The Symfony 8 demo (`demo/symfony8`) remains.
+
+## [1.2.2] - 2026-07-16
+
+### Added
+
+- **CI — REQ-GIT-001**: New `git-hygiene` job in `.github/workflows/ci.yml` runs `check-no-cursor-coauthor` with full history (`fetch-depth: 0`).
+- **History cleanup script**: `.scripts/strip-cursor-coauthor-from-history.sh` and `make strip-cursor-coauthor-from-history` to rewrite local branch messages when trailers are already present.
+- **CI operator doc**: [GITHUB_CI.md](GITHUB_CI.md) documents REQ-GIT-001 adoption, CI wiring, and force-push recovery.
+- **Tests**: Additional coverage for flash-throttle DI errors, invalid route patterns, and expiry flash subject keys / session-unavailable paths.
+- **Hardening**: `PasswordExpiryListener` no longer throws when the request session is unavailable; expiry flash is skipped gracefully.
+- **Cleanup**: Removed unreachable numeric-extension guard in `PasswordPolicyService` (max extension length is already 3 digits / 0–999).
+
+### Changed
+
+- **`check-no-cursor-coauthor.sh`**: Validates a bundle-local `.git`, refuses parent-monorepo checkouts, uses `--no-replace-objects`, and lists offending commits on failure.
+- **Documentation**: [RELEASE.md](RELEASE.md) and [CONTRIBUTING.md](CONTRIBUTING.md) point to the CI hygiene check and cleanup flow; [README.md](../README.md) links [GITHUB_CI.md](GITHUB_CI.md).
 
 ## [1.2.1] - 2026-07-15
 

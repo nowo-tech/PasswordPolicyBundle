@@ -6,7 +6,7 @@ COMPOSE_FILE := docker-compose.yml
 COMPOSE := docker-compose -f $(COMPOSE_FILE)
 SERVICE_PHP := php
 
-.PHONY: help up down build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan qa release-check release-check-demos composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor
+.PHONY: help up down build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan qa release-check release-check-demos composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor strip-cursor-coauthor-from-history
 
 # Default target
 help:
@@ -169,3 +169,7 @@ setup-hooks:
 # REQ-MAKE-008: update-deps (REQ-MAKE-008)
 BUNDLE_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 include $(BUNDLE_ROOT)/../.scripts/Makefile.update-deps.mk
+
+strip-cursor-coauthor-from-history:
+	@chmod +x .scripts/strip-cursor-coauthor-from-history.sh
+	@./.scripts/strip-cursor-coauthor-from-history.sh main

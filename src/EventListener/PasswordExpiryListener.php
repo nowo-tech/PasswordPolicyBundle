@@ -150,7 +150,11 @@ class PasswordExpiryListener
                 ]);
             }
 
-            $session = $this->requestStack->getSession();
+            try {
+                $session = $this->requestStack->getSession();
+            } catch (Exception) {
+                $session = null;
+            }
             if ($session instanceof Session && $this->shouldAddExpiryFlash($subjectKey)) {
                 // Translate error message(s) - use local variable to avoid modifying property
                 $translatedMessage = $this->errorMessage;

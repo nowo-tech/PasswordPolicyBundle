@@ -393,7 +393,7 @@ make qa
 
 ## Demo Projects
 
-The bundle includes complete demo projects for Symfony 6.4, 7.0, and 8.0. Each demo includes:
+The bundle includes a complete demo project for Symfony 8. It includes:
 
 - **MySQL Database**: Isolated database per demo with migrations and initial data
 - **Authentication System**: Complete login system with Symfony Security
@@ -427,25 +427,20 @@ Users management: list with password status (Active, Expiring Soon, Expired), pa
 
 ![Demo users management](docs/images/demo-users-management.png)
 
-### Running the Demos
+### Running the Demo
 
 ```bash
 cd demo
-make up-symfony6   # Start Symfony 6.4 demo (includes automatic setup)
-make up-symfony7   # Start Symfony 7.0 demo
-make up-symfony8   # Start Symfony 8.0 demo
+make up-symfony8   # Start Symfony 8 demo (includes automatic setup)
 ```
 
-The `make up-*` commands automatically:
+The `make up-*` command automatically:
 - Install Composer dependencies
 - Copy updated bundle files to vendor directory
 - Create database and run migrations
 - Set up initial data with password history
 
-Access the demos at:
-- Symfony 6.4: `http://localhost:8001`
-- Symfony 7.0: `http://localhost:8002`
-- Symfony 8.0: `http://localhost:8003`
+Access the demo at `http://localhost:8003` (port from `demo/symfony8/.env`).
 
 ### Testing Password Expiry
 
@@ -551,5 +546,6 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 
 ### Additional documentation
 
+- [GitHub Actions CI requirements](docs/GITHUB_CI.md) — REQ-GIT-001 CI hygiene and history cleanup
 - [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run demos in dev (no cache) or production (worker)
 - [Events](docs/EVENTS.md) — Custom events and event listeners

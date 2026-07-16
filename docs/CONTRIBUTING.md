@@ -74,9 +74,8 @@ Enhancement suggestions are welcome:
    make install-symfony6
    make database-symfony6
    ```
-   
+
    Access the demo at `http://localhost:8001` to see the CRUD interface in action.
-   ```
 
 #### Code Standards
 
@@ -220,4 +219,4 @@ If you have questions about contributing, you can:
 ## Acknowledgments
 
 Thank you for contributing to Password Policy Bundle. Your help makes this project better for everyone.
-
+If CI fails because trailers are already on the remote, see [GITHUB_CI.md](GITHUB_CI.md) (REQ-GIT-001) and run `make strip-cursor-coauthor-from-history` before `git push --force-with-lease`.
