@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.3.0](#upgrading-to-130)
   - [Upgrading to 1.2.3](#upgrading-to-123)
   - [Upgrading to 1.2.2](#upgrading-to-122)
   - [Upgrading to 1.2.1](#upgrading-to-121)
@@ -42,6 +43,63 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.3.0
+
+**Release Date**: 2026-07-22
+
+#### What's New (REQ-I18N-003)
+
+- **Translation domain** is now `NowoPasswordPolicyBundle` (files: `src/Resources/translations/NowoPasswordPolicyBundle.{locale}.yaml`).
+- **Bundle class** renamed to `Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle`.
+- PHP namespaces under `Nowo\PasswordPolicyBundle\` are unchanged.
+- DI config alias `nowo_password_policy` is unchanged.
+- YAML message key root `nowo_password_policy` is unchanged.
+
+#### Breaking Changes
+
+- App translation overrides and `->trans(..., [], 'PasswordPolicyBundle')` must switch to domain `NowoPasswordPolicyBundle`.
+
+#### Configuration Changes
+
+Update `config/bundles.php` (recommended):
+
+```php
+return [
+    // ...
+    Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle::class => ['all' => true],
+];
+```
+
+`PasswordPolicyBundle::class` still works via a deprecated `class_alias`, but prefer the new class name.
+
+If you override messages in the application:
+
+```text
+translations/PasswordPolicyBundle.en.yaml  →  translations/NowoPasswordPolicyBundle.en.yaml
+```
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Update `config/bundles.php` to `NowoPasswordPolicyBundle::class`.
+
+3. Rename any app-level translation files/domain from `PasswordPolicyBundle` to `NowoPasswordPolicyBundle`.
+
+4. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+5. Verify expiry flash messages and validator violations still translate correctly.
+
+---
 
 ### Upgrading to 1.2.3
 

@@ -43,7 +43,7 @@ If you use Symfony Flex, the bundle is registered automatically and a default co
 
 return [
     // ...
-    Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class => ['all' => true],
+    Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle::class => ['all' => true],
 ];
 ```
 

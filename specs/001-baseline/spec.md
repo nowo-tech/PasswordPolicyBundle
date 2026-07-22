@@ -148,7 +148,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 
 ### Internationalization
 
-- **FR-I18N-001**: Translation files under `Resources/translations/PasswordPolicyBundle.*.yaml` MUST provide keys for validator messages and expiry flash title/message in all shipped locales.
+- **FR-I18N-001**: Translation files under `Resources/translations/NowoNowoPasswordPolicyBundle.*.yaml` MUST provide keys for validator messages and expiry flash title/message in all shipped locales.
 
 ---
 

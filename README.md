@@ -38,7 +38,7 @@ Then, register the bundle in your `config/bundles.php`:
 
 return [
   // ...
-  Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class => ['all' => true],
+  Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle::class => ['all' => true],
 ];
 ```
 

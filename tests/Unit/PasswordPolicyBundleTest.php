@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Tests\Unit;
 
 use Nowo\PasswordPolicyBundle\DependencyInjection\PasswordPolicyExtension;
-use Nowo\PasswordPolicyBundle\PasswordPolicyBundle;
+use Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 
 /**
- * Tests for PasswordPolicyBundle.
+ * Tests for NowoPasswordPolicyBundle.
  *
  * @author Héctor Franco Aceituno <hectorfranco@nowo.tech>
  * @copyright 2025 Nowo.tech
  */
 final class PasswordPolicyBundleTest extends TestCase
 {
-    private PasswordPolicyBundle $bundle;
+    private NowoPasswordPolicyBundle $bundle;
 
     protected function setUp(): void
     {
-        $this->bundle = new PasswordPolicyBundle();
+        $this->bundle = new NowoPasswordPolicyBundle();
     }
 
     public function testGetContainerExtension(): void
@@ -46,5 +46,11 @@ final class PasswordPolicyBundleTest extends TestCase
         $this->assertInstanceOf(PasswordPolicyExtension::class, $extension);
 
         $this->assertSame('nowo_password_policy', $extension->getAlias());
+    }
+
+    public function testDeprecatedPasswordPolicyBundleClassAlias(): void
+    {
+        $this->assertTrue(class_exists(\Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class));
+        $this->assertInstanceOf(NowoPasswordPolicyBundle::class, new \Nowo\PasswordPolicyBundle\PasswordPolicyBundle());
     }
 }

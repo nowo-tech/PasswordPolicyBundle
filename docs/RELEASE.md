@@ -8,16 +8,16 @@
 
 After creating the release commit and tag, run `make check-no-cursor-coauthor` again **before** `git push` (REQ-GIT-001). The release commit itself is not covered by an earlier `release-check` run.
 
-## Example for v1.2.3
+## Example for v1.3.0
 
 ```bash
 git add -A
-git status   # review: CHANGELOG, UPGRADING, demo removal, docs
-git commit -m "Release 1.2.3"
+git status   # review: CHANGELOG, UPGRADING, translation domain rename, bundle class
+git commit -m "Release 1.3.0"
 make check-no-cursor-coauthor
-git tag -a v1.2.3 -m "Release 1.2.3 — see docs/CHANGELOG.md"
+git tag -a v1.3.0 -m "Release 1.3.0 — see docs/CHANGELOG.md"
 git push origin main
-git push origin v1.2.3
+git push origin v1.3.0
 ```
 
 The `Create Release` workflow will open a GitHub Release from the annotated tag message and, when present, append the matching section from `docs/CHANGELOG.md`.

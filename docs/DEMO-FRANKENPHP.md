@@ -46,7 +46,7 @@ The main difference between development and production is:
 The demo applications are configured for **local development and debugging**:
 
 - **Symfony Web Profiler** — enabled in `dev` environment.
-- **Password Policy Bundle** (`Nowo\PasswordPolicyBundle\PasswordPolicyBundle`) — the bundle under test; enabled in the demos.
+- **Password Policy Bundle** (`Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle`) — the bundle under test; enabled in the demos.
 
 Example `config/bundles.php` (aligned with **demo/symfony8**):
 
@@ -60,7 +60,7 @@ return [
     Doctrine\Bundle\DoctrineBundle\DoctrineBundle::class             => ['all' => true],
     Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle::class   => ['dev' => true, 'test' => true],
     Symfony\Bundle\SecurityBundle\SecurityBundle::class            => ['all' => true],
-    Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class            => ['all' => true],
+    Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle::class            => ['all' => true],
     Symfony\Bundle\TwigBundle\TwigBundle::class                      => ['all' => true],
     Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle::class => ['all' => true],
     Symfony\Bundle\WebProfilerBundle\WebProfilerBundle::class      => ['dev' => true],

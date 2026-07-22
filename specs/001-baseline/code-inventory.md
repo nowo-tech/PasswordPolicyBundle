@@ -2,7 +2,7 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/password-policy-bundle`  
-**Last audited**: 2026-07-15
+**Last audited**: 2026-07-22
 
 This file proves that **every production source artifact** under `src/` is referenced by the baseline specification. Test-only files under `tests/` and demo trees are out of Packagist scope unless promoted in the spec.
 
@@ -10,7 +10,8 @@ This file proves that **every production source artifact** under `src/` is refer
 
 | Source file | Spec section | Requirement IDs |
 | --- | --- | --- |
-| `PasswordPolicyBundle.php` | Bundle entry | FR-BUNDLE-001 |
+| `NowoPasswordPolicyBundle.php` | Bundle entry | FR-BUNDLE-001 |
+| `PasswordPolicyBundle.php` | Deprecated class_alias BC shim | FR-BUNDLE-001 |
 | `DependencyInjection/Configuration.php` | Config tree | FR-CFG-001 |
 | `DependencyInjection/PasswordPolicyExtension.php` | DI extension, listeners, throttle storage | FR-CFG-002, FR-LIST-002, FR-FLASH-001 |
 | `Model/HasPasswordPolicyInterface.php` | Entity contract | FR-MODEL-001 |
@@ -50,47 +51,47 @@ This file proves that **every production source artifact** under `src/` is refer
 
 ## Translations (`src/Resources/translations/`)
 
-All locale files expose validator violation messages and expiry flash copy under domain `PasswordPolicyBundle`.
+All locale files expose validator violation messages and expiry flash copy under domain `NowoPasswordPolicyBundle`.
 
 | Source file | Spec section | Requirement IDs |
 | --- | --- | --- |
-| `Resources/translations/PasswordPolicyBundle.ar.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.bg.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.ca.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.cs.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.da.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.de.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.el.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.en.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.es.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.et.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.fi.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.fr.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.he.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.hi.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.hr.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.hu.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.id.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.it.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.ja.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.ko.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.lt.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.nl.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.no.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.pl.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.pt.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.pt_BR.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.ro.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.ru.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.sk.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.sl.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.sv.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.th.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.tr.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.uk.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.vi.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.zh_CN.yaml` | i18n | FR-I18N-001 |
-| `Resources/translations/PasswordPolicyBundle.zh_TW.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.ar.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.bg.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.ca.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.cs.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.da.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.de.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.el.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.en.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.es.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.et.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.fi.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.fr.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.he.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.hi.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.hr.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.hu.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.id.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.it.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.ja.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.ko.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.lt.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.nl.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.no.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.pl.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.pt.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.pt_BR.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.ro.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.ru.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.sk.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.sl.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.sv.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.th.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.tr.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.uk.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.vi.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.zh_CN.yaml` | i18n | FR-I18N-001 |
+| `Resources/translations/NowoPasswordPolicyBundle.zh_TW.yaml` | i18n | FR-I18N-001 |
 
 ## Coverage summary
 

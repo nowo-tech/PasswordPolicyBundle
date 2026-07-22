@@ -47,11 +47,11 @@ The bundle stores hashed passwords in the history entity when the user changes p
 
 ## Translation overrides
 
-The bundle translation domain is `PasswordPolicyBundle`. You can override any message from the application layer while keeping bundle translations as fallback.
+The bundle translation domain is `NowoPasswordPolicyBundle`. You can override any message from the application layer while keeping bundle translations as fallback.
 
 1. Create or edit an app translation file with the same domain, for example:
-   - `translations/PasswordPolicyBundle.en.yaml`
-   - `translations/PasswordPolicyBundle.es.yaml`
+   - `translations/NowoPasswordPolicyBundle.en.yaml`
+   - `translations/NowoPasswordPolicyBundle.es.yaml`
 2. Override only the keys you need. If a key is not defined in your app file, Symfony automatically uses the bundle value from `src/Resources/translations/`.
 
 Example:

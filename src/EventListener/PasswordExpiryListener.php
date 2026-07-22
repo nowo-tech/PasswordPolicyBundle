@@ -160,10 +160,10 @@ class PasswordExpiryListener
                 $translatedMessage = $this->errorMessage;
                 if (is_array($translatedMessage)) {
                     foreach ($translatedMessage as $key => $value) {
-                        $translatedMessage[$key] = $this->translator->trans($value, [], 'PasswordPolicyBundle');
+                        $translatedMessage[$key] = $this->translator->trans($value, [], 'NowoPasswordPolicyBundle');
                     }
                 } else {
-                    $translatedMessage = $this->translator->trans($translatedMessage, [], 'PasswordPolicyBundle');
+                    $translatedMessage = $this->translator->trans($translatedMessage, [], 'NowoPasswordPolicyBundle');
                 }
 
                 $flashBag         = $session->getFlashBag();

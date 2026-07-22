@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.3.0] - 2026-07-22](#130---2026-07-22)
 - [[1.2.3] - 2026-07-16](#123---2026-07-16)
 - [[1.2.2] - 2026-07-16](#122---2026-07-16)
 - [[1.2.1] - 2026-07-15](#121---2026-07-15)
@@ -231,6 +232,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [1.3.0] - 2026-07-22
+
+### Changed
+
+- **Translation domain (REQ-I18N-003)**: Domain renamed from `PasswordPolicyBundle` to `NowoPasswordPolicyBundle`. Translation files are now `src/Resources/translations/NowoPasswordPolicyBundle.{locale}.yaml`. YAML message keys under `nowo_password_policy` are unchanged.
+- **Bundle class**: Canonical class is `Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle`. Register it in `config/bundles.php`. `PasswordPolicyBundle` remains as a deprecated `class_alias` for backward compatibility.
+- **Documentation**: [USAGE.md](USAGE.md), [INSTALLATION.md](INSTALLATION.md), [README.md](../README.md), and [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md) updated for the new domain and bundle class.
+
+### Breaking Changes
+
+- Applications that override translations under domain `PasswordPolicyBundle` must rename files/domain to `NowoPasswordPolicyBundle`.
+- Explicit `->trans(..., [], 'PasswordPolicyBundle')` calls must use `'NowoPasswordPolicyBundle'`.
 
 ## [1.2.3] - 2026-07-16
 
