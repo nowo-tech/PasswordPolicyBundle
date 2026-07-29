@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
-use Carbon\Carbon;
 use DateTime;
+use DateTimeImmutable;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Util\RouteNameMatcher;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Clock\ClockInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 
 use function array_keys;
 use function in_array;
@@ -59,9 +61,15 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
         private readonly ?RouterInterface $router = null,
         private readonly ?CacheItemPoolInterface $cache = null,
         bool $cacheEnabled = false,
-        private readonly int $cacheTtl = 3600
+        private readonly int $cacheTtl = 3600,
+        private readonly ?ClockInterface $clock = null,
     ) {
         $this->cacheEnabled = $cacheEnabled && $cache instanceof CacheItemPoolInterface;
+    }
+
+    private function now(): DateTimeImmutable
+    {
+        return $this->clock?->now() ?? new DateTimeImmutable();
     }
 
     /**
@@ -89,17 +97,18 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
 
             // Calculate expiry status
             $isExpired = false;
+            $now       = $this->now();
             foreach ($this->entities as $entityClass => $config) {
                 $passwordLastChange = $user->getPasswordChangedAt();
                 if ($passwordLastChange instanceof DateTime && $user instanceof $entityClass) {
                     // Validate that passwordChangedAt is not in the future
-                    if ($passwordLastChange > Carbon::now()) {
+                    if ($passwordLastChange > $now) {
                         // If date is in the future, treat as not expired (data error)
                         continue;
                     }
                     $expiresAt = (clone $passwordLastChange)->modify('+' . $config->getExpiryDays() . ' days');
 
-                    $isExpired = $expiresAt <= Carbon::now();
+                    $isExpired = $expiresAt <= $now;
                     break; // Found matching entity, no need to continue
                 }
             }
@@ -281,7 +290,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     private function getCurrentUser(): ?HasPasswordPolicyInterface
     {
         $token = $this->tokenStorage->getToken();
-        if ($token instanceof \Symfony\Component\Security\Core\Authentication\Token\TokenInterface) {
+        if ($token instanceof TokenInterface) {
             $user = $token->getUser();
             if (!is_object($user)) {
                 return null;

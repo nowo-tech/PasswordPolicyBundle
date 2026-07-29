@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
 use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Mockery;
+use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
+use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStorage;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -21,10 +27,12 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class PasswordExpiryListenerTest extends UnitTestCase
@@ -433,7 +441,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithRedirectOnExpiryAndLogging(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(static fn (array $c): bool => isset($c['route'], $c['bundle'])));
@@ -489,7 +497,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testOnKernelRequestWithInvalidRoute(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::any());
@@ -563,7 +571,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->urlGeneratorMock->shouldReceive('generate')
                                ->once()
                                ->with('invalid_route')
-                               ->andThrow(new \Symfony\Component\Routing\Exception\RouteNotFoundException('Route not found'));
+                               ->andThrow(new RouteNotFoundException('Route not found'));
 
         // Should not set response (no redirect), but flash message should be shown
         $responseEventMock->shouldNotReceive('setResponse');
@@ -576,7 +584,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
 
     public function testLoggingWithDifferentLevels(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
 
         // Test debug level
         $loggerMock->shouldReceive('debug')
@@ -688,7 +696,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class, UserInterface::class);
+        $userMock  = Mockery::mock(HasPasswordPolicyInterface::class, UserInterface::class);
         $userMock->shouldReceive('getId')->andReturn(123);
         $userMock->shouldReceive('getUserIdentifier')->andReturn('123');
         $tokenMock->shouldReceive('getUser')
@@ -757,7 +765,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
-        $userMock  = Mockery::mock(\Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface::class, UserInterface::class);
+        $userMock  = Mockery::mock(HasPasswordPolicyInterface::class, UserInterface::class);
         $userMock->shouldReceive('getId')->andReturn(123);
         $userMock->shouldReceive('getUserIdentifier')->andReturn('123');
         $tokenMock->shouldReceive('getUser')
@@ -778,10 +786,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->andReturnTrue();
 
-        $eventDispatcherMock = Mockery::mock(\Symfony\Contracts\EventDispatcher\EventDispatcherInterface::class);
+        $eventDispatcherMock = Mockery::mock(EventDispatcherInterface::class);
         $eventDispatcherMock->shouldReceive('dispatch')
                             ->once()
-                            ->with(Mockery::type(\Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent::class));
+                            ->with(Mockery::type(PasswordExpiredEvent::class));
 
         // Create listener with event dispatcher
         $listener = new PasswordExpiryListener(
@@ -834,7 +842,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         // Create a concrete class that implements HasPasswordPolicyInterface and UserInterface (required by TokenInterface::getUser())
-        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface, UserInterface {
+        $userMock = new class implements HasPasswordPolicyInterface, UserInterface {
             public function getUserIdentifier(): string
             {
                 return 'test@example.com';
@@ -869,17 +877,17 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                 return $this;
             }
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
-                return new \Doctrine\Common\Collections\ArrayCollection();
+                return new ArrayCollection();
             }
 
-            public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
             {
                 return $this;
             }
 
-            public function removePasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
             {
                 return $this;
             }
@@ -903,7 +911,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->andReturnTrue();
 
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(static fn ($context): bool => isset($context['user_identifier'])
@@ -962,7 +970,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                           ->andReturn($requestMock);
 
         // Create a concrete class that implements HasPasswordPolicyInterface and UserInterface (required by TokenInterface::getUser())
-        $userMock = new class implements \Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface, UserInterface {
+        $userMock = new class implements HasPasswordPolicyInterface, UserInterface {
             public function getEmail(): string
             {
                 return 'test@example.com';
@@ -1002,17 +1010,17 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                 return $this;
             }
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
-                return new \Doctrine\Common\Collections\ArrayCollection();
+                return new ArrayCollection();
             }
 
-            public function addPasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
             {
                 return $this;
             }
 
-            public function removePasswordHistory(\Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface $passwordHistory): static
+            public function removePasswordHistory(PasswordHistoryInterface $passwordHistory): static
             {
                 return $this;
             }
@@ -1036,7 +1044,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
                                         ->once()
                                         ->andReturnTrue();
 
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(static fn ($context): bool => isset($context['user_identifier'])

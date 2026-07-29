@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\EventListener;
 
 use Carbon\Carbon;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Events;
@@ -15,6 +16,7 @@ use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryServiceInterface;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -63,8 +65,14 @@ class PasswordEntityListener
         private readonly bool $enableLogging = true,
         private readonly string $logLevel = 'info',
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
-        private readonly ?PasswordExpiryServiceInterface $passwordExpiryService = null
+        private readonly ?PasswordExpiryServiceInterface $passwordExpiryService = null,
+        private readonly ?ClockInterface $clock = null,
     ) {
+    }
+
+    private function now(): DateTimeImmutable
+    {
+        return $this->clock?->now() ?? new DateTimeImmutable();
     }
 
     /**
@@ -140,7 +148,7 @@ class PasswordEntityListener
 
         $history->$userSetter($hasPasswordPolicy);
         $history->setPassword($oldPassword);
-        $history->setCreatedAt(Carbon::now());
+        $history->setCreatedAt(Carbon::instance($this->now()));
         // $history->setSalt($entity->getSalt());
         //
         $hasPasswordPolicy->addPasswordHistory($history);
@@ -158,7 +166,7 @@ class PasswordEntityListener
         $metadata = $entityManager->getClassMetadata($historyClass);
         $unitOfWork->computeChangeSet($metadata, $history);
 
-        $changedAt = Carbon::now();
+        $changedAt = Carbon::instance($this->now());
         $hasPasswordPolicy->setPasswordChangedAt($changedAt);
         // We need to recompute the change set so we won't trigger updates instead of inserts.
         $unitOfWork->recomputeSingleEntityChangeSet($entityMeta, $hasPasswordPolicy);

@@ -6,6 +6,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Exception;
 use Mockery;
 use Mockery\MockInterface;
@@ -323,10 +324,10 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $entity        = new class implements HasPasswordPolicyInterface, UserInterface, PasswordAuthenticatedUserInterface {
             public string $password = '';
 
-            /** @var \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> */
-            public \Doctrine\Common\Collections\Collection $passwordHistory;
+            /** @var Collection<int, PasswordHistoryInterface> */
+            public Collection $passwordHistory;
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
                 return $this->passwordHistory;
             }
@@ -423,10 +424,10 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $entity        = new class implements HasPasswordPolicyInterface, UserInterface, PasswordAuthenticatedUserInterface {
             public string $password = '';
 
-            /** @var \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> */
-            public \Doctrine\Common\Collections\Collection $passwordHistory;
+            /** @var Collection<int, PasswordHistoryInterface> */
+            public Collection $passwordHistory;
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
                 return $this->passwordHistory;
             }
@@ -633,7 +634,7 @@ final class PasswordPolicyServiceTest extends UnitTestCase
                 throw new RuntimeException('Clone not supported');
             }
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
                 return new ArrayCollection();
             }
@@ -706,10 +707,10 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $entity        = new class implements HasPasswordPolicyInterface, UserInterface, PasswordAuthenticatedUserInterface {
             public string $password = 'original';
 
-            /** @var \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> */
-            public \Doctrine\Common\Collections\Collection $passwordHistory;
+            /** @var Collection<int, PasswordHistoryInterface> */
+            public Collection $passwordHistory;
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
                 return $this->passwordHistory;
             }
@@ -790,15 +791,15 @@ final class PasswordPolicyServiceTest extends UnitTestCase
             public string $password = 'original';
 
             /**
-             * @param \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> $passwordHistory
+             * @param Collection<int, PasswordHistoryInterface> $passwordHistory
              */
             public function __construct(
                 private readonly string $hashToSet,
-                private readonly \Doctrine\Common\Collections\Collection $passwordHistory,
+                private readonly Collection $passwordHistory,
             ) {
             }
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
                 return $this->passwordHistory;
             }
@@ -882,8 +883,8 @@ final class CloneableTestUser implements HasPasswordPolicyInterface, PasswordAut
 {
     public string $password = '';
 
-    /** @var \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> */
-    private \Doctrine\Common\Collections\Collection $passwordHistory;
+    /** @var Collection<int, PasswordHistoryInterface> */
+    private Collection $passwordHistory;
 
     public function __construct()
     {
@@ -891,14 +892,14 @@ final class CloneableTestUser implements HasPasswordPolicyInterface, PasswordAut
     }
 
     /**
-     * @param \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface> $history
+     * @param Collection<int, PasswordHistoryInterface> $history
      */
-    public function setPasswordHistory(\Doctrine\Common\Collections\Collection $history): void
+    public function setPasswordHistory(Collection $history): void
     {
         $this->passwordHistory = $history;
     }
 
-    public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+    public function getPasswordHistory(): Collection
     {
         return $this->passwordHistory;
     }

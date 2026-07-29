@@ -15,11 +15,15 @@ use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\Unit\Mocks\PasswordHistoryMock;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
+use Symfony\Contracts\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 use function sprintf;
 
@@ -165,15 +169,15 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
     public function testCreatePasswordHistoryWithCacheInvalidationAndEventDispatcher(): void
     {
-        $expiryServiceMock = Mockery::mock(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface::class);
+        $expiryServiceMock = Mockery::mock(PasswordExpiryServiceInterface::class);
         $expiryServiceMock->shouldReceive('invalidateCache')
                           ->once()
                           ->with($this->entityMock);
 
-        $eventDispatcherMock = Mockery::mock(\Symfony\Contracts\EventDispatcher\EventDispatcherInterface::class);
+        $eventDispatcherMock = Mockery::mock(EventDispatcherInterface::class);
         $eventDispatcherMock->shouldReceive('dispatch')
                             ->twice()
-                            ->with(Mockery::type(\Symfony\Contracts\EventDispatcher\Event::class));
+                            ->with(Mockery::type(Event::class));
 
         $listener = new PasswordEntityListener(
             $this->passwordHistoryServiceMock,
@@ -330,7 +334,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
     public function testLoggingWithDifferentLevels(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
 
         // Test debug level
         $loggerMock->shouldReceive('debug')
@@ -444,7 +448,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
      */
     public function testCreatePasswordHistoryLogsWhenLoggerProvided(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password changed successfully', Mockery::on(static fn (array $context): bool => isset($context['bundle'], $context['user_id'], $context['entity_class'], $context['history_entries_removed'])

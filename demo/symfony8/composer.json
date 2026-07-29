@@ -4,7 +4,7 @@
     "type": "project",
     "license": "MIT",
     "require": {
-        "php": ">=8.2,<8.6",
+        "php": ">=8.5,<8.6",
         "nowo-tech/password-policy-bundle": "^0.0.5 || dev-main || dev-master",
         "doctrine/doctrine-bundle": "^3.0",
         "doctrine/orm": "^3.0",
@@ -20,7 +20,8 @@
         "symfony/security-bundle": "^8.0",
         "symfony/twig-bundle": "^8.0",
         "symfony/validator": "^8.0",
-        "symfony/yaml": "^8.0"
+        "symfony/yaml": "^8.0",
+        "twig/twig": "^3.21"
     },
     "require-dev": {
         "nowo-tech/twig-inspector-bundle": "*",
@@ -95,5 +96,6 @@
             "type": "path",
             "url": "/var/password-policy-bundle"
         }
-    ]
+    ],
+    "prefer-stable": true
 }

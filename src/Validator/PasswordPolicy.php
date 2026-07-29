@@ -14,7 +14,7 @@ use Symfony\Component\Validator\Constraint;
  * in their password history.
  */
 #[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_METHOD)]
-class PasswordPolicy extends Constraint
+final class PasswordPolicy extends Constraint
 {
     /**
      * Error code for when a password is found in the history.

@@ -6,6 +6,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit;
 
 use Nowo\PasswordPolicyBundle\DependencyInjection\PasswordPolicyExtension;
 use Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle;
+use Nowo\PasswordPolicyBundle\PasswordPolicyBundle;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 
@@ -50,7 +51,7 @@ final class PasswordPolicyBundleTest extends TestCase
 
     public function testDeprecatedPasswordPolicyBundleClassAlias(): void
     {
-        $this->assertTrue(class_exists(\Nowo\PasswordPolicyBundle\PasswordPolicyBundle::class));
-        $this->assertInstanceOf(NowoPasswordPolicyBundle::class, new \Nowo\PasswordPolicyBundle\PasswordPolicyBundle());
+        $this->assertTrue(class_exists(PasswordPolicyBundle::class));
+        $this->assertInstanceOf(NowoPasswordPolicyBundle::class, new PasswordPolicyBundle());
     }
 }

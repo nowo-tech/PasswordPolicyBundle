@@ -13,6 +13,8 @@ use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use Psr\Cache\CacheItemInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use ReflectionClass;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Route;
@@ -417,9 +419,9 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
     public function testIsPasswordExpiredWithCacheEnabled(): void
     {
-        $cacheMock      = Mockery::mock(\Psr\Cache\CacheItemPoolInterface::class);
-        $cacheItemMock1 = Mockery::mock(\Psr\Cache\CacheItemInterface::class);
-        $cacheItemMock2 = Mockery::mock(\Psr\Cache\CacheItemInterface::class);
+        $cacheMock      = Mockery::mock(CacheItemPoolInterface::class);
+        $cacheItemMock1 = Mockery::mock(CacheItemInterface::class);
+        $cacheItemMock2 = Mockery::mock(CacheItemInterface::class);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
@@ -476,8 +478,8 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
     public function testIsPasswordExpiredWithCacheHit(): void
     {
-        $cacheMock     = Mockery::mock(\Psr\Cache\CacheItemPoolInterface::class);
-        $cacheItemMock = Mockery::mock(\Psr\Cache\CacheItemInterface::class);
+        $cacheMock     = Mockery::mock(CacheItemPoolInterface::class);
+        $cacheItemMock = Mockery::mock(CacheItemInterface::class);
 
         $tokenMock = Mockery::mock(TokenInterface::class);
         $tokenMock->shouldReceive('getUser')
@@ -517,7 +519,7 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
     public function testInvalidateCache(): void
     {
-        $cacheMock = Mockery::mock(\Psr\Cache\CacheItemPoolInterface::class);
+        $cacheMock = Mockery::mock(CacheItemPoolInterface::class);
 
         $this->userMock->shouldReceive('getId')
                        ->andReturn(123);

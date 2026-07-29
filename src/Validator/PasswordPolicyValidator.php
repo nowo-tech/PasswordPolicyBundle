@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Validator;
 
 use Carbon\Carbon;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -37,7 +41,7 @@ class PasswordPolicyValidator extends ConstraintValidator
      * @param bool $enableLogging Whether logging is enabled
      * @param string $logLevel The logging level to use
      * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
-     * @param \Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService|null $configService The configuration service (optional)
+     * @param PasswordPolicyConfigurationService|null $configService The configuration service (optional)
      */
     public function __construct(
         private readonly PasswordPolicyServiceInterface $passwordPolicyService,
@@ -46,8 +50,14 @@ class PasswordPolicyValidator extends ConstraintValidator
         private readonly bool $enableLogging = true,
         private readonly string $logLevel = 'info',
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
-        private readonly ?\Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService $configService = null
+        private readonly ?PasswordPolicyConfigurationService $configService = null,
+        private readonly ?ClockInterface $clock = null,
     ) {
+    }
+
+    private function now(): DateTimeImmutable
+    {
+        return $this->clock?->now() ?? new DateTimeImmutable();
     }
 
     /**
@@ -123,7 +133,7 @@ class PasswordPolicyValidator extends ConstraintValidator
         // Log password reuse attempt
         if ($this->enableLogging && $this->logger) {
             $userId         = $entity->getId();
-            $userIdentifier = $entity instanceof \Symfony\Component\Security\Core\User\UserInterface
+            $userIdentifier = $entity instanceof UserInterface
                 ? $entity->getUserIdentifier()
                 : (method_exists($entity, 'getEmail') ? $entity->getEmail() : 'unknown');
             $createdAt = $history->getCreatedAt();
@@ -133,7 +143,7 @@ class PasswordPolicyValidator extends ConstraintValidator
             $this->log($this->logLevel, $message, [
                 'user_id'                => $userId,
                 'user_identifier'        => $userIdentifier,
-                'password_used_days_ago' => $createdAt instanceof DateTimeInterface ? Carbon::instance($createdAt)->diffInDays(Carbon::now()) : 0,
+                'password_used_days_ago' => $createdAt instanceof DateTimeInterface ? Carbon::instance($createdAt)->diffInDays(Carbon::instance($this->now())) : 0,
                 'match_type'             => $type,
             ]);
         }

@@ -27,4 +27,8 @@
             <clover outputFile="coverage.xml"/>
         </report>
     </coverage>
+
+    <php>
+        <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[direct]=0"/>
+    </php>
 </phpunit>

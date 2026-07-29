@@ -24,74 +24,76 @@ help:
 
 up:
 	@if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || true; fi
-	docker-compose up -d
+	$(COMPOSE) up -d
 	@echo "Waiting for container to be ready..."
 	@sleep 5
 	@echo "Installing dependencies..."
-	@docker-compose exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction
+	@$(COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction
 	@echo "Setting up database (create, migrations, fixtures)..."
-	@docker-compose exec -T php composer database
-	@docker-compose exec -T php php bin/console cache:clear
+	@$(COMPOSE) exec -T php composer database
+	@$(COMPOSE) exec -T php php bin/console cache:clear
 	@echo "Demo ready. Login: admin@example.com / admin123, demo@example.com / demo123, expired@example.com / expired123."
 	@PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	[ -z "$$PORT" ] && PORT=$$(grep "^PORT=" .env.example 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	echo "Demo started at: http://localhost:$$PORT"
 down:
-	docker-compose down
+	$(COMPOSE) down
 
 restart: ensure-up
-	docker-compose restart
+	$(COMPOSE) restart
 
 build:
-	docker-compose build --no-cache
+	$(COMPOSE) build --no-cache
 
 ensure-up:
-	@if ! docker-compose exec -T php true 2>/dev/null; then \
+	@if ! $(COMPOSE) exec -T php true 2>/dev/null; then \
 		echo "Starting containers..."; \
-		docker-compose up -d; \
+		$(COMPOSE) up -d; \
 		sleep 5; \
 	fi
 
 install: ensure-up
-	docker-compose exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction
+	$(COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction
 
 database: ensure-up
-	docker-compose exec -T php composer database
+	$(COMPOSE) exec -T php composer database
 
 cache-clear: ensure-up
-	docker-compose exec -T php php bin/console cache:clear
+	$(COMPOSE) exec -T php php bin/console cache:clear
 
 shell: ensure-up
-	docker-compose exec php sh
+	$(COMPOSE) exec php sh
 
 logs:
-	docker-compose logs -f
+	$(COMPOSE) logs -f
 
 test: ensure-up
-	docker-compose exec -T -e APP_ENV=test php composer test
+	$(COMPOSE) exec -T -e APP_ENV=test php composer test
 
 test-coverage: ensure-up
-	docker-compose exec -T php composer test-coverage
+	$(COMPOSE) exec -T php composer test-coverage
 
 update-bundle: ensure-up
-	docker-compose exec -T php composer update nowo-tech/password-policy-bundle --no-interaction
-	docker-compose exec -T php php bin/console cache:clear
+	$(COMPOSE) exec -T php composer update nowo-tech/password-policy-bundle --no-interaction
+	$(COMPOSE) exec -T php php bin/console cache:clear
 	@echo "Bundle updated from /var/password-policy-bundle."
 
 verify:
 	@if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || true; fi
 	@PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo "8001"); \
-	docker-compose up -d; sleep 8; \
+	$(COMPOSE) up -d; sleep 8; \
 	for i in 1 2 3 4 5 6 7 8 9 10; do \
 		code=$$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:$$PORT 2>/dev/null || echo "000"); \
-		if [ "$$code" = "200" ]; then echo "OK HTTP 200"; docker-compose down; exit 0; fi; \
+		if [ "$$code" = "200" ]; then echo "OK HTTP 200"; $(COMPOSE) down; exit 0; fi; \
 		sleep 3; \
 	done; \
-	docker-compose down; echo "Verify failed: no HTTP 200"; exit 1
+	$(COMPOSE) down; echo "Verify failed: no HTTP 200"; exit 1
 
 
 # REQ-MAKE-008: update-deps (REQ-MAKE-008)
-COMPOSE := docker-compose
+# Prefer Compose V2 plugin (GitHub Actions / modern Docker Desktop); fall back to docker-compose V1 (REQ-MAKE-010).
+COMPOSE := $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 SERVICE_PHP := php
 BUNDLE_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../..)
-include $(BUNDLE_ROOT)/../.scripts/Makefile.demo-update-deps.mk
+# Optional: monorepo helper absent on standalone GitHub Actions checkout (REQ-MAKE-009).
+-include $(BUNDLE_ROOT)/../.scripts/Makefile.demo-update-deps.mk

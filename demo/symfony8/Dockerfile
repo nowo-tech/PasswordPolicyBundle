@@ -1,7 +1,6 @@
-# FrankenPHP (Dunglas) - PHP 8.4 Alpine (§2.4 BUNDLES_STANDARDS_PROMPT)
-# Demo dependencies (composer.lock) require PHP >= 8.4; use 8.4 image to match.
+# FrankenPHP + PHP 8.5 for Password Policy Bundle Demo (Symfony 8)
 # https://frankenphp.dev/docs/docker/
-FROM dunglas/frankenphp:1-php8.4-alpine
+FROM dunglas/frankenphp:1-php8.5-alpine
 
 RUN apk add --no-cache git unzip bash curl ca-certificates
 
@@ -24,13 +23,7 @@ ENV XDEBUG_CONFIG="client_host=host.docker.internal client_port=9003"
 COPY docker/frankenphp/Caddyfile /etc/frankenphp/Caddyfile
 COPY docker/frankenphp/Caddyfile.dev /etc/frankenphp/Caddyfile.dev
 
-RUN echo '#!/bin/sh' > /usr/local/bin/docker-entrypoint.sh && \
-    echo 'set -e' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'if [ "${APP_ENV:-prod}" = "dev" ]; then cp /etc/frankenphp/Caddyfile.dev /etc/frankenphp/Caddyfile; fi' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'mkdir -p /app/var/cache /app/var/log' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'chmod -R 777 /app/var' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'if [ -d /app/vendor ] && [ "${APP_ENV:-dev}" = dev ]; then (cd /app && php bin/console cache:clear) 2>/dev/null || true; fi' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'exec frankenphp run --config /etc/frankenphp/Caddyfile --adapter caddyfile' >> /usr/local/bin/docker-entrypoint.sh && \
-    chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY docker/entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["docker-entrypoint.sh"]

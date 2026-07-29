@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
  * This bundle provides password history tracking, password expiry enforcement,
  * and configurable password policies for Symfony applications.
  */
-class NowoPasswordPolicyBundle extends Bundle
+final class NowoPasswordPolicyBundle extends Bundle
 {
     /**
      * Returns the container extension instance.
