@@ -1,24 +1,35 @@
 # Password Policy Bundle
 
-![FrankenPHP Friendly Worker Mode](docs/images/frankenphp-friendly.png)
-
-FrankenPHP worker mode: supported (PHPStan FrankenPHP rules + Symfony 8 demo with `FRANKENPHP_MODE=worker`).
-
 [![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6.0%2B%20%7C%207.4%2B%20%7C%208.0%20%7C%208.1%2B-000000?logo=symfony)](https://symfony.com)
 
 > ⭐ **Found this useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
 Symfony bundle for password policy enforcements including password history, expiry, and validation.
 
+![FrankenPHP Friendly Worker Mode](docs/images/frankenphp-friendly.png)
+
+This bundle is **FrankenPHP worker mode friendly**.
+
 ## Table of contents
 
 - [Features](#features)
-- [Documentation](#documentation)
-- [Requirements](#requirements)
 - [Installation](#installation)
-- [Demo](#demo)
+- [Requirements](#requirements)
+- [Configuration](#configuration)
+- [Configuration Options](#configuration-options)
+- [How It Works](#how-it-works)
+- [Usage Examples](#usage-examples)
+- [Demo Projects](#demo-projects)
+- [Development](#development)
+- [Code Quality](#code-quality)
+- [CI/CD](#cicd)
+- [Documentation](#documentation)
+- [Testing](#testing)
 - [Tests and coverage](#tests-and-coverage)
 - [License](#license)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
+- [Author](#author)
 
 ## Features
 
@@ -67,7 +78,6 @@ return [
 - Symfony Cache Component (`symfony/cache`) — required only if `enable_cache: true` is used (`cache.app` must exist; Symfony Framework provides it by default).
 
 ## Configuration
-
 ### Step 1: Implement Required Interfaces
 
 1. Implement `Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface` in the entities that you want to support password policies.
@@ -163,8 +173,33 @@ nowo_password_policy:
   log_level: info
 ```
 
-## How It Works
+## Configuration Options
 
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `password_field` | `string` | `'password'` | The password property name in the entity |
+| `password_history_field` | `string` | `'passwordHistory'` | The password history property name in the entity |
+| `passwords_to_remember` | `int` | `3` | How many previous passwords to track |
+| `expiry_days` | `int` | `90` | Number of days before password expires |
+| `reset_password_route_name` | `string` | **required** | Fallback route name for password reset (required) |
+| `reset_password_route_pattern` | `string` \| `null` | `null` | Optional pattern to pick the reset route from the router (first match, alphabetical order); see [CONFIGURATION.md](docs/CONFIGURATION.md) |
+| `notified_routes` | `array` | `[]` | Route names or patterns where expiry is enforced. Keep the list minimal; see [route configuration recommendations](docs/CONFIGURATION.md#route-configuration-recommendations) |
+| `excluded_notified_routes` | `array` | `[]` | Routes excluded from expiry handling (login, logout, reset, APIs). See [CONFIGURATION.md](docs/CONFIGURATION.md#route-configuration-recommendations) |
+| `detect_password_extensions` | `bool` | `false` | Detect trivial extensions (e.g. `password123` from `password`). Each check runs password verification against history; keep disabled unless required (see [Password History](docs/CONFIGURATION.md#password-history)) |
+| `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
+| `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
+| `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to the resolved reset route when password is expired |
+| `expiry_listener.flash_strategy` | `string` | `'always'` | How often to add the expiry flash: `always`, `once_per_session`, `interval`, `never` |
+| `expiry_listener.flash_interval_minutes` | `int` | `30` | Minutes between flashes when `flash_strategy` is `interval` |
+| `expiry_listener.flash_throttle_storage` | `string` | `'session'` | `session` or `cache` (Redis/Memcached) for multi-pod / FrankenPHP |
+| `expiry_listener.flash_throttle_cache_service` | `string` | `'cache.app'` | Cache pool service id when using `cache` storage |
+| `expiry_listener.lock_route` | `string` | - | **Deprecated** — use `redirect_on_expiry` + `reset_password_route_name` |
+| `expiry_listener.error_msg.text` | `array` or `string` | keys `nowo_password_policy.title` / `.message` (defaults) | Flash title/message (supports translation keys) |
+| `expiry_listener.error_msg.type` | `string` | `'error'` | Flash message type |
+| `enable_cache` | `bool` | `false` | Cache expiry checks (needs `cache.app`) |
+| `cache_ttl` | `int` | `3600` | TTL in seconds when `enable_cache` is true |
+
+## How It Works
 ### Password History
 
 The bundle uses Doctrine lifecycle events to create password history and set last password change on the target entities. When a password is changed:
@@ -204,34 +239,7 @@ The bundle prevents users from reusing old passwords and can optionally detect p
 - It then verifies if the resulting base password matches any password in history
 - This prevents users from simply adding numbers or characters to their old passwords
 
-## Configuration Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `password_field` | `string` | `'password'` | The password property name in the entity |
-| `password_history_field` | `string` | `'passwordHistory'` | The password history property name in the entity |
-| `passwords_to_remember` | `int` | `3` | How many previous passwords to track |
-| `expiry_days` | `int` | `90` | Number of days before password expires |
-| `reset_password_route_name` | `string` | **required** | Fallback route name for password reset (required) |
-| `reset_password_route_pattern` | `string` \| `null` | `null` | Optional pattern to pick the reset route from the router (first match, alphabetical order); see [CONFIGURATION.md](docs/CONFIGURATION.md) |
-| `notified_routes` | `array` | `[]` | Route names or patterns where expiry is enforced. Keep the list minimal; see [route configuration recommendations](docs/CONFIGURATION.md#route-configuration-recommendations) |
-| `excluded_notified_routes` | `array` | `[]` | Routes excluded from expiry handling (login, logout, reset, APIs). See [CONFIGURATION.md](docs/CONFIGURATION.md#route-configuration-recommendations) |
-| `detect_password_extensions` | `bool` | `false` | Detect trivial extensions (e.g. `password123` from `password`). Each check runs password verification against history; keep disabled unless required (see [Password History](docs/CONFIGURATION.md#password-history)) |
-| `extension_min_length` | `int` | `4` | Minimum length of base password to consider for extension detection |
-| `expiry_listener.priority` | `int` | `0` | Priority of the expiry listener |
-| `expiry_listener.redirect_on_expiry` | `bool` | `false` | If `true`, redirect to the resolved reset route when password is expired |
-| `expiry_listener.flash_strategy` | `string` | `'always'` | How often to add the expiry flash: `always`, `once_per_session`, `interval`, `never` |
-| `expiry_listener.flash_interval_minutes` | `int` | `30` | Minutes between flashes when `flash_strategy` is `interval` |
-| `expiry_listener.flash_throttle_storage` | `string` | `'session'` | `session` or `cache` (Redis/Memcached) for multi-pod / FrankenPHP |
-| `expiry_listener.flash_throttle_cache_service` | `string` | `'cache.app'` | Cache pool service id when using `cache` storage |
-| `expiry_listener.lock_route` | `string` | - | **Deprecated** — use `redirect_on_expiry` + `reset_password_route_name` |
-| `expiry_listener.error_msg.text` | `array` or `string` | keys `nowo_password_policy.title` / `.message` (defaults) | Flash title/message (supports translation keys) |
-| `expiry_listener.error_msg.type` | `string` | `'error'` | Flash message type |
-| `enable_cache` | `bool` | `false` | Cache expiry checks (needs `cache.app`) |
-| `cache_ttl` | `int` | `3600` | TTL in seconds when `enable_cache` is true |
-
 ## Usage Examples
-
 ### Basic Entity Implementation
 
 ```php
@@ -382,29 +390,6 @@ class UserPasswordHistory implements PasswordHistoryInterface
 }
 ```
 
-## Development
-
-### Using Docker (Recommended)
-
-```bash
-# Start the container
-make up
-
-# Install dependencies
-make install
-
-# Run tests (inside container)
-make test
-
-# Run tests with coverage (inside container)
-make test-coverage
-
-# Run all QA checks (inside container)
-make qa
-```
-
-**Note**: All commands execute inside the Docker container. The Makefile automatically handles container management and command execution.
-
 ## Demo Projects
 
 The bundle includes a complete demo project for Symfony 8. It includes:
@@ -474,28 +459,27 @@ Use the CRUD interface to:
 
 For more information, see [demo/README.md](demo/README.md).
 
-## Testing
-
-The bundle includes comprehensive test coverage. All tests are located in the `tests/` directory.
-
-**Important**: Tests must be run inside the Docker container. Use the Makefile commands:
+## Development
+### Using Docker (Recommended)
 
 ```bash
-# Start the Docker container (if not already running)
+# Start the container
 make up
 
-# Run all tests (inside container)
+# Install dependencies
+make install
+
+# Run tests (inside container)
 make test
 
-# Run tests with coverage report (inside container)
+# Run tests with coverage (inside container)
 make test-coverage
 
-# View coverage report (after test-coverage)
-# The coverage report is generated in the coverage/ directory
-# Open coverage/index.html in your browser
+# Run all QA checks (inside container)
+make qa
 ```
 
-**Note**: The `make test` and `make test-coverage` commands automatically execute the tests inside the PHP container created by `docker-compose.yml`. Do not run `composer test` or `composer test-coverage` directly on your host machine - always use the Makefile commands.
+**Note**: All commands execute inside the Docker container. The Makefile automatically handles container management and command execution.
 
 ## Code Quality
 
@@ -519,29 +503,6 @@ The bundle uses GitHub Actions for continuous integration:
 
 See `.github/workflows/ci.yml` for details.
 
-## Tests and coverage
-
-- Tests: PHPUnit (PHP)
-- PHP: 100%
-- TS/JS: N/A
-- Python: N/A
-
-## License
-
-The MIT License (MIT). Please see [LICENSE](LICENSE) for more information.
-
-## Author
-
-Created by [Héctor Franco Aceituno](https://github.com/HecFranco) at [Nowo.tech](https://nowo.tech)
-
-## Contributing
-
-Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on how to contribute to this project.
-
-## Changelog
-
-Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
-
 ## Documentation
 
 - [Installation](docs/INSTALLATION.md)
@@ -563,3 +524,49 @@ Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
 - [GitHub Actions CI requirements](docs/GITHUB_CI.md) — REQ-GIT-001 CI hygiene and history cleanup
 - [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run the Symfony 8 demo in dev (no cache) or production (worker)
 - [Events](docs/EVENTS.md) — Custom events and event listeners
+## Testing
+
+The bundle includes comprehensive test coverage. All tests are located in the `tests/` directory.
+
+**Important**: Tests must be run inside the Docker container. Use the Makefile commands:
+
+```bash
+# Start the Docker container (if not already running)
+make up
+
+# Run all tests (inside container)
+make test
+
+# Run tests with coverage report (inside container)
+make test-coverage
+
+# View coverage report (after test-coverage)
+# The coverage report is generated in the coverage/ directory
+# Open coverage/index.html in your browser
+```
+
+**Note**: The `make test` and `make test-coverage` commands automatically execute the tests inside the PHP container created by `docker-compose.yml`. Do not run `composer test` or `composer test-coverage` directly on your host machine - always use the Makefile commands.
+
+## Tests and coverage
+
+- Tests: PHPUnit (PHP)
+- PHP: 100%
+- TS/JS: N/A
+- Python: N/A
+
+## License
+
+The MIT License (MIT). Please see [LICENSE](LICENSE) for more information.
+
+## Contributing
+
+Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on how to contribute to this project.
+
+## Changelog
+
+Please see [docs/CHANGELOG.md](docs/CHANGELOG.md) for version history.
+
+## Author
+
+Created by [Héctor Franco Aceituno](https://github.com/HecFranco) at [Nowo.tech](https://nowo.tech)
+
