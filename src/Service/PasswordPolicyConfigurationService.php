@@ -10,7 +10,7 @@ namespace Nowo\PasswordPolicyBundle\Service;
  * This service allows the validator to access entity-specific configuration
  * (like detect_password_extensions) that is defined in YAML configuration.
  */
-class PasswordPolicyConfigurationService
+final class PasswordPolicyConfigurationService
 {
     /**
      * @var array<string, array<string, mixed>>

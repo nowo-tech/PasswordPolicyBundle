@@ -1,10 +1,24 @@
 # Password Policy Bundle
 
+![FrankenPHP Friendly Worker Mode](docs/images/frankenphp-friendly.png)
+
+FrankenPHP worker mode: supported (PHPStan FrankenPHP rules + Symfony 8 demo with `FRANKENPHP_MODE=worker`).
+
 [![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6.0%2B%20%7C%207.4%2B%20%7C%208.0%20%7C%208.1%2B-000000?logo=symfony)](https://symfony.com)
 
 > ⭐ **Found this useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
 Symfony bundle for password policy enforcements including password history, expiry, and validation.
+
+## Table of contents
+
+- [Features](#features)
+- [Documentation](#documentation)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Demo](#demo)
+- [Tests and coverage](#tests-and-coverage)
+- [License](#license)
 
 ## Features
 

@@ -6,6 +6,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.4.0](#upgrading-to-140)
   - [Upgrading to 1.3.0](#upgrading-to-130)
   - [Upgrading to 1.2.3](#upgrading-to-123)
   - [Upgrading to 1.2.2](#upgrading-to-122)
@@ -43,6 +44,45 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 6. **Test your application**: Verify that password policy functionality works as expected
 
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.4.0
+
+**Release Date**: 2026-07-29
+
+#### What's New
+
+- Optional `Psr\Clock\ClockInterface` for testable time in expiry / history / validator (defaults to system clock when omitted).
+- FrankenPHP Friendly docs/banner; Symfony 8 demo supports `FRANKENPHP_MODE=classic|worker` (default worker) on FrankenPHP PHP 8.5.
+- Maintainer tooling: `make demo-smoke`, `make down-dev`, stricter `release-check-demos`, PHPUnit direct-deprecation fail, PHPStan FrankenPHP rules.
+
+#### Breaking Changes
+
+- Several core classes are now `final` (`NowoPasswordPolicyBundle`, Configuration/Extension where applicable, some services). If you were subclassing them, stop extending and use composition / decoration instead.
+- Runtime behaviour for normal consumers is unchanged.
+
+#### Configuration Changes
+
+None required. Clock is optional and auto-wired when a `Psr\Clock\ClockInterface` service exists.
+
+#### Upgrade Steps
+
+1. Update the bundle:
+
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
+2. Clear cache:
+
+   ```bash
+   php bin/console cache:clear
+   ```
+
+3. If you subclassed a now-`final` class, refactor to decoration or custom services.
+
+4. (Maintainers) For the repo demo: set `FRANKENPHP_MODE` in `demo/symfony8/.env` and run `make demo-smoke` if needed.
+
+---
 
 ### Upgrading to 1.3.0
 

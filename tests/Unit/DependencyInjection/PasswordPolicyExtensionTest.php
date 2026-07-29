@@ -6,9 +6,12 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\DependencyInjection;
 
 use Nowo\PasswordPolicyBundle\DependencyInjection\Configuration;
 use Nowo\PasswordPolicyBundle\DependencyInjection\PasswordPolicyExtension;
+use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
+use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use ReflectionClass;
 use stdClass;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -55,7 +58,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         // Should not throw any exception
         $this->extension->load($configs, $container);
 
-        $this->assertTrue($container->hasDefinition(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryService::class));
+        $this->assertTrue($container->hasDefinition(PasswordExpiryService::class));
         $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
     }
 
@@ -95,7 +98,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->extension->load($configs, $container);
 
-        $this->assertTrue($container->hasDefinition(\Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener::class));
+        $this->assertTrue($container->hasDefinition(PasswordExpiryListener::class));
         $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
     }
 
@@ -357,7 +360,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->extension->load($configs, $container);
 
-        $def  = $container->getDefinition(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryService::class);
+        $def  = $container->getDefinition(PasswordExpiryService::class);
         $args = $def->getArguments();
         $this->assertArrayHasKey('$router', $args);
         $this->assertSame('router', (string) $args['$router']);
@@ -385,7 +388,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->extension->load($configs, $container);
 
-        $def  = $container->getDefinition(\Nowo\PasswordPolicyBundle\Service\PasswordExpiryService::class);
+        $def  = $container->getDefinition(PasswordExpiryService::class);
         $args = $def->getArguments();
         $this->assertNotNull($args['$cache'] ?? null);
     }
@@ -401,7 +404,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $config     = ['enable_logging' => true, 'log_level' => 'info'];
 
         $method->invoke($this->extension, $container, $config);
-        $this->assertFalse($container->hasDefinition(\Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator::class));
+        $this->assertFalse($container->hasDefinition(PasswordPolicyValidator::class));
         $this->addToAssertionCount(1);
     }
 
@@ -424,7 +427,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         ];
 
         $definition = $method->invoke($this->extension, $container, $config);
-        $this->assertTrue($container->hasDefinition(\Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener::class));
+        $this->assertTrue($container->hasDefinition(PasswordExpiryListener::class));
         $this->assertNotEmpty($definition->getTags());
         $this->addToAssertionCount(1);
     }

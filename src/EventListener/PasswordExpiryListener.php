@@ -12,11 +12,13 @@ use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInte
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -32,7 +34,10 @@ use function is_object;
  *
  * This listener checks if a password has expired when accessing locked routes
  * and displays appropriate error messages to the user.
+ *
+ * Priority is applied from bundle config via the DI Extension (REQ-SF-003 attribute + configurable tag).
  */
+#[AsEventListener(event: KernelEvents::REQUEST, method: 'onKernelRequest')]
 class PasswordExpiryListener
 {
     /**

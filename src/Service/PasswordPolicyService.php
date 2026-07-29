@@ -22,7 +22,7 @@ use function strlen;
  * This service checks if a password has been used before by comparing it against
  * the password history of an entity.
  */
-class PasswordPolicyService implements PasswordPolicyServiceInterface
+final class PasswordPolicyService implements PasswordPolicyServiceInterface
 {
     /**
      * Single-character extensions checked when extension detection is enabled.

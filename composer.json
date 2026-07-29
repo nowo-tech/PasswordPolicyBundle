@@ -4,7 +4,9 @@
     "type": "symfony-bundle",
     "license": "MIT",
     "keywords": [
+        "php",
         "symfony",
+        "symfony-bundle",
         "bundle",
         "password",
         "policy",
@@ -20,7 +22,7 @@
     },
     "authors": [
         {
-            "name": "Héctor Franco Aceituno",
+            "name": "H\u00e9ctor Franco Aceituno",
             "email": "hectorfranco@nowo.com",
             "homepage": "https://github.com/HecFranco",
             "role": "Developer"
@@ -32,9 +34,10 @@
     ],
     "require": {
         "php": ">=8.1 <8.6",
+        "nesbot/carbon": "^3.9",
+        "psr/clock": "^1.0",
         "symfony/framework-bundle": "^6.0 || ^7.0 || ^8.0",
-        "symfony/validator": "^6.0 || ^7.0 || ^8.0",
-        "nesbot/carbon": "^3.9"
+        "symfony/validator": "^6.0 || ^7.0 || ^8.0"
     },
     "require-dev": {
         "doctrine/collections": "^2.4",
@@ -42,6 +45,7 @@
         "doctrine/orm": "^2.15 || ^3.0",
         "friendsofphp/php-cs-fixer": "^3.0",
         "mockery/mockery": "^1.6",
+        "nowo-tech/phpstan-frankenphp": "^1.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.0",
         "phpstan/phpstan-mockery": "^2.0",
@@ -54,7 +58,10 @@
         "symfony/yaml": "^6.0 || ^7.0 || ^8.0"
     },
     "archive": {
-        "exclude": ["/demo", "/.cursor"]
+        "exclude": [
+            "/demo",
+            "/.cursor"
+        ]
     },
     "autoload": {
         "psr-4": {

@@ -6,8 +6,11 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Validator;
 
 use Carbon\Carbon;
 use DateTime;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Mockery;
 use Mockery\MockInterface;
+use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -16,6 +19,7 @@ use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicy;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -136,7 +140,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
     public function testLoggingWithDifferentLevels(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')
@@ -306,7 +310,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $eventDispatcherMock = Mockery::mock(EventDispatcherInterface::class);
         $eventDispatcherMock->shouldReceive('dispatch')
           ->once()
-          ->with(Mockery::type(\Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent::class));
+          ->with(Mockery::type(PasswordReuseAttemptedEvent::class));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');
@@ -374,7 +378,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
     public function testValidateFailWithLoggingCallsLogger(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
           ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['bundle'], $context['user_id'], $context['user_identifier'], $context['match_type'])
@@ -414,7 +418,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
 
     public function testValidateFailWithLoggingUsesGetEmailWhenNoUserIdentifier(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
           ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'email@example.com'));
@@ -457,11 +461,11 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
             }
 
             /**
-             * @return \Doctrine\Common\Collections\Collection<int, PasswordHistoryInterface>
+             * @return Collection<int, PasswordHistoryInterface>
              */
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
-                return new \Doctrine\Common\Collections\ArrayCollection();
+                return new ArrayCollection();
             }
 
             public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
@@ -530,7 +534,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
      */
     public function testValidateFailWithExtensionDetectionAndLoggingNullCreatedAt(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
             ->with('Password extension detected (new password is an extension of an old password)', Mockery::on(static fn (array $context): bool => isset($context['match_type'], $context['password_used_days_ago'])
@@ -602,9 +606,9 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
                 return $this;
             }
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
-                return new \Doctrine\Common\Collections\ArrayCollection();
+                return new ArrayCollection();
             }
 
             public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
@@ -618,7 +622,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
             }
         };
 
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
             ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier'], $context['user_id'])
@@ -733,9 +737,9 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
                 return $this;
             }
 
-            public function getPasswordHistory(): \Doctrine\Common\Collections\Collection
+            public function getPasswordHistory(): Collection
             {
-                return new \Doctrine\Common\Collections\ArrayCollection();
+                return new ArrayCollection();
             }
 
             public function addPasswordHistory(PasswordHistoryInterface $passwordHistory): static
@@ -749,7 +753,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
             }
         };
 
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
             ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'auth_user_10'));
@@ -788,7 +792,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
      */
     public function testValidateFailWithCustomLogLevelFallsBackToInfo(): void
     {
-        $loggerMock = Mockery::mock(\Psr\Log\LoggerInterface::class);
+        $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
             ->with('Password reuse attempt detected', Mockery::type('array'));

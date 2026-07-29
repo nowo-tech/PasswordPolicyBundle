@@ -17,6 +17,8 @@ use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStor
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
+use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
+use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -37,7 +39,7 @@ use function trim;
  * This extension loads the bundle configuration and registers all necessary services,
  * including entity listeners and the password expiry listener.
  */
-class PasswordPolicyExtension extends Extension
+final class PasswordPolicyExtension extends Extension
 {
     /**
      * Loads the bundle configuration and registers services.
@@ -75,6 +77,7 @@ class PasswordPolicyExtension extends Extension
         $definition->setArgument('$cache', $cacheService);
         $definition->setArgument('$cacheEnabled', $config['enable_cache'] ?? false);
         $definition->setArgument('$cacheTtl', $config['cache_ttl'] ?? 3600);
+        $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
         if ($containerBuilder->has('router')) {
             $definition->setArgument('$router', new Reference('router'));
         }
@@ -306,6 +309,7 @@ class PasswordPolicyExtension extends Extension
         $definition->setArgument('$logLevel', $config['log_level'] ?? 'info');
         $definition->setArgument('$eventDispatcher', $containerBuilder->has('event_dispatcher') ? new Reference('event_dispatcher') : null);
         $definition->setArgument('$passwordExpiryService', new Reference(PasswordExpiryServiceInterface::class));
+        $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
 
         return $definition;
     }
@@ -317,11 +321,11 @@ class PasswordPolicyExtension extends Extension
      */
     private function configureValidator(ContainerBuilder $containerBuilder, array $config): void
     {
-        if (!$containerBuilder->hasDefinition(\Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator::class)) {
+        if (!$containerBuilder->hasDefinition(PasswordPolicyValidator::class)) {
             return;
         }
 
-        $definition = $containerBuilder->getDefinition(\Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator::class);
+        $definition = $containerBuilder->getDefinition(PasswordPolicyValidator::class);
 
         // Add logging parameters (will override if already set via autowiring)
         $definition->setArgument('$logger', $containerBuilder->has('logger') ? new Reference('logger') : null);
@@ -329,6 +333,7 @@ class PasswordPolicyExtension extends Extension
         $definition->setArgument('$logLevel', $config['log_level'] ?? 'info');
         $definition->setArgument('$eventDispatcher', $containerBuilder->has('event_dispatcher') ? new Reference('event_dispatcher') : null);
         $definition->setArgument('$configService', new Reference(PasswordPolicyConfigurationService::class));
+        $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
     }
 
     /**

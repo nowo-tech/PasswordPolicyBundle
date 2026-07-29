@@ -14,7 +14,7 @@ use function sprintf;
  * This class holds the configuration for password expiry, including the number
  * of days before expiry, locked routes, and excluded routes.
  */
-class PasswordExpiryConfiguration
+final class PasswordExpiryConfiguration
 {
     /**
      * The fully qualified class name of the entity.

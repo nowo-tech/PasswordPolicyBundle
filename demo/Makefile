@@ -2,6 +2,9 @@
 # Each demo has its own docker-compose.yml and can be run independently
 
 # Define available demos (directory names: symfony8)
+# Prefer Compose V2 plugin (GitHub Actions / modern Docker Desktop); fall back to docker-compose V1 (REQ-MAKE-010).
+COMPOSE ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
+
 DEMOS := symfony8
 
 # Helper function to get port from .env file (defaults to 8001)
@@ -13,7 +16,7 @@ get-version = $(shell echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | s
 # Helper function to get demo version for shell commands
 get-version-shell = $(shell echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/')
 
-.PHONY: help clean test-all test-coverage-all verify-all check-all release-check release-verify update-bundle-all
+.PHONY: help clean test-all test-coverage-all verify-all check-all release-check release-verify demo-smoke update-bundle-all
 .PHONY: $(foreach demo,$(DEMOS),up-$(demo) down-$(demo) install-$(demo) database-$(demo) shell-$(demo) logs-$(demo) test-$(demo) test-coverage-$(demo) verify-$(demo))
 .PHONY: up down install database test shell logs test-coverage verify
 
@@ -42,6 +45,8 @@ help:
 	@echo "  verify-all         Verify all demos are running correctly (HTTP 200)"
 	@echo ""
 	@echo "Verification:"
+	@echo "  demo-smoke         REQ-TEST-011: up -> HTTP 200 -> down"
+	@echo "  release-verify     Alias of demo-smoke / verify-all"
 	@echo "  verify-all         Start all demos and verify they respond correctly"
 	@echo "  verify <demo>      Start a specific demo and verify it responds (e.g., make verify DEMO=symfony8)"
 	@echo ""
@@ -89,16 +94,16 @@ up-$(1):
 		docker rm $$$$CONTAINER 2>/dev/null || true; \
 		echo "✅ Port $$$$PORT is now free"; \
 	fi && \
-	docker-compose build && \
-	docker-compose up -d && \
+	$(COMPOSE) build && \
+	$(COMPOSE) up -d && \
 	echo "⏳ Waiting for containers to be ready..." && \
 	sleep 5 && \
 	echo "📦 Installing dependencies (bundle from /var/password-policy-bundle)..." && \
-	(docker-compose exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction 2>&1 || \
+	($(COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction 2>&1 || \
 		(echo "⚠️  Lock file out of sync, updating dependencies..." && \
-		 sleep 2 && docker-compose exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer update --no-interaction 2>&1)) && \
+		 sleep 2 && $(COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer update --no-interaction 2>&1)) && \
 	echo "🗄️  Setting up database..." && \
-	(docker-compose exec -T php composer database 2>&1 || echo "⚠️  Database setup may have failed or already been executed") && \
+	($(COMPOSE) exec -T php composer database 2>&1 || echo "⚠️  Database setup may have failed or already been executed") && \
 	echo "⏳ Waiting for demo to be ready..." && \
 	sleep 3 && \
 	MAX_ATTEMPTS=12 && \
@@ -121,7 +126,7 @@ define down-target-template
 down-$(1):
 	@VERSION=$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
 	echo "🛑 Stopping $$VERSION demo..."; \
-	cd $(1) && docker-compose down; \
+	cd $(1) && $(COMPOSE) down; \
 	echo "✅ $$VERSION demo stopped!"
 endef
 
@@ -130,14 +135,14 @@ define install-target-template
 install-$(1):
 	@VERSION=$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
 	echo "📦 Installing $$VERSION dependencies..."; \
-	cd $(1) && docker-compose exec php composer install || \
+	cd $(1) && $(COMPOSE) exec php composer install || \
 		(PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo 8001); \
 		CONTAINER=$$(docker ps --format "{{.Names}}" --filter "publish=$$PORT" 2>/dev/null | head -1); \
 		if [ -n "$$CONTAINER" ]; then \
 			docker stop $$CONTAINER 2>/dev/null || true; \
 			docker rm $$CONTAINER 2>/dev/null || true; \
 		fi; \
-		docker-compose up -d && sleep 2 && docker-compose exec php composer install); \
+		$(COMPOSE) up -d && sleep 2 && $(COMPOSE) exec php composer install); \
 	echo "✅ $$VERSION dependencies installed!"
 endef
 
@@ -146,27 +151,27 @@ define database-target-template
 database-$(1):
 	@VERSION=$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
 	echo "🗄️  Setting up $$VERSION database..."; \
-	cd $(1) && docker-compose exec php composer database || \
+	cd $(1) && $(COMPOSE) exec php composer database || \
 		(PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo 8001); \
 		CONTAINER=$$(docker ps --format "{{.Names}}" --filter "publish=$$PORT" 2>/dev/null | head -1); \
 		if [ -n "$$CONTAINER" ]; then \
 			docker stop $$CONTAINER 2>/dev/null || true; \
 			docker rm $$CONTAINER 2>/dev/null || true; \
 		fi; \
-		docker-compose up -d && sleep 5 && docker-compose exec php composer database); \
+		$(COMPOSE) up -d && sleep 5 && $(COMPOSE) exec php composer database); \
 	echo "✅ $$VERSION database setup complete!"
 endef
 
 # Generate shell targets for each demo
 define shell-target-template
 shell-$(1):
-	@cd $(1) && docker-compose exec php sh
+	@cd $(1) && $(COMPOSE) exec php sh
 endef
 
 # Generate logs targets for each demo
 define logs-target-template
 logs-$(1):
-	@cd $(1) && docker-compose logs -f
+	@cd $(1) && $(COMPOSE) logs -f
 endef
 
 # Generate test targets for each demo
@@ -174,14 +179,14 @@ define test-target-template
 test-$(1):
 	@VERSION=$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
 	echo "🧪 Running $$VERSION tests..."; \
-	cd $(1) && docker-compose exec php composer test || \
+	cd $(1) && $(COMPOSE) exec php composer test || \
 		(PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo 8001); \
 		CONTAINER=$$(docker ps --format "{{.Names}}" --filter "publish=$$PORT" 2>/dev/null | head -1); \
 		if [ -n "$$CONTAINER" ]; then \
 			docker stop $$CONTAINER 2>/dev/null || true; \
 			docker rm $$CONTAINER 2>/dev/null || true; \
 		fi; \
-		docker-compose up -d && sleep 2 && docker-compose exec php composer test)
+		$(COMPOSE) up -d && sleep 2 && $(COMPOSE) exec php composer test)
 endef
 
 # Generate test-coverage targets for each demo
@@ -189,14 +194,14 @@ define test-coverage-target-template
 test-coverage-$(1):
 	@VERSION=$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
 	echo "🧪 Running $$VERSION tests with coverage..."; \
-	cd $(1) && docker-compose exec php composer test-coverage || \
+	cd $(1) && $(COMPOSE) exec php composer test-coverage || \
 		(PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo 8001); \
 		CONTAINER=$$(docker ps --format "{{.Names}}" --filter "publish=$$PORT" 2>/dev/null | head -1); \
 		if [ -n "$$CONTAINER" ]; then \
 			docker stop $$CONTAINER 2>/dev/null || true; \
 			docker rm $$CONTAINER 2>/dev/null || true; \
 		fi; \
-		docker-compose up -d && sleep 2 && docker-compose exec php composer test-coverage)
+		$(COMPOSE) up -d && sleep 2 && $(COMPOSE) exec php composer test-coverage)
 endef
 
 # Generate all targets for each demo
@@ -310,8 +315,8 @@ verify-$(1):
 		docker rm $$$$CONTAINER 2>/dev/null || true; \
 		echo "✅ Port $$$$PORT is now free"; \
 	fi && \
-	docker-compose build >/dev/null 2>&1 && \
-	docker-compose up -d >/dev/null 2>&1 && \
+	$(COMPOSE) build >/dev/null 2>&1 && \
+	$(COMPOSE) up -d >/dev/null 2>&1 && \
 	echo "⏳ Waiting for $$$$VERSION demo to be ready..." && \
 	sleep 5 && \
 	MAX_ATTEMPTS=12; \
@@ -409,7 +414,21 @@ verify:
 check-all: verify-all
 
 # Pre-release: verify all demos (used by root make release-check)
-release-verify: verify-all
+release-verify: demo-smoke
+
+# REQ-TEST-011: boot demo stack and expect HTTP 200
+demo-smoke:
+	@PORT=$$(grep "^PORT=" symfony8/.env.example 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	[ -z "$$PORT" ] && PORT=8003; \
+	echo "Demo smoke: symfony8 (http://127.0.0.1:$$PORT)"; \
+	$(MAKE) up-symfony8; sleep 12; \
+	code=$$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$$PORT" 2>/dev/null || echo "000"); \
+	$(MAKE) down-symfony8 2>/dev/null || true; \
+	if [ "$$code" != "200" ]; then echo "symfony8 failed with HTTP $$code"; exit 1; fi; \
+	echo "symfony8 OK (HTTP $$code)"
+
+release-check: update-bundle-all test-coverage-all release-verify
+	@echo "✅ All demos passed release-check."
 
 update-bundle-all:
 	@echo "🔄 Updating bundle in all demos..."
@@ -432,4 +451,5 @@ clean:
 
 # REQ-MAKE-008: update-deps-all (REQ-MAKE-008)
 BUNDLE_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
-include $(BUNDLE_ROOT)/../.scripts/Makefile.demo-aggregate-update-deps.mk
+# Optional: monorepo helper absent on standalone GitHub Actions checkout (REQ-MAKE-009).
+-include $(BUNDLE_ROOT)/../.scripts/Makefile.demo-aggregate-update-deps.mk

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Traits;
 
-use Carbon\Carbon;
 use DateTime;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -95,7 +95,7 @@ trait PasswordHistoryTrait
     {
 
         if ($this->getCreatedAt() == null) {
-            $this->setCreatedAt(Carbon::now());
+            $this->setCreatedAt(new DateTimeImmutable());
         }
     }
 

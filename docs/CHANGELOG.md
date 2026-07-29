@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.4.0] - 2026-07-29](#140---2026-07-29)
 - [[1.3.0] - 2026-07-22](#130---2026-07-22)
 - [[1.2.3] - 2026-07-16](#123---2026-07-16)
 - [[1.2.2] - 2026-07-16](#122---2026-07-16)
@@ -232,6 +233,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved document structure
 
 ## [Unreleased]
+
+## [1.4.0] - 2026-07-29
+
+### Added
+
+- FrankenPHP Friendly banner (REQ-DOCS-017); `make demo-smoke` / `down-dev` (REQ-TEST-011, REQ-MAKE-007).
+- PHPUnit `SYMFONY_DEPRECATIONS_HELPER=max[direct]=0` (REQ-SF-005).
+- `FRANKENPHP_MODE` on the Symfony 8 demo; PHPStan FrankenPHP rulesets (REQ-DEMO-010, REQ-CS-005).
+- Optional `Psr\Clock\ClockInterface` injection for expiry / history / validator time (REQ-DI-001).
+- AI security audit section in [SECURITY.md](SECURITY.md) (REQ-SEC-004).
+
+### Changed
+
+- Demo Symfony 8 image bumped to FrankenPHP **PHP 8.5**.
+- `release-check-demos` no longer swallows demo failures (`|| true` removed) (REQ-MAKE-003).
+- Bundle / Extension / Configuration / core services marked `final` where Mockery allows; expiry listener uses `#[AsEventListener]` (REQ-PHP-001, REQ-SF-003). Listeners/services mocked as concrete classes stay non-`final`.
+- Packagist keywords include `php` / `symfony-bundle`; GitHub About homepage + topics (REQ-DOCS-018 / REQ-PKG-004).
+- Root Makefile prefers `docker compose` (V2) with V1 fallback; optional monorepo `update-deps` include (REQ-MAKE-009 / REQ-MAKE-010).
 
 ## [1.3.0] - 2026-07-22
 
