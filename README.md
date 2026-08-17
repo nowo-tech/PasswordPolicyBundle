@@ -43,6 +43,7 @@ This bundle is **FrankenPHP worker mode friendly**.
 - ✅ **Custom Events** - Symfony events for extensibility (PasswordExpiredEvent, PasswordChangedEvent, etc.)
 - ✅ **Performance Cache** - Optional caching for password expiry checks with automatic invalidation
 - ✅ **Multiple Entities Support** - Configure different password policies for different user types with validation
+- ✅ **Clock-based time** — optional `Psr\Clock\ClockInterface` for expiry, history, and validator (testable; REQ-DI-001)
 - ✅ **Flexible Configuration** - Works out of the box with sensible defaults
 - ✅ **Modern Symfony Support** - Compatible with Symfony 6, 7, and 8
 - ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English

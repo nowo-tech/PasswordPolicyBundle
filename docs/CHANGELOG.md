@@ -31,6 +31,168 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[0.0.2] - 2025-12-16](#002---2025-12-16)
 - [[0.0.1] - 2025-12-15](#001---2025-12-15)
 
+## [Unreleased]
+
+## [1.4.0] - 2026-07-29
+
+### Added
+
+- FrankenPHP Friendly banner (REQ-DOCS-017); `make demo-smoke` / `down-dev` (REQ-TEST-011, REQ-MAKE-007).
+- PHPUnit `SYMFONY_DEPRECATIONS_HELPER=max[direct]=0` (REQ-SF-005).
+- `FRANKENPHP_MODE` on the Symfony 8 demo; PHPStan FrankenPHP rulesets (REQ-DEMO-010, REQ-CS-005).
+- Optional `Psr\Clock\ClockInterface` injection for expiry / history / validator time (REQ-DI-001).
+- AI security audit section in [SECURITY.md](SECURITY.md) (REQ-SEC-004).
+
+### Changed
+
+- Demo Symfony 8 image bumped to FrankenPHP **PHP 8.5**.
+- `release-check-demos` no longer swallows demo failures (`|| true` removed) (REQ-MAKE-003).
+- Bundle / Extension / Configuration / core services marked `final` where Mockery allows; expiry listener uses `#[AsEventListener]` (REQ-PHP-001, REQ-SF-003). Listeners/services mocked as concrete classes stay non-`final`.
+- Packagist keywords include `php` / `symfony-bundle`; GitHub About homepage + topics (REQ-DOCS-018 / REQ-PKG-004).
+- Root Makefile prefers `docker compose` (V2) with V1 fallback; optional monorepo `update-deps` include (REQ-MAKE-009 / REQ-MAKE-010).
+
+## [1.3.0] - 2026-07-22
+
+### Changed
+
+- **Translation domain (REQ-I18N-003)**: Domain renamed from `PasswordPolicyBundle` to `NowoPasswordPolicyBundle`. Translation files are now `src/Resources/translations/NowoPasswordPolicyBundle.{locale}.yaml`. YAML message keys under `nowo_password_policy` are unchanged.
+- **Bundle class**: Canonical class is `Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle`. Register it in `config/bundles.php`. `PasswordPolicyBundle` remains as a deprecated `class_alias` for backward compatibility.
+- **Documentation**: [USAGE.md](USAGE.md), [INSTALLATION.md](INSTALLATION.md), [README.md](../README.md), and [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md) updated for the new domain and bundle class.
+
+### Breaking Changes
+
+- Applications that override translations under domain `PasswordPolicyBundle` must rename files/domain to `NowoPasswordPolicyBundle`.
+- Explicit `->trans(..., [], 'PasswordPolicyBundle')` calls must use `'NowoPasswordPolicyBundle'`.
+
+## [1.2.3] - 2026-07-16
+
+### Removed
+
+- **Demo projects**: Removed Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`). The Symfony 8 demo (`demo/symfony8`) remains as the reference demo.
+
+### Changed
+
+- **Documentation**: [CONFIGURATION.md](CONFIGURATION.md), [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [demo/README.md](../demo/README.md) updated for the single Symfony 8 demo.
+
+## [1.2.2] - 2026-07-16
+
+### Added
+
+- **CI — REQ-GIT-001**: New `git-hygiene` job in `.github/workflows/ci.yml` runs `check-no-cursor-coauthor` with full history (`fetch-depth: 0`).
+- **History cleanup script**: `.scripts/strip-cursor-coauthor-from-history.sh` and `make strip-cursor-coauthor-from-history` to rewrite local branch messages when trailers are already present.
+- **CI operator doc**: [GITHUB_CI.md](GITHUB_CI.md) documents REQ-GIT-001 adoption, CI wiring, and force-push recovery.
+- **Tests**: Additional coverage for flash-throttle DI errors, invalid route patterns, and expiry flash subject keys / session-unavailable paths.
+- **Hardening**: `PasswordExpiryListener` no longer throws when the request session is unavailable; expiry flash is skipped gracefully.
+- **Cleanup**: Removed unreachable numeric-extension guard in `PasswordPolicyService` (max extension length is already 3 digits / 0–999).
+
+### Changed
+
+- **`check-no-cursor-coauthor.sh`**: Validates a bundle-local `.git`, refuses parent-monorepo checkouts, uses `--no-replace-objects`, and lists offending commits on failure.
+- **Documentation**: [RELEASE.md](RELEASE.md) and [CONTRIBUTING.md](CONTRIBUTING.md) point to the CI hygiene check and cleanup flow; [README.md](../README.md) links [GITHUB_CI.md](GITHUB_CI.md).
+
+## [1.2.1] - 2026-07-15
+
+### Added
+
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) at the repository root (Contributor Covenant 2.1).
+
+### Changed
+
+- **Documentation**: Root [README.md](../README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) link to the Code of Conduct; enforcement contact aligned with [.github/SECURITY.md](../.github/SECURITY.md).
+
+## [1.2.0] - 2026-07-15
+
+### Added
+
+- **Configurable expiry flash strategies**: `expiry_listener.flash_strategy` (`always`, `once_per_session`, `interval`, `never`) and `flash_interval_minutes` control how often the password expiry flash is added. Default remains `always` for backward compatibility.
+- **Shared flash throttle storage**: `flash_throttle_storage` (`session` or `cache`) with optional Redis/Memcached via `flash_throttle_cache_service`, for FrankenPHP workers and Kubernetes multi-pod. Custom backends via `ExpiryFlashThrottleStorageInterface`.
+- **Example configurations**: [docs/examples/expiry-flash-and-cache.yaml](examples/expiry-flash-and-cache.yaml) with session, Redis, Memcached, and custom storage recipes.
+
+### Changed
+
+- **Documentation**: [CONFIGURATION.md](CONFIGURATION.md) documents flash strategies, throttle storage, and FrankenPHP/Kubernetes guidance; [README.md](../README.md) lists new options and links to the examples file.
+- **Demos**: Symfony 6/7/8 demo `nowo_password_policy.yaml` and `cache.yaml` include inline comments and optional Redis/Memcached pools for flash throttle testing.
+- **Maintainer tooling**: `.githooks/commit-msg` strips accidental Cursor co-author trailers; `make setup-hooks` installs hooks; `make check-no-cursor-coauthor` runs in `release-check` (REQ-GIT-001).
+
+## [1.1.1] - 2026-07-14
+
+### Fixed
+
+- **Extension detection performance**: `PasswordPolicyService::getHistoryByPasswordExtension()` deduplicates candidate base passwords and replaces 0–999 scan loops with bounded prefix/suffix extraction. Same behaviour when `detect_password_extensions` is enabled; runs only on password change validation, not on every HTTP request.
+
+### Changed
+
+- **Documentation — route configuration**: [CONFIGURATION.md](CONFIGURATION.md) adds [Route configuration recommendations](CONFIGURATION.md#route-configuration-recommendations) (literal routes, minimal `notified_routes`, exclusions for login/logout/reset/API). [USAGE.md](USAGE.md) and [README.md](../README.md) cross-link the guidance.
+- **Documentation — validation cost**: [CONFIGURATION.md](CONFIGURATION.md#password-history) documents password-history verification and extension-detection cost on password change.
+
+## [1.1.0] - 2026-07-09
+
+### Added
+
+- **GitHub Spec Kit baseline**: `.specify/` scaffolding, Cursor Agent skills (`.cursor/skills/speckit-*`), and `specs/001-baseline/` with full-product `spec.md` and `code-inventory.md` (100% of `src/` mapped).
+- **Spec Kit operator manual**: New [SPEC-KIT.md](SPEC-KIT.md) (install, init, structure, Cursor workflow, maintainer checklist).
+
+### Changed
+
+- **Spec-driven development docs**: [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) documents three layers (Spec Kit baseline, product behavior, `REQ-*` traceability), refined user stories, and explicit scope note (history/expiry/reuse — not password complexity).
+- **README**: Link to [SPEC-KIT.md](SPEC-KIT.md) in the documentation index.
+
+### Fixed
+
+- **Demo Docker images (Symfony 6 and 7)**: FrankenPHP images now install the PHP `intl` extension (aligned with Symfony 8 demo and Symfony recommendations).
+
+## [1.0.0] - 2026-06-23
+
+First stable release. The public API, configuration schema, and runtime behavior are unchanged from **0.0.14**; this version marks semver stability for production use.
+
+### Fixed
+
+- **Demo `update-deps` target**: Demo Makefiles (`symfony6`, `symfony7`, `symfony8`) now define `COMPOSE` and `SERVICE_PHP` before including the shared `Makefile.demo-update-deps.mk`, fixing `run: not found` when running `make update-deps` from the bundle or demo aggregator.
+
+## [0.0.14] - 2026-06-23
+
+### Added
+
+- **CodeRabbit integration**: `.coderabbit.yaml` and GitHub Actions workflow for automated pull request reviews.
+- **Spec-driven development**: New [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) with repository-local product spec and `REQ-*` traceability; linked from [ENGRAM.md](ENGRAM.md) and [README.md](../README.md).
+- **Makefile `update-deps` targets**: Bundle and demo Makefiles include shared update-deps recipes (`REQ-MAKE-008`).
+
+### Changed
+
+- **CI matrix**: Symfony test matrix extended to 7.4 and 8.1 with PHP version exclusions aligned to Symfony requirements.
+- **Demos**: Symfony 7 demo targets 7.4; Symfony 8 demo targets 8.1; per-demo Makefiles include `update-deps` includes.
+- **README**: Symfony compatibility badge updated (6.0+, 7.4+, 8.0+, 8.1+).
+- **Repository URLs**: Corrected GitHub links in `composer.json`, [CONTRIBUTING.md](CONTRIBUTING.md), and [UPGRADING.md](UPGRADING.md) (`PasswordPolicyBundle` canonical repo name).
+
+### Fixed
+
+- **PHP 8.4 deprecation (null array offset)**: `PasswordExpiryService` resolves entity configuration via `getEntityConfiguration()` and no longer uses `null` as an array key when there is no authenticated user. Fixes `Deprecated: Using null as an array offset is deprecated` triggered from `PasswordExpiryListener::isLockedRoute()` on anonymous requests.
+
+## [0.0.13] - 2026-04-17
+
+### Fixed
+
+- **Duplicate expiry flashes across dashboard/API bursts**: `PasswordExpiryListener` now checks existing flash entries (`FlashBag::peek`) before adding a new one, so equivalent PasswordPolicy expiry messages are not duplicated when multiple requests hit in quick succession.
+- **Dedup strategy hardening**: Combined request-scoped guard plus session flash dedup keeps behavior stable with FrankenPHP worker mode while avoiding repeated user-facing notifications.
+
+## [0.0.12] - 2026-04-17
+
+### Fixed
+
+- **Password expiry flash duplication**: `PasswordExpiryListener` now guarantees that the expiry flash is added at most once per HTTP request, preventing repeated identical notifications during a single request lifecycle.
+- **FrankenPHP compatibility**: The duplicate-guard is request-scoped (stored in request attributes), so it does not rely on static/global state and remains safe with persistent workers.
+
+## [0.0.11] - 2026-04-15
+
+### Added
+
+- **Route name patterns**: `notified_routes` and `excluded_notified_routes` accept literal names, globs (`*`, `?`), or delimited PCRE (`~…~`, `#…#`, `/…/`). Optional `reset_password_route_pattern` resolves the reset route from the router (first alphabetical match among registered route names; fallback to `reset_password_route_name`). See [CONFIGURATION.md](CONFIGURATION.md#route-name-patterns).
+- **`PasswordExpiryServiceInterface::isRouteExcluded()`**: Exposes whether the current route matches any `excluded_notified_routes` entry (used by the expiry listener).
+
+### Changed
+
+- **Documentation**: [README.md](../README.md) and [CONFIGURATION.md](CONFIGURATION.md) describe route patterns, reset route resolution, and duplicate-route validation when using patterns across multiple entities.
+
 ## [0.0.10] - 2026-04-15
 
 ### Added
@@ -231,168 +393,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CONFIGURATION.md**: Removed duplicate "Caching" section
   - Eliminated redundant caching documentation
   - Improved document structure
-
-## [Unreleased]
-
-## [1.4.0] - 2026-07-29
-
-### Added
-
-- FrankenPHP Friendly banner (REQ-DOCS-017); `make demo-smoke` / `down-dev` (REQ-TEST-011, REQ-MAKE-007).
-- PHPUnit `SYMFONY_DEPRECATIONS_HELPER=max[direct]=0` (REQ-SF-005).
-- `FRANKENPHP_MODE` on the Symfony 8 demo; PHPStan FrankenPHP rulesets (REQ-DEMO-010, REQ-CS-005).
-- Optional `Psr\Clock\ClockInterface` injection for expiry / history / validator time (REQ-DI-001).
-- AI security audit section in [SECURITY.md](SECURITY.md) (REQ-SEC-004).
-
-### Changed
-
-- Demo Symfony 8 image bumped to FrankenPHP **PHP 8.5**.
-- `release-check-demos` no longer swallows demo failures (`|| true` removed) (REQ-MAKE-003).
-- Bundle / Extension / Configuration / core services marked `final` where Mockery allows; expiry listener uses `#[AsEventListener]` (REQ-PHP-001, REQ-SF-003). Listeners/services mocked as concrete classes stay non-`final`.
-- Packagist keywords include `php` / `symfony-bundle`; GitHub About homepage + topics (REQ-DOCS-018 / REQ-PKG-004).
-- Root Makefile prefers `docker compose` (V2) with V1 fallback; optional monorepo `update-deps` include (REQ-MAKE-009 / REQ-MAKE-010).
-
-## [1.3.0] - 2026-07-22
-
-### Changed
-
-- **Translation domain (REQ-I18N-003)**: Domain renamed from `PasswordPolicyBundle` to `NowoPasswordPolicyBundle`. Translation files are now `src/Resources/translations/NowoPasswordPolicyBundle.{locale}.yaml`. YAML message keys under `nowo_password_policy` are unchanged.
-- **Bundle class**: Canonical class is `Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle`. Register it in `config/bundles.php`. `PasswordPolicyBundle` remains as a deprecated `class_alias` for backward compatibility.
-- **Documentation**: [USAGE.md](USAGE.md), [INSTALLATION.md](INSTALLATION.md), [README.md](../README.md), and [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md) updated for the new domain and bundle class.
-
-### Breaking Changes
-
-- Applications that override translations under domain `PasswordPolicyBundle` must rename files/domain to `NowoPasswordPolicyBundle`.
-- Explicit `->trans(..., [], 'PasswordPolicyBundle')` calls must use `'NowoPasswordPolicyBundle'`.
-
-## [1.2.3] - 2026-07-16
-
-### Removed
-
-- **Demo projects**: Removed Symfony 6 and Symfony 7 demos (`demo/symfony6`, `demo/symfony7`). The Symfony 8 demo (`demo/symfony8`) remains as the reference demo.
-
-### Changed
-
-- **Documentation**: [CONFIGURATION.md](CONFIGURATION.md), [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [demo/README.md](../demo/README.md) updated for the single Symfony 8 demo.
-
-## [1.2.2] - 2026-07-16
-
-### Added
-
-- **CI — REQ-GIT-001**: New `git-hygiene` job in `.github/workflows/ci.yml` runs `check-no-cursor-coauthor` with full history (`fetch-depth: 0`).
-- **History cleanup script**: `.scripts/strip-cursor-coauthor-from-history.sh` and `make strip-cursor-coauthor-from-history` to rewrite local branch messages when trailers are already present.
-- **CI operator doc**: [GITHUB_CI.md](GITHUB_CI.md) documents REQ-GIT-001 adoption, CI wiring, and force-push recovery.
-- **Tests**: Additional coverage for flash-throttle DI errors, invalid route patterns, and expiry flash subject keys / session-unavailable paths.
-- **Hardening**: `PasswordExpiryListener` no longer throws when the request session is unavailable; expiry flash is skipped gracefully.
-- **Cleanup**: Removed unreachable numeric-extension guard in `PasswordPolicyService` (max extension length is already 3 digits / 0–999).
-
-### Changed
-
-- **`check-no-cursor-coauthor.sh`**: Validates a bundle-local `.git`, refuses parent-monorepo checkouts, uses `--no-replace-objects`, and lists offending commits on failure.
-- **Documentation**: [RELEASE.md](RELEASE.md) and [CONTRIBUTING.md](CONTRIBUTING.md) point to the CI hygiene check and cleanup flow; [README.md](../README.md) links [GITHUB_CI.md](GITHUB_CI.md).
-
-## [1.2.1] - 2026-07-15
-
-### Added
-
-- **Code of Conduct**: [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) at the repository root (Contributor Covenant 2.1).
-
-### Changed
-
-- **Documentation**: Root [README.md](../README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) link to the Code of Conduct; enforcement contact aligned with [.github/SECURITY.md](../.github/SECURITY.md).
-
-## [1.2.0] - 2026-07-15
-
-### Added
-
-- **Configurable expiry flash strategies**: `expiry_listener.flash_strategy` (`always`, `once_per_session`, `interval`, `never`) and `flash_interval_minutes` control how often the password expiry flash is added. Default remains `always` for backward compatibility.
-- **Shared flash throttle storage**: `flash_throttle_storage` (`session` or `cache`) with optional Redis/Memcached via `flash_throttle_cache_service`, for FrankenPHP workers and Kubernetes multi-pod. Custom backends via `ExpiryFlashThrottleStorageInterface`.
-- **Example configurations**: [docs/examples/expiry-flash-and-cache.yaml](examples/expiry-flash-and-cache.yaml) with session, Redis, Memcached, and custom storage recipes.
-
-### Changed
-
-- **Documentation**: [CONFIGURATION.md](CONFIGURATION.md) documents flash strategies, throttle storage, and FrankenPHP/Kubernetes guidance; [README.md](../README.md) lists new options and links to the examples file.
-- **Demos**: Symfony 6/7/8 demo `nowo_password_policy.yaml` and `cache.yaml` include inline comments and optional Redis/Memcached pools for flash throttle testing.
-- **Maintainer tooling**: `.githooks/commit-msg` strips accidental Cursor co-author trailers; `make setup-hooks` installs hooks; `make check-no-cursor-coauthor` runs in `release-check` (REQ-GIT-001).
-
-## [1.1.1] - 2026-07-14
-
-### Fixed
-
-- **Extension detection performance**: `PasswordPolicyService::getHistoryByPasswordExtension()` deduplicates candidate base passwords and replaces 0–999 scan loops with bounded prefix/suffix extraction. Same behaviour when `detect_password_extensions` is enabled; runs only on password change validation, not on every HTTP request.
-
-### Changed
-
-- **Documentation — route configuration**: [CONFIGURATION.md](CONFIGURATION.md) adds [Route configuration recommendations](CONFIGURATION.md#route-configuration-recommendations) (literal routes, minimal `notified_routes`, exclusions for login/logout/reset/API). [USAGE.md](USAGE.md) and [README.md](../README.md) cross-link the guidance.
-- **Documentation — validation cost**: [CONFIGURATION.md](CONFIGURATION.md#password-history) documents password-history verification and extension-detection cost on password change.
-
-## [1.1.0] - 2026-07-09
-
-### Added
-
-- **GitHub Spec Kit baseline**: `.specify/` scaffolding, Cursor Agent skills (`.cursor/skills/speckit-*`), and `specs/001-baseline/` with full-product `spec.md` and `code-inventory.md` (100% of `src/` mapped).
-- **Spec Kit operator manual**: New [SPEC-KIT.md](SPEC-KIT.md) (install, init, structure, Cursor workflow, maintainer checklist).
-
-### Changed
-
-- **Spec-driven development docs**: [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) documents three layers (Spec Kit baseline, product behavior, `REQ-*` traceability), refined user stories, and explicit scope note (history/expiry/reuse — not password complexity).
-- **README**: Link to [SPEC-KIT.md](SPEC-KIT.md) in the documentation index.
-
-### Fixed
-
-- **Demo Docker images (Symfony 6 and 7)**: FrankenPHP images now install the PHP `intl` extension (aligned with Symfony 8 demo and Symfony recommendations).
-
-## [1.0.0] - 2026-06-23
-
-First stable release. The public API, configuration schema, and runtime behavior are unchanged from **0.0.14**; this version marks semver stability for production use.
-
-### Fixed
-
-- **Demo `update-deps` target**: Demo Makefiles (`symfony6`, `symfony7`, `symfony8`) now define `COMPOSE` and `SERVICE_PHP` before including the shared `Makefile.demo-update-deps.mk`, fixing `run: not found` when running `make update-deps` from the bundle or demo aggregator.
-
-## [0.0.14] - 2026-06-23
-
-### Added
-
-- **CodeRabbit integration**: `.coderabbit.yaml` and GitHub Actions workflow for automated pull request reviews.
-- **Spec-driven development**: New [SPEC-DRIVEN-DEVELOPMENT.md](SPEC-DRIVEN-DEVELOPMENT.md) with repository-local product spec and `REQ-*` traceability; linked from [ENGRAM.md](ENGRAM.md) and [README.md](../README.md).
-- **Makefile `update-deps` targets**: Bundle and demo Makefiles include shared update-deps recipes (`REQ-MAKE-008`).
-
-### Changed
-
-- **CI matrix**: Symfony test matrix extended to 7.4 and 8.1 with PHP version exclusions aligned to Symfony requirements.
-- **Demos**: Symfony 7 demo targets 7.4; Symfony 8 demo targets 8.1; per-demo Makefiles include `update-deps` includes.
-- **README**: Symfony compatibility badge updated (6.0+, 7.4+, 8.0+, 8.1+).
-- **Repository URLs**: Corrected GitHub links in `composer.json`, [CONTRIBUTING.md](CONTRIBUTING.md), and [UPGRADING.md](UPGRADING.md) (`PasswordPolicyBundle` canonical repo name).
-
-### Fixed
-
-- **PHP 8.4 deprecation (null array offset)**: `PasswordExpiryService` resolves entity configuration via `getEntityConfiguration()` and no longer uses `null` as an array key when there is no authenticated user. Fixes `Deprecated: Using null as an array offset is deprecated` triggered from `PasswordExpiryListener::isLockedRoute()` on anonymous requests.
-
-## [0.0.13] - 2026-04-17
-
-### Fixed
-
-- **Duplicate expiry flashes across dashboard/API bursts**: `PasswordExpiryListener` now checks existing flash entries (`FlashBag::peek`) before adding a new one, so equivalent PasswordPolicy expiry messages are not duplicated when multiple requests hit in quick succession.
-- **Dedup strategy hardening**: Combined request-scoped guard plus session flash dedup keeps behavior stable with FrankenPHP worker mode while avoiding repeated user-facing notifications.
-
-## [0.0.12] - 2026-04-17
-
-### Fixed
-
-- **Password expiry flash duplication**: `PasswordExpiryListener` now guarantees that the expiry flash is added at most once per HTTP request, preventing repeated identical notifications during a single request lifecycle.
-- **FrankenPHP compatibility**: The duplicate-guard is request-scoped (stored in request attributes), so it does not rely on static/global state and remains safe with persistent workers.
-
-## [0.0.11] - 2026-04-15
-
-### Added
-
-- **Route name patterns**: `notified_routes` and `excluded_notified_routes` accept literal names, globs (`*`, `?`), or delimited PCRE (`~…~`, `#…#`, `/…/`). Optional `reset_password_route_pattern` resolves the reset route from the router (first alphabetical match among registered route names; fallback to `reset_password_route_name`). See [CONFIGURATION.md](CONFIGURATION.md#route-name-patterns).
-- **`PasswordExpiryServiceInterface::isRouteExcluded()`**: Exposes whether the current route matches any `excluded_notified_routes` entry (used by the expiry listener).
-
-### Changed
-
-- **Documentation**: [README.md](../README.md) and [CONFIGURATION.md](CONFIGURATION.md) describe route patterns, reset route resolution, and duplicate-route validation when using patterns across multiple entities.
 
 ## [0.0.2] - 2025-12-16
 
