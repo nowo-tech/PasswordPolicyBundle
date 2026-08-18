@@ -45,6 +45,25 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
+### Upgrading to 1.4.1
+
+**Release Date**: 2026-08-18
+
+#### What's New
+
+- No application upgrade steps. **Demos only:** Hot Reload Bundle `^1.4` (FrankenPHP Mercure/`hot_reload`, `dev`/`test`).
+
+#### Breaking Changes
+
+None for application consumers of `nowo-tech/password-policy-bundle`.
+
+#### Migration Steps
+
+1. **Update the bundle** (if you use Composer):
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
 ### Upgrading to 1.4.0
 
 **Release Date**: 2026-07-29
