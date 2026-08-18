@@ -4,8 +4,8 @@ declare(strict_types=1);
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
-use Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle;
 use Nowo\HotReloadBundle\NowoHotReloadBundle;
+use Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle;
 use Nowo\TwigInspectorBundle\NowoTwigInspectorBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\SecurityBundle\SecurityBundle;
@@ -22,7 +22,7 @@ return [
     TwigBundle::class               => ['all' => true],
     DoctrineMigrationsBundle::class => ['all' => true],
     WebProfilerBundle::class        => ['dev' => true],
-    NowoHotReloadBundle::class  => ['dev' => true, 'test' => true],
+    NowoHotReloadBundle::class      => ['dev' => true, 'test' => true],
     NowoTwigInspectorBundle::class  => ['dev' => true, 'test' => true],
-    TwigExtraBundle::class => ['all' => true],
+    TwigExtraBundle::class          => ['all' => true],
 ];
