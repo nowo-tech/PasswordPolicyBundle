@@ -48,6 +48,7 @@ The main difference between development and production is:
 The demo applications are configured for **local development and debugging**:
 
 - **Symfony Web Profiler** — enabled in `dev` environment.
+- **Nowo Twig Inspector** (`nowo-tech/twig-inspector-bundle`) and **Nowo Hot Reload** (`nowo-tech/hot-reload-bundle`) — required together on FrankenPHP demos (dev/test only; Caddyfile Mercure + `hot_reload`, plus `worker { watch }` in worker mode). Do not enable Hot Reload in production.
 - **Password Policy Bundle** (`Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle`) — the bundle under test; enabled in the demos.
 
 Example `config/bundles.php` (aligned with **demo/symfony8**):
