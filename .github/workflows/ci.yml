@@ -84,6 +84,9 @@ jobs:
           echo "📦 Installing dependencies for Symfony ${{ matrix.symfony }}..."
           composer require symfony/framework-bundle:^${{ matrix.symfony }} symfony/validator:^${{ matrix.symfony }} --no-interaction --no-update
           composer update symfony/* --with-all-dependencies --no-interaction --prefer-dist --no-progress
+      - name: Composer audit (Critical/High)
+        run: composer audit --locked
+
 
       - name: Run tests
         run: |
