@@ -45,6 +45,25 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Upgrade Instructions by Version
 
+### Upgrading to 1.4.2
+
+**Release Date**: 2026-08-19
+
+#### What's New
+
+- **CI:** `composer audit --locked` after dependency install (REQ-SEC / P3). No application upgrade steps.
+
+#### Breaking Changes
+
+None.
+
+#### Migration Steps
+
+1. **Update the bundle** (if you use Composer):
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+
 ### Upgrading to 1.4.1
 
 **Release Date**: 2026-08-18
