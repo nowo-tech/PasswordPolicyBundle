@@ -508,6 +508,7 @@ See `.github/workflows/ci.yml` for details.
 
 - [Installation](docs/INSTALLATION.md)
 - [Configuration](docs/CONFIGURATION.md)
+- [PSR evaluation (REQ-CS-007)](docs/PSR.md)
 - [Expiry flash & cache examples](docs/examples/expiry-flash-and-cache.yaml) (Redis, Memcached, session, custom storage)
 - [Usage](docs/USAGE.md)
 - [Contributing](docs/CONTRIBUTING.md)
