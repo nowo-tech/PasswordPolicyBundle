@@ -4,6 +4,8 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Table of contents
 
+
+- [From 1.4.2 to 1.4.3](#from-142-to-143)
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
   - [Upgrading to 1.4.0](#upgrading-to-140)
