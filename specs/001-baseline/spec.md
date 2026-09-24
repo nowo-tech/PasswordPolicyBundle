@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-baseline`  
 **Created**: 2026-07-07  
-**Last updated**: 2026-07-15  
+**Last updated**: 2026-09-24  
 **Status**: Active  
 **Input**: Backfill GitHub Spec Kit baseline documenting 100% of production code in `src/`.
 
@@ -87,6 +87,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - Password verification tries `password_verify()` first, then Symfony hasher via cloned user or temporary `setPassword` fallback — never plain hash comparison.
 - Sub-requests: expiry listener processes only main requests.
 - FrankenPHP / duplicate kernel events: request attribute prevents duplicate flash messages within the same request lifecycle.
+- FrankenPHP worker mode (`reset_kernel` false / no `services_resetter`): `PasswordEntityListener` clears its duplicate-history guard at the start of every flush and implements `ResetInterface`; `PasswordPolicyValidator` must not call `Carbon::setLocale()`; `PasswordExpiryListener` must ignore main requests without `_firewall_context` so a stale token cannot leak across requests. Full audit: [`docs/FRANKENPHP-WORKER-AUDIT.md`](../../docs/FRANKENPHP-WORKER-AUDIT.md).
 - FrankenPHP worker mode / Kubernetes multi-pod: `flash_throttle_storage=session` is unreliable unless sessions are shared; `cache` (Redis/Memcached via `cache.app`) is recommended for `once_per_session` and `interval`.
 - Flash bag peek: identical message already in flash bag is not duplicated before render.
 - Missing cache service when `flash_throttle_storage=cache`: compile-time `ConfigurationException` with integrator guidance.
@@ -122,18 +123,20 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 ### Password history
 
 - **FR-HIST-001**: `PasswordHistoryService` MUST sort history by `createdAt` descending and remove entries beyond configured limit via entity `removePasswordHistory()`.
-- **FR-LIST-001**: `PasswordEntityListener` on `onFlush` MUST detect password field changes, create history entries, dispatch `PasswordChangedEvent` / `PasswordHistoryCreatedEvent`, deduplicate via processed map, and trigger cleanup.
+- **FR-LIST-001**: `PasswordEntityListener` on `onFlush` MUST detect password field changes, create history entries, dispatch `PasswordChangedEvent` / `PasswordHistoryCreatedEvent`, deduplicate via a per-flush processed map keyed by entity identity + old hash (store only a flag, never the history entity), clear that map at the start of every flush, and implement `ResetInterface` (`kernel.reset`) for worker safety.
+- **FR-LIST-001a**: Under FrankenPHP worker mode without kernel reset, a retried password change or a second entity with the same stored hash MUST still create history (no cross-request / cross-user skip).
 
 ### Password reuse policy
 
 - **FR-POL-001**: `PasswordPolicyService` MUST locate history by plain password (`getHistoryByPassword`) and by extension heuristics (`getHistoryByPasswordExtension`) using secure verification only.
 - **FR-VAL-001**: `PasswordPolicy` constraint MUST expose `message`, `extensionMessage`, `detectExtensions`, `extensionMinLength` options.
-- **FR-VAL-002**: `PasswordPolicyValidator` MUST dispatch `PasswordReuseAttemptedEvent`, log attempts when enabled, and build violations with translation parameters.
+- **FR-VAL-002**: `PasswordPolicyValidator` MUST dispatch `PasswordReuseAttemptedEvent`, log attempts when enabled, and build violations with translation parameters. Locale for `{{ days }}` MUST be applied on a local Carbon instance; MUST NOT call `Carbon::setLocale()` (process-wide).
 
 ### Password expiry
 
 - **FR-EXP-001**: `PasswordExpiryService` MUST determine expiry from `passwordChangedAt` + `expiry_days`, optionally cache per user, invalidate on password change, and resolve reset route names.
 - **FR-LIST-002**: `PasswordExpiryListener` on `kernel.request` MUST match routes via `RouteNameMatcher`, add configurable flash messages according to `flash_strategy` and throttle storage, optionally redirect, and dispatch `PasswordExpiredEvent`. Subject key MUST prefer authenticated user id/identifier; fallback to session id when user is unavailable.
+- **FR-LIST-002a**: `PasswordExpiryListener` MUST return early on main requests that lack `_firewall_context` (no SecurityBundle firewall matched), so a token left in `TokenStorage` from a previous worker request cannot drive flashes, redirects, events, or logs.
 - **FR-ROUTE-001**: `RouteNameMatcher` MUST support literal names, globs (`*`, `?`), and delimited PCRE patterns.
 
 ### Events & errors
@@ -148,11 +151,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 
 ### Internationalization
 
-- **FR-I18N-001**: Translation files under `Resources/translations/NowoNowoPasswordPolicyBundle.*.yaml` MUST provide keys for validator messages and expiry flash title/message in all shipped locales.
-
----
-
-## Key Entities
+- **FR-I18N-001**: Translation files under `Resources/translations/NowoPasswordPolicyBundle.*.yaml` MUST provide keys for validator messages and expiry flash title/message in all shipped locales.
 
 - **HasPasswordPolicyInterface**: Application user (or account) entity contract.
 - **PasswordHistoryInterface**: Stored prior password hash with timestamp.

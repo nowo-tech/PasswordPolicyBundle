@@ -47,6 +47,11 @@ class PasswordExpiryListener
     private const FLASH_ALREADY_ADDED_ATTRIBUTE = '_nowo_password_policy.expiry_flash_added';
 
     /**
+     * Request attribute set by SecurityBundle's firewall map when the request matched a firewall.
+     */
+    private const FIREWALL_CONTEXT_ATTRIBUTE = '_firewall_context';
+
+    /**
      * PasswordExpiryListener constructor.
      *
      * @param PasswordExpiryServiceInterface $passwordExpiryService The service for checking password expiry
@@ -108,6 +113,12 @@ class PasswordExpiryListener
             return;
         }
 
+        // Without a firewall on this request the token storage may still hold the previous request's token
+        // (FrankenPHP worker without services_resetter), so it must not be trusted.
+        if ($request->attributes->get(self::FIREWALL_CONTEXT_ATTRIBUTE) === null) {
+            return;
+        }
+
         // Guard against duplicate handling in the same request (FrankenPHP-safe: request-scoped only).
         // Restrict to concrete Request to keep backward compatibility with test doubles.
         if ($request::class === Request::class && $this->isExpiryFlashAlreadyHandled($request)) {
@@ -134,7 +145,7 @@ class PasswordExpiryListener
             }
 
             // Dispatch PasswordExpiredEvent if user is available and event dispatcher is set
-            if ($user instanceof HasPasswordPolicyInterface && $this->eventDispatcher) {
+            if ($user instanceof HasPasswordPolicyInterface && $this->eventDispatcher instanceof EventDispatcherInterface) {
                 $event = new PasswordExpiredEvent($user, $route, $this->redirectOnExpiry);
                 $this->eventDispatcher->dispatch($event);
             }
@@ -146,7 +157,7 @@ class PasswordExpiryListener
             $subjectKey = $this->resolveSubjectKey($user);
 
             // Log password expiry detection
-            if ($this->enableLogging && $this->logger) {
+            if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
                 $this->log($this->logLevel, 'Password expired detected', [
                     'user_id'            => $userId,
                     'user_identifier'    => $userIdentifier,
@@ -188,7 +199,7 @@ class PasswordExpiryListener
                         $requestEvent->setResponse(new RedirectResponse($resetPasswordUrl));
 
                         // Log redirect
-                        if ($this->enableLogging && $this->logger) {
+                        if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
                             $this->log($this->logLevel, 'Redirecting to password reset route', [
                                 'user_id'              => $userId,
                                 'user_identifier'      => $userIdentifier,
@@ -200,7 +211,7 @@ class PasswordExpiryListener
                         return;
                     } catch (Exception $e) {
                         // If route doesn't exist, log error but don't break the application
-                        if ($this->enableLogging && $this->logger) {
+                        if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
                             $this->logger->error('Failed to generate reset password route', [
                                 'user_id'         => $userId,
                                 'user_identifier' => $userIdentifier,

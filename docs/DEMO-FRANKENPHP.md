@@ -115,6 +115,8 @@ Recreate the container after changing `.env` (`docker compose up -d`).
 
 After changing env or Caddyfile, restart: `docker-compose restart` or `make -C demo/symfony8 restart`.
 
+Bundle compatibility with worker mode when the Symfony kernel is **not** reset between requests (`reset_kernel: false` / no `services_resetter`) is documented in [FRANKENPHP-WORKER-AUDIT.md](FRANKENPHP-WORKER-AUDIT.md) (viable as of **1.4.4**).
+
 ---
 
 ## Reproducing in another bundle

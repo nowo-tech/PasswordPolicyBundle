@@ -4,10 +4,12 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Table of contents
 
-
-- [From 1.4.2 to 1.4.3](#from-142-to-143)
+- [From 1.4.3 to 1.4.4](#from-143-to-144)
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.4.4](#upgrading-to-144)
+  - [Upgrading to 1.4.2](#upgrading-to-142)
+  - [Upgrading to 1.4.1](#upgrading-to-141)
   - [Upgrading to 1.4.0](#upgrading-to-140)
   - [Upgrading to 1.3.0](#upgrading-to-130)
   - [Upgrading to 1.2.3](#upgrading-to-123)
@@ -45,7 +47,37 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 5. **Clear cache**: Run `php bin/console cache:clear`
 6. **Test your application**: Verify that password policy functionality works as expected
 
+## From 1.4.3 to 1.4.4
+
+Patch release for FrankenPHP worker mode when the kernel is **not** reset between requests (`reset_kernel: false` / no `services_resetter`). No config migration. Details: [Upgrading to 1.4.4](#upgrading-to-144) and [FRANKENPHP-WORKER-AUDIT.md](FRANKENPHP-WORKER-AUDIT.md).
+
 ## Upgrade Instructions by Version
+
+### Upgrading to 1.4.4
+
+**Release Date**: 2026-09-24
+
+#### What's New
+
+- FrankenPHP worker hardening (no kernel reset between requests). See [FRANKENPHP-WORKER-AUDIT.md](FRANKENPHP-WORKER-AUDIT.md).
+
+#### Behaviour Changes
+
+- **`PasswordExpiryListener`** now only acts on main requests that matched a SecurityBundle firewall (request attribute `_firewall_context`). Routes outside every firewall have no authenticated user, so nothing changes for correctly configured apps. If you set `expiry_listener.priority` above the firewall listener (`8`), the check is skipped: keep the priority at `8` or lower (default `0`).
+- **Validator:** the `{{ days }}` parameter is localized per call with the translator locale; the bundle no longer calls `Carbon::setLocale()`. If your app relied on that side effect to set Carbon's global locale, set it yourself.
+- **`PasswordEntityListener`** implements `ResetInterface` and clears its duplicate guard at the start of every `onFlush`.
+
+#### Breaking Changes
+
+None (no config keys or constructor signatures changed).
+
+#### Migration Steps
+
+1. **Update the bundle** (if you use Composer):
+   ```bash
+   composer update nowo-tech/password-policy-bundle
+   ```
+2. Clear the Symfony cache and smoke-test password change + expiry flash flows under worker mode if you use FrankenPHP.
 
 ### Upgrading to 1.4.2
 

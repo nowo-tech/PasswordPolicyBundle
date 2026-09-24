@@ -480,4 +480,105 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $history = $listener->createPasswordHistory($this->emMock, $this->entityMock, 'new_pwd');
         $this->assertInstanceOf(PasswordHistoryInterface::class, $history);
     }
+
+    /**
+     * Retry after a failed flush: request 1 and request 2 on the same listener instance, no reset() in between.
+     */
+    public function testRetryOfSamePasswordChangeInNextRequestCreatesHistoryAgain(): void
+    {
+        $listener = $this->createRealListener(HasPasswordPolicyInterface::class);
+        $user     = Mockery::mock(HasPasswordPolicyInterface::class);
+        $user->shouldReceive('addPasswordHistory')->twice();
+        $user->shouldReceive('setPasswordChangedAt')->twice();
+        $this->expectHistoryWrites(2);
+
+        $this->uowMock->shouldReceive('getIdentityMap')->andReturn([HasPasswordPolicyInterface::class => [$user]]);
+        $this->uowMock->shouldReceive('getEntityChangeSet')->with($user)->andReturn(['password' => ['old_hash', 'new_hash']]);
+
+        $listener->onFlush(new OnFlushEventArgs($this->emMock));
+        $listener->onFlush(new OnFlushEventArgs($this->emMock));
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Two users sharing the same stored hash, changed in consecutive requests of the same worker.
+     */
+    public function testSameOldHashForDifferentUsersAcrossRequestsIsNotSkipped(): void
+    {
+        $listener = $this->createRealListener(HasPasswordPolicyInterface::class);
+        $alice    = Mockery::mock(HasPasswordPolicyInterface::class);
+        $bob      = Mockery::mock(HasPasswordPolicyInterface::class);
+        foreach ([$alice, $bob] as $user) {
+            $user->shouldReceive('addPasswordHistory')->once();
+            $user->shouldReceive('setPasswordChangedAt')->once();
+        }
+        $this->expectHistoryWrites(2);
+
+        $this->uowMock->shouldReceive('getIdentityMap')->andReturn(
+            [HasPasswordPolicyInterface::class => [$alice]],
+            [HasPasswordPolicyInterface::class => [$bob]],
+        );
+        $this->uowMock->shouldReceive('getEntityChangeSet')->andReturn(['password' => ['placeholder_hash', 'new_hash']]);
+
+        $listener->onFlush(new OnFlushEventArgs($this->emMock));
+        $listener->onFlush(new OnFlushEventArgs($this->emMock));
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testSameOldHashForDifferentUsersInOneFlushIsNotSkipped(): void
+    {
+        $listener = $this->createRealListener(HasPasswordPolicyInterface::class);
+        $alice    = Mockery::mock(HasPasswordPolicyInterface::class);
+        $bob      = Mockery::mock(HasPasswordPolicyInterface::class);
+        foreach ([$alice, $bob] as $user) {
+            $user->shouldReceive('addPasswordHistory')->once();
+            $user->shouldReceive('setPasswordChangedAt')->once();
+        }
+        $this->expectHistoryWrites(2);
+
+        self::assertInstanceOf(PasswordHistoryInterface::class, $listener->createPasswordHistory($this->emMock, $alice, 'shared_hash'));
+        self::assertInstanceOf(PasswordHistoryInterface::class, $listener->createPasswordHistory($this->emMock, $bob, 'shared_hash'));
+    }
+
+    public function testResetClearsProcessedPasswords(): void
+    {
+        $listener = $this->createRealListener(HasPasswordPolicyInterface::class);
+        $user     = Mockery::mock(HasPasswordPolicyInterface::class);
+        $user->shouldReceive('addPasswordHistory')->twice();
+        $user->shouldReceive('setPasswordChangedAt')->twice();
+        $this->expectHistoryWrites(2);
+
+        self::assertInstanceOf(PasswordHistoryInterface::class, $listener->createPasswordHistory($this->emMock, $user, 'pwd'));
+        self::assertNull($listener->createPasswordHistory($this->emMock, $user, 'pwd'));
+
+        $listener->reset();
+
+        self::assertInstanceOf(PasswordHistoryInterface::class, $listener->createPasswordHistory($this->emMock, $user, 'pwd'));
+    }
+
+    private function createRealListener(string $entityClass): PasswordEntityListener
+    {
+        return new PasswordEntityListener(
+            $this->passwordHistoryServiceMock,
+            'password',
+            'passwordHistory',
+            3,
+            $entityClass,
+        );
+    }
+
+    private function expectHistoryWrites(int $times): void
+    {
+        $classMetadata = new ClassMetadata(stdClass::class);
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+
+        $this->emMock->shouldReceive('getUnitOfWork')->andReturn($this->uowMock);
+        $this->emMock->shouldReceive('getClassMetadata')->andReturn($classMetadata);
+        $this->emMock->shouldReceive('persist')->times($times);
+        $this->passwordHistoryServiceMock->shouldReceive('getHistoryItemsForCleanup')->times($times)->andReturn([]);
+        $this->uowMock->shouldReceive('computeChangeSet')->times($times);
+        $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')->times($times);
+    }
 }

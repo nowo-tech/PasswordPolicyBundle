@@ -20,10 +20,12 @@ use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
 use function array_key_exists;
 use function count;
 use function is_array;
+use function spl_object_id;
 use function sprintf;
 
 /**
@@ -32,12 +34,13 @@ use function sprintf;
  * This listener listens to Doctrine's onFlush event and automatically creates password
  * history entries when a password is changed, and updates the passwordChangedAt timestamp.
  */
-class PasswordEntityListener
+class PasswordEntityListener implements ResetInterface
 {
     /**
-     * Array of processed passwords to avoid duplicate history entries.
+     * Entity/old-password pairs already handled in the current flush, to avoid duplicate history entries.
+     * Cleared at the start of every flush so nothing survives into the next request of a long-running worker.
      *
-     * @var array<string, PasswordHistoryInterface>
+     * @var array<string, true>
      */
     private array $processedPasswords = [];
 
@@ -82,6 +85,8 @@ class PasswordEntityListener
      */
     public function onFlush(OnFlushEventArgs $onFlushEventArgs): void
     {
+        $this->reset();
+
         $em         = $onFlushEventArgs->getObjectManager();
         $unitOfWork = $em->getUnitOfWork();
 
@@ -124,7 +129,8 @@ class PasswordEntityListener
             return null;
         }
 
-        if (array_key_exists($oldPassword, $this->processedPasswords)) {
+        $processedKey = spl_object_id($hasPasswordPolicy) . "\0" . $oldPassword;
+        if (array_key_exists($processedKey, $this->processedPasswords)) {
             return null;
         }
 
@@ -153,7 +159,7 @@ class PasswordEntityListener
         //
         $hasPasswordPolicy->addPasswordHistory($history);
 
-        $this->processedPasswords[$oldPassword] = $history;
+        $this->processedPasswords[$processedKey] = true;
 
         $stalePasswords = $this->passwordHistoryService->getHistoryItemsForCleanup($hasPasswordPolicy, $this->historyLimit);
 
@@ -188,7 +194,7 @@ class PasswordEntityListener
         }
 
         // Log password change
-        if ($this->enableLogging && $this->logger) {
+        if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
             $userId = $hasPasswordPolicy->getId();
             $this->log($this->logLevel, 'Password changed successfully', [
                 'user_id'                 => $userId,
@@ -198,6 +204,11 @@ class PasswordEntityListener
         }
 
         return $history;
+    }
+
+    public function reset(): void
+    {
+        $this->processedPasswords = [];
     }
 
     /**

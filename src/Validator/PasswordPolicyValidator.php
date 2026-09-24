@@ -80,8 +80,6 @@ class PasswordPolicyValidator extends ConstraintValidator
             throw new ValidationException(message: sprintf('Expected validation entity to implements %s', HasPasswordPolicyInterface::class));
         }
 
-        Carbon::setLocale($this->translator->getLocale());
-
         // First, check for exact password match
         $history = $this->passwordPolicyService->getHistoryByPassword($value, $entity);
         if ($history instanceof PasswordHistoryInterface && $constraint instanceof PasswordPolicy) {
@@ -131,7 +129,7 @@ class PasswordPolicyValidator extends ConstraintValidator
         }
 
         // Log password reuse attempt
-        if ($this->enableLogging && $this->logger) {
+        if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
             $userId         = $entity->getId();
             $userIdentifier = $entity instanceof UserInterface
                 ? $entity->getUserIdentifier()
@@ -154,8 +152,15 @@ class PasswordPolicyValidator extends ConstraintValidator
         }
 
         $createdAt = $history->getCreatedAt();
+        $days      = '';
+        if ($createdAt instanceof DateTimeInterface) {
+            $localizedCreatedAt = Carbon::instance($createdAt);
+            $localizedCreatedAt->locale($this->translator->getLocale());
+            $days = $localizedCreatedAt->diffForHumans();
+        }
+
         $this->context->buildViolation($message)
-                      ->setParameter('{{ days }}', $createdAt instanceof DateTimeInterface ? Carbon::instance($createdAt)->diffForHumans() : '')
+                      ->setParameter('{{ days }}', $days)
                       ->setCode($type === 'extension' ? PasswordPolicy::PASSWORD_EXTENSION : PasswordPolicy::PASSWORD_IN_HISTORY)
                       ->addViolation();
     }

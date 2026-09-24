@@ -25,9 +25,7 @@ final class NowoPasswordPolicyBundle extends Bundle
      */
     public function getContainerExtension(): ?ExtensionInterface
     {
-        if ($this->extension === null) {
-            $this->extension = new PasswordPolicyExtension();
-        }
+        $this->extension ??= new PasswordPolicyExtension();
 
         return $this->extension instanceof ExtensionInterface ? $this->extension : null;
     }

@@ -60,6 +60,9 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->assertTrue($container->hasDefinition(PasswordExpiryService::class));
         $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
+
+        $listenerDefinition = $container->getDefinition('nowo_password_policy.entity_listener.' . strtolower(str_replace('\\', '_', $mockEntityClass)));
+        $this->assertSame([['method' => 'reset']], $listenerDefinition->getTag('kernel.reset'));
     }
 
     public function testLoadWithFullConfig(): void

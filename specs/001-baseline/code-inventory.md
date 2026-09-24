@@ -2,7 +2,7 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/password-policy-bundle`  
-**Last audited**: 2026-07-22
+**Last audited**: 2026-09-24
 
 This file proves that **every production source artifact** under `src/` is referenced by the baseline specification. Test-only files under `tests/` and demo trees are out of Packagist scope unless promoted in the spec.
 
@@ -13,7 +13,7 @@ This file proves that **every production source artifact** under `src/` is refer
 | `NowoPasswordPolicyBundle.php` | Bundle entry | FR-BUNDLE-001 |
 | `PasswordPolicyBundle.php` | Deprecated class_alias BC shim | FR-BUNDLE-001 |
 | `DependencyInjection/Configuration.php` | Config tree | FR-CFG-001 |
-| `DependencyInjection/PasswordPolicyExtension.php` | DI extension, listeners, throttle storage | FR-CFG-002, FR-LIST-002, FR-FLASH-001 |
+| `DependencyInjection/PasswordPolicyExtension.php` | DI extension, listeners, throttle storage, `kernel.reset` | FR-CFG-002, FR-LIST-001, FR-LIST-002, FR-FLASH-001 |
 | `Model/HasPasswordPolicyInterface.php` | Entity contract | FR-MODEL-001 |
 | `Model/PasswordHistoryInterface.php` | History entity contract | FR-MODEL-002 |
 | `Model/PasswordExpiryConfiguration.php` | Per-entity expiry DTO | FR-MODEL-003 |
@@ -30,9 +30,9 @@ This file proves that **every production source artifact** under `src/` is refer
 | `Service/ExpiryFlash/SessionExpiryFlashThrottleStorage.php` | Session-backed throttle | FR-FLASH-002 |
 | `Service/ExpiryFlash/CacheExpiryFlashThrottleStorage.php` | Cache-backed throttle | FR-FLASH-003 |
 | `Validator/PasswordPolicy.php` | Constraint definition | FR-VAL-001 |
-| `Validator/PasswordPolicyValidator.php` | Reuse validation | FR-VAL-002 |
-| `EventListener/PasswordEntityListener.php` | Doctrine onFlush history | FR-LIST-001 |
-| `EventListener/PasswordExpiryListener.php` | Request expiry enforcement | FR-LIST-002 |
+| `Validator/PasswordPolicyValidator.php` | Reuse validation (local Carbon locale) | FR-VAL-002 |
+| `EventListener/PasswordEntityListener.php` | Doctrine onFlush history + ResetInterface | FR-LIST-001, FR-LIST-001a |
+| `EventListener/PasswordExpiryListener.php` | Request expiry enforcement + firewall gate | FR-LIST-002, FR-LIST-002a |
 | `Event/PasswordChangedEvent.php` | Domain event | FR-EVT-001 |
 | `Event/PasswordExpiredEvent.php` | Domain event | FR-EVT-002 |
 | `Event/PasswordHistoryCreatedEvent.php` | Domain event | FR-EVT-003 |

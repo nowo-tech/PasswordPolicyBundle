@@ -5,14 +5,15 @@
          colors="true"
          cacheDirectory=".phpunit.cache">
     <php>
+        <env name="KERNEL_CLASS" value="App\Kernel"/>
         <env name="APP_ENV" value="test" force="true"/>
         <env name="SHELL_VERBOSITY" value="-1"/>
         <env name="SYMFONY_PHPUNIT_REMOVE" value=""/>
         <env name="SYMFONY_PHPUNIT_VERSION" value="10.5"/>
+        <env name="XDEBUG_MODE" value="coverage"/>
 
         <!-- ###+ symfony/framework-bundle ### -->
-        <env name="APP_ENV" value="dev"/>
-        <env name="APP_SECRET" value=""/>
+        <env name="APP_SECRET" value="changeMeInTests"/>
         <env name="APP_SHARE_DIR" value="var/share"/>
         <!-- ###- symfony/framework-bundle ### -->
 

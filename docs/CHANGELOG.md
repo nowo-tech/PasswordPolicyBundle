@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.4.4] - 2026-09-24](#144---2026-09-24)
+- [[1.4.3] - 2026-08-24](#143---2026-08-24)
+- [[1.4.2] - 2026-08-19](#142---2026-08-19)
 - [[1.4.1] - 2026-08-18](#141---2026-08-18)
 - [[1.4.0] - 2026-07-29](#140---2026-07-29)
 - [[1.3.0] - 2026-07-22](#130---2026-07-22)
@@ -34,6 +37,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.4.4] - 2026-09-24
+
+### Fixed
+
+- **FrankenPHP worker mode (no kernel reset):** `PasswordEntityListener` clears its duplicate-history guard at the start of every flush, keys it by entity + old hash and stores only a flag; it also implements `ResetInterface` (`kernel.reset`). A retried password change or a second user with the same stored hash is no longer skipped, and history entities are no longer retained for the worker life (W-01, W-02).
+- **FrankenPHP worker mode:** `PasswordPolicyValidator` no longer calls `Carbon::setLocale()` (process-wide); the `{{ days }}` text is localized on a local Carbon instance (W-03).
+- **FrankenPHP worker mode:** `PasswordExpiryListener` ignores main requests that did not match a firewall, so a stale token left in the token storage cannot trigger flashes, redirects, `PasswordExpiredEvent` or logs for another user (W-04).
+
+### Docs
+
+- Worker audit report: [FRANKENPHP-WORKER-AUDIT.md](FRANKENPHP-WORKER-AUDIT.md) (scenario B viable after remediation).
+- Specs and configuration notes for `reset_kernel` false / no `services_resetter`.
+
+### Changed
+
+- **Demos:** Symfony 8 PHPUnit sets `KERNEL_CLASS` and `XDEBUG_MODE=coverage`; home smoke test expects redirect to login for anonymous `/home`.
+
+### Notes
+
+- **No configuration keys or constructor signatures changed.** Keep `expiry_listener.priority` at **8 or lower** (default `0`) and put `notified_routes` behind real firewalls (not `security: false`).
+
+[1.4.4]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.4.4
 
 ## [1.4.3] - 2026-08-24
 

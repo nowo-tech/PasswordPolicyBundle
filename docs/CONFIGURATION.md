@@ -452,6 +452,8 @@ The listener deduplicates flashes **within a single request** using request attr
 
 If `flash_throttle_storage: cache` is set but `flash_throttle_cache_service` (default `cache.app`) is missing, the container fails at compile time with a clear configuration error.
 
+**Worker mode without kernel reset (`reset_kernel` false):** the bundle is safe for scenario B (no `services_resetter`). Keep `expiry_listener.priority` at **8 or lower** (default `0`) so SecurityBundle sets `_firewall_context` before the expiry listener runs. Put every `notified_routes` match behind a real firewall (not `security: false`). Full findings and remediations: [FRANKENPHP-WORKER-AUDIT.md](FRANKENPHP-WORKER-AUDIT.md).
+
 #### Route name patterns
 
 Each entry in `notified_routes`, `excluded_notified_routes`, and optional `reset_password_route_pattern` can be:

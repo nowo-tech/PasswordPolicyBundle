@@ -826,4 +826,56 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $validator->validate('pwd', new PasswordPolicy());
         $this->addToAssertionCount(1);
     }
+
+    /**
+     * Two consecutive requests in different locales on the same validator instance, without reset():
+     * the message uses each request's locale and Carbon's process-wide default locale is left untouched.
+     */
+    public function testLocaleIsAppliedPerValidationWithoutChangingCarbonGlobalLocale(): void
+    {
+        $previousLocale = Carbon::getLocale();
+        Carbon::setLocale('en');
+
+        try {
+            $locale         = 'es';
+            $translatorMock = Mockery::mock(TranslatorInterface::class);
+            $translatorMock->shouldReceive('getLocale')->andReturnUsing(static function () use (&$locale): string {
+                return $locale;
+            });
+
+            $validator = new PasswordPolicyValidator($this->passwordPolicyServiceMock, $translatorMock);
+
+            $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+            $historyMock->shouldReceive('getCreatedAt')->andReturn(Carbon::now()->subDays(3));
+            $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')->andReturn($historyMock);
+            $this->contextMock->shouldReceive('getObject')->andReturn($this->entityMock);
+
+            $days    = [];
+            $builder = Mockery::mock(ConstraintViolationBuilderInterface::class);
+            $builder->shouldReceive('setParameter')->andReturnUsing(static function (string $key, string $value) use (&$days, $builder): ConstraintViolationBuilderInterface {
+                $days[] = $value;
+
+                return $builder;
+            });
+            $builder->shouldReceive('setCode')->andReturnSelf();
+            $builder->shouldReceive('addViolation');
+            $this->contextMock->shouldReceive('buildViolation')->andReturn($builder);
+            $validator->initialize($this->contextMock);
+
+            // Request 1: Spanish user.
+            $validator->validate('pwd', new PasswordPolicy());
+            self::assertSame('en', Carbon::getLocale());
+
+            // Request 2: English user on the same worker.
+            $locale = 'en';
+            $validator->validate('pwd', new PasswordPolicy());
+            self::assertSame('en', Carbon::getLocale());
+
+            self::assertCount(2, $days);
+            self::assertStringContainsString('hace', $days[0]);
+            self::assertStringContainsString('ago', $days[1]);
+        } finally {
+            Carbon::setLocale($previousLocale);
+        }
+    }
 }

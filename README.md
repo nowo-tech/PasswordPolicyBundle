@@ -525,6 +525,7 @@ See `.github/workflows/ci.yml` for details.
 
 - [GitHub Actions CI requirements](docs/GITHUB_CI.md) — REQ-GIT-001 CI hygiene and history cleanup
 - [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run the Symfony 8 demo in dev (no cache) or production (worker)
+- [FrankenPHP worker audit](docs/FRANKENPHP-WORKER-AUDIT.md) — Compatibility with worker mode when the kernel is not reset (`reset_kernel: false`)
 - [Events](docs/EVENTS.md) — Custom events and event listeners
 ## Testing
 

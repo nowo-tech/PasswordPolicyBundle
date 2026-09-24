@@ -94,6 +94,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -141,6 +142,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestAddsFlashOnlyOncePerRequest(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -190,6 +192,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestDoesNotAddDuplicateFlashWhenAlreadyInSession(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -241,6 +244,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -268,6 +272,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('excluded-2');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -300,6 +305,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -346,6 +352,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn(null);
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -390,6 +397,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -473,6 +481,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $requestMock    = Mockery::mock(Request::class);
         $attributesMock = Mockery::mock(ParameterBag::class);
         $attributesMock->shouldReceive('get')->with('_route')->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -533,6 +542,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -687,6 +697,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -756,6 +767,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -833,6 +845,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -961,6 +974,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $attributesMock->shouldReceive('get')
                        ->with('_route')
                        ->andReturn('route');
+        $attributesMock->shouldReceive('get')->with('_firewall_context')->andReturn('security.firewall.map.context.main');
         $requestMock->attributes = $attributesMock;
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -1090,6 +1104,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestDoesNotAddFlashWhenStrategyIsNever(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -1162,6 +1177,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $firstRequest = new Request();
+        $firstRequest->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $firstRequest->attributes->set('_route', 'route');
         $responseEventMock->shouldReceive('getRequest')->once()->andReturn($firstRequest);
 
@@ -1173,6 +1189,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $listener->onKernelRequest($responseEventMock);
 
         $secondRequest = new Request();
+        $secondRequest->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $secondRequest->attributes->set('_route', 'route');
         $responseEventMock->shouldReceive('getRequest')->once()->andReturn($secondRequest);
 
@@ -1231,6 +1248,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         );
 
         $firstRequest = new Request();
+        $firstRequest->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $firstRequest->attributes->set('_route', 'route');
         $responseEventMock->shouldReceive('getRequest')->once()->andReturn($firstRequest);
 
@@ -1239,6 +1257,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $listener->onKernelRequest($responseEventMock);
 
         $secondRequest = new Request();
+        $secondRequest->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $secondRequest->attributes->set('_route', 'route');
         $responseEventMock->shouldReceive('getRequest')->once()->andReturn($secondRequest);
 
@@ -1255,6 +1274,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestUsesUserIdentifierForPlainUserInterface(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -1303,6 +1323,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestSkipsFlashWhenSessionUnavailableAndStrategyAlways(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -1342,6 +1363,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestNeverStrategyWithNullSubjectKeyDoesNotAddFlash(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -1384,6 +1406,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
     public function testOnKernelRequestIntervalStrategyAddsFlashWhenNeverShown(): void
     {
         $request = new Request();
+        $request->attributes->set('_firewall_context', 'security.firewall.map.context.main');
         $request->attributes->set('_route', 'route');
 
         $responseEventMock = Mockery::mock(RequestEvent::class);
@@ -1422,6 +1445,58 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $this->sessionMock->shouldReceive('getFlashBag')->once()->andReturn($flashBagMock);
 
         $listener->onKernelRequest($responseEventMock);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Request 1 is authenticated behind a firewall; request 2 (same worker, no reset) matches no firewall
+     * while the token storage still holds request 1's token: it must not be flashed or redirected.
+     */
+    public function testStaleTokenIsIgnoredOnRequestWithoutFirewallWithoutReset(): void
+    {
+        $user = Mockery::mock(HasPasswordPolicyInterface::class, UserInterface::class);
+        $user->shouldReceive('getId')->andReturn(7);
+        $user->shouldReceive('getUserIdentifier')->andReturn('alice@example.com');
+        $token = Mockery::mock(TokenInterface::class);
+        $token->shouldReceive('getUser')->andReturn($user);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($token);
+
+        $this->passwordExpiryServiceMock->shouldReceive('isLockedRoute')->once()->with('route')->andReturn(true);
+        $this->passwordExpiryServiceMock->shouldReceive('isRouteExcluded')->once()->with('route')->andReturn(false);
+        $this->passwordExpiryServiceMock->shouldReceive('isPasswordExpired')->once()->andReturnTrue();
+
+        $flashBagMock = Mockery::mock(FlashBagInterface::class);
+        $flashBagMock->shouldReceive('peek')->once()->andReturn([]);
+        $flashBagMock->shouldReceive('add')->once();
+        $this->sessionMock->shouldReceive('getFlashBag')->once()->andReturn($flashBagMock);
+
+        $listener = new PasswordExpiryListener(
+            $this->passwordExpiryServiceMock,
+            $this->tokenStorageMock,
+            $this->requestStackMock,
+            $this->urlGeneratorMock,
+            $this->translatorMock,
+            'error',
+            'Your password expired. You need to change it',
+            $this->flashThrottleStorage,
+        );
+
+        $firstRequest = new Request();
+        $firstRequest->attributes->set('_firewall_context', 'security.firewall.map.context.main');
+        $firstRequest->attributes->set('_route', 'route');
+        $firstEvent = Mockery::mock(RequestEvent::class);
+        $firstEvent->shouldReceive('isMainRequest')->andReturnTrue();
+        $firstEvent->shouldReceive('getRequest')->andReturn($firstRequest);
+        $listener->onKernelRequest($firstEvent);
+
+        $secondRequest = new Request();
+        $secondRequest->attributes->set('_route', 'route');
+        $secondEvent = Mockery::mock(RequestEvent::class);
+        $secondEvent->shouldReceive('isMainRequest')->andReturnTrue();
+        $secondEvent->shouldReceive('getRequest')->andReturn($secondRequest);
+        $secondEvent->shouldNotReceive('setResponse');
+        $listener->onKernelRequest($secondEvent);
 
         $this->addToAssertionCount(1);
     }

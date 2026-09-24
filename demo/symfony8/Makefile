@@ -71,7 +71,7 @@ test: ensure-up
 	$(COMPOSE) exec -T -e APP_ENV=test php composer test
 
 test-coverage: ensure-up
-	$(COMPOSE) exec -T php composer test-coverage
+	$(COMPOSE) exec -T -e XDEBUG_MODE=coverage php composer test-coverage
 
 update-bundle: ensure-up
 	$(COMPOSE) exec -T php composer update nowo-tech/password-policy-bundle --no-interaction

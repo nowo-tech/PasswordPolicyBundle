@@ -10,10 +10,13 @@ class DemoControllerTest extends WebTestCase
 {
     public function testHomePage(): void
     {
-        $client  = static::createClient();
-        $crawler = $client->request('GET', '/');
+        $client = static::createClient();
+        $client->request('GET', '/home');
 
+        // Anonymous users are redirected to the login form.
+        $this->assertResponseRedirects();
+        $client->followRedirect();
         $this->assertResponseIsSuccessful();
-        $this->assertSelectorTextContains('h1', 'Password Policy Bundle - Demo');
+        $this->assertSelectorTextContains('h1', 'Login');
     }
 }

@@ -43,7 +43,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     /**
      * Whether caching is enabled for password expiry checks.
      */
-    private bool $cacheEnabled = false;
+    private readonly bool $cacheEnabled;
 
     /**
      * PasswordExpiryService constructor.
@@ -86,7 +86,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
         $user = $this->getCurrentUser();
         if ($user instanceof HasPasswordPolicyInterface) {
             // Try to get from cache if enabled
-            if ($this->cacheEnabled && $this->cache) {
+            if ($this->cacheEnabled && $this->cache instanceof CacheItemPoolInterface) {
                 $cacheKey   = $this->getCacheKey($user);
                 $cachedItem = $this->cache->getItem($cacheKey);
 
@@ -114,7 +114,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             }
 
             // Store in cache if enabled
-            if ($this->cacheEnabled && $this->cache) {
+            if ($this->cacheEnabled && $this->cache instanceof CacheItemPoolInterface) {
                 $cacheKey   = $this->getCacheKey($user);
                 $cachedItem = $this->cache->getItem($cacheKey);
                 $cachedItem->set($isExpired);
@@ -137,7 +137,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function invalidateCache(HasPasswordPolicyInterface $user): void
     {
-        if ($this->cacheEnabled && $this->cache) {
+        if ($this->cacheEnabled && $this->cache instanceof CacheItemPoolInterface) {
             $cacheKey = $this->getCacheKey($user);
             $this->cache->deleteItem($cacheKey);
         }
@@ -276,9 +276,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function addEntity(PasswordExpiryConfiguration $passwordExpiryConfiguration): void
     {
-        if ($this->entities === null) {
-            $this->entities = [];
-        }
+        $this->entities ??= [];
         $this->entities[$passwordExpiryConfiguration->getEntityClass()] = $passwordExpiryConfiguration;
     }
 

@@ -299,6 +299,7 @@ final class PasswordPolicyExtension extends Extension
         );
 
         $definition->addTag('doctrine.event_listener', ['event' => 'onFlush']);
+        $definition->addTag('kernel.reset', ['method' => 'reset']);
 
         $definition->setArgument('$passwordField', $settings['password_field']);
         $definition->setArgument('$passwordHistoryField', $settings['password_history_field']);

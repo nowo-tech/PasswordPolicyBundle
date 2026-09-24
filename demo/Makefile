@@ -194,14 +194,14 @@ define test-coverage-target-template
 test-coverage-$(1):
 	@VERSION=$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
 	echo "🧪 Running $$VERSION tests with coverage..."; \
-	cd $(1) && $(COMPOSE) exec php composer test-coverage || \
+	cd $(1) && $(COMPOSE) exec -T -e XDEBUG_MODE=coverage php composer test-coverage || \
 		(PORT=$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo 8001); \
 		CONTAINER=$$(docker ps --format "{{.Names}}" --filter "publish=$$PORT" 2>/dev/null | head -1); \
 		if [ -n "$$CONTAINER" ]; then \
 			docker stop $$CONTAINER 2>/dev/null || true; \
 			docker rm $$CONTAINER 2>/dev/null || true; \
 		fi; \
-		$(COMPOSE) up -d && sleep 2 && $(COMPOSE) exec php composer test-coverage)
+		$(COMPOSE) up -d && sleep 2 && $(COMPOSE) exec -T -e XDEBUG_MODE=coverage php composer test-coverage)
 endef
 
 # Generate all targets for each demo
