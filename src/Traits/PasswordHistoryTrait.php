@@ -57,6 +57,7 @@ trait PasswordHistoryTrait
      */
     public function setPassword(string $password): self
     {
+        // @igor-ignore - Not shared worker service state.
         $this->password = $password;
 
         return $this;
@@ -79,6 +80,7 @@ trait PasswordHistoryTrait
      */
     public function setCreatedAt(DateTimeInterface $createdAt): self
     {
+        // @igor-ignore - Not shared worker service state.
         $this->createdAt = $createdAt;
 
         return $this;
@@ -116,6 +118,7 @@ trait PasswordHistoryTrait
      */
     public function setSalt(?string $salt): void
     {
+        // @igor-ignore - Not shared worker service state.
         $this->salt = $salt;
     }
 }

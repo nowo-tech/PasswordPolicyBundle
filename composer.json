@@ -44,6 +44,7 @@
         "doctrine/dbal": "^3.8",
         "doctrine/orm": "^2.15 || ^3.0",
         "friendsofphp/php-cs-fixer": "^3.0",
+        "igor-php/igor-php": "^0.9.7",
         "mockery/mockery": "^1.6",
         "nowo-tech/phpstan-frankenphp": "^1.0",
         "phpstan/extension-installer": "^1.4",
@@ -96,7 +97,8 @@
             "@test"
         ],
         "update": "composer update",
-        "validate": "composer validate --strict"
+        "validate": "composer validate --strict",
+        "igor": "igor-php --no-agent ."
     },
     "scripts-descriptions": {
         "test": "Run PHPUnit tests",
@@ -108,6 +110,7 @@
         "phpstan": "Run PHPStan static analysis",
         "qa": "Run all quality assurance checks",
         "update": "Update composer.lock",
-        "validate": "Validate composer.json"
+        "validate": "Validate composer.json",
+        "igor": "Run Igor FrankenPHP worker-state audit (REQ-CS-008)"
     }
 }

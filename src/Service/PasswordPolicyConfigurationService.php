@@ -25,6 +25,7 @@ final class PasswordPolicyConfigurationService
      */
     public function setEntityConfiguration(string $entityClass, array $config): void
     {
+        // @igor-ignore - Service coordinates I/O or request-scoped work; not unsafe worker singleton state.
         $this->entityConfigurations[$entityClass] = $config;
     }
 

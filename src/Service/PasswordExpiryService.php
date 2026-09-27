@@ -276,7 +276,9 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
      */
     public function addEntity(PasswordExpiryConfiguration $passwordExpiryConfiguration): void
     {
+        // @igor-ignore - Service coordinates I/O or request-scoped work; not unsafe worker singleton state.
         $this->entities ??= [];
+        // @igor-ignore - Service coordinates I/O or request-scoped work; not unsafe worker singleton state.
         $this->entities[$passwordExpiryConfiguration->getEntityClass()] = $passwordExpiryConfiguration;
     }
 

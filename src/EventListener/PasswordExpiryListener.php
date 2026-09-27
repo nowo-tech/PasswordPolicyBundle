@@ -185,6 +185,7 @@ class PasswordExpiryListener
                 $flashBag         = $session->getFlashBag();
                 $existingMessages = $flashBag->peek($this->errorMessageType, []);
                 if (!in_array($translatedMessage, $existingMessages, true)) {
+                    // @igor-ignore - Not shared worker service state.
                     $flashBag->add($this->errorMessageType, $translatedMessage);
                     $this->markExpiryFlashShown($subjectKey);
                 }

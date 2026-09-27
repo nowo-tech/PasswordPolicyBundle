@@ -25,6 +25,7 @@ final class NowoPasswordPolicyBundle extends Bundle
      */
     public function getContainerExtension(): ?ExtensionInterface
     {
+        // @igor-ignore - Boot-time Symfony Bundle extension cache (not request state).
         $this->extension ??= new PasswordPolicyExtension();
 
         return $this->extension instanceof ExtensionInterface ? $this->extension : null;
