@@ -1,83 +1,278 @@
-name: Sync Releases
+name: Sync Missing Releases
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
   schedule:
-    - cron: '0 3 * * 1'
+    # Run daily at 2 AM UTC to check for missing releases
+    - cron: '0 2 * * *'
+  # Do not run on tag push: Create Release already handles new tags.
+  # Running both concurrently can create duplicate releases for the same tag_name.
 
 jobs:
   sync-releases:
+    name: Sync Missing Releases
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # Required to create releases
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Required to get all tags and history
 
-      - name: Sync missing/incomplete releases
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Fetch all tags
+        run: git fetch --tags --force || true
+
+      - name: Get all tags
+        id: tags
         run: |
-          set -euo pipefail
+          # Get all tags starting with 'v' and sort them
+          TAGS=$(git tag -l 'v*' | sort -V)
+          echo "TAGS<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Found tags: $TAGS"
 
-          owner_repo="${GITHUB_REPOSITORY}"
-          tags="$(git tag -l 'v*' | sort -V)"
+      - name: Check existing releases
+        id: check-releases
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const releases = [];
+            for (let page = 1; ; page++) {
+              const { data } = await github.rest.repos.listReleases({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+                page
+              });
+              releases.push(...data);
+              if (data.length < 100) break;
+            }
 
-          if [ -z "${tags}" ]; then
-            echo "No v* tags found."
-            exit 0
-          fi
+            // Prefer the release with a changelog body when duplicates exist.
+            const preferredByTag = {};
+            const duplicatesToDelete = [];
 
-          for tag in ${tags}; do
-            version="${tag#v}"
-            tag_message="$(git tag -l --format='%(contents)' "${tag}" 2>/dev/null || true)"
-            if [ -z "${tag_message}" ]; then
-              tag_message="Release ${tag}"
-            fi
+            const score = (r) => {
+              const body = r.body || '';
+              let s = 0;
+              if (body.includes('## Changelog')) s += 2;
+              if (body.length > 80) s += 1;
+              return s;
+            };
 
-            changelog=""
-            if [ -f docs/CHANGELOG.md ]; then
-              version_esc="$(printf '%s\n' "${version}" | sed 's/[.]/\\./g')"
-              changelog="$(awk -v ver="${version_esc}" '
-                $0 ~ "^## \\[" ver "\\]" { flag=1; next }
-                /^## \[/ && flag { flag=0 }
-                flag
-              ' docs/CHANGELOG.md || true)"
-            fi
+            for (const r of releases) {
+              const prev = preferredByTag[r.tag_name];
+              if (!prev) {
+                preferredByTag[r.tag_name] = r;
+                continue;
+              }
+              if (score(r) > score(prev) || (score(r) === score(prev) && r.id < prev.id)) {
+                duplicatesToDelete.push(prev);
+                preferredByTag[r.tag_name] = r;
+              } else {
+                duplicatesToDelete.push(r);
+              }
+            }
 
-            body="${tag_message}"
-            if [ -n "${changelog}" ]; then
-              body="${body}
+            for (const dup of duplicatesToDelete) {
+              console.log('Deleting duplicate release id=' + dup.id + ' tag=' + dup.tag_name);
+              try {
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: dup.id
+                });
+                console.log('✅ Deleted duplicate release ' + dup.id);
+              } catch (error) {
+                console.log('⚠️ Could not delete duplicate ' + dup.id + ': ' + error.message);
+              }
+            }
 
-## Changelog
+            const existingReleaseTags = Object.keys(preferredByTag);
+            const releasesMap = {};
+            for (const [tag, r] of Object.entries(preferredByTag)) {
+              releasesMap[tag] = {
+                id: r.id,
+                body: r.body || '',
+                hasChangelog: (r.body || '').includes('## Changelog')
+              };
+            }
 
-${changelog}"
-            fi
+            console.log('Existing releases:', existingReleaseTags);
 
-            release_json="$(gh api "repos/${owner_repo}/releases/tags/${tag}" --silent 2>/dev/null || true)"
+            core.setOutput('tags', JSON.stringify(existingReleaseTags));
+            core.setOutput('releases_map', JSON.stringify(releasesMap));
 
-            if [ -z "${release_json}" ]; then
-              echo "Creating missing release for ${tag}"
-              gh release create "${tag}" --title "Release ${tag}" --notes "${body}"
-              continue
-            fi
+      - name: Find missing and outdated releases
+        id: missing
+        uses: actions/github-script@v9
+        env:
+          TAGS: ${{ steps.tags.outputs.TAGS }}
+          EXISTING_RELEASES: ${{ steps.check-releases.outputs.tags }}
+          RELEASES_MAP: ${{ steps.check-releases.outputs.releases_map }}
+        with:
+          script: |
+            const tags = (process.env.TAGS || '').trim().split('\n').filter(t => t);
+            const existingReleases = JSON.parse(process.env.EXISTING_RELEASES || '[]');
+            const releasesMap = JSON.parse(process.env.RELEASES_MAP || '{}');
 
-            release_id="$(printf '%s' "${release_json}" | jq -r '.id')"
-            existing_body="$(printf '%s' "${release_json}" | jq -r '.body // ""')"
+            const missingTags = tags.filter(tag => !existingReleases.includes(tag));
+            const outdatedTags = tags.filter(tag => {
+              const release = releasesMap[tag];
+              return release && !release.hasChangelog;
+            });
 
-            if [ -n "${changelog}" ] && ! printf '%s' "${existing_body}" | grep -q "## Changelog"; then
-              echo "Updating incomplete release for ${tag}"
-              gh api \
-                --method PATCH \
-                "repos/${owner_repo}/releases/${release_id}" \
-                -f body="${existing_body}
+            const allTagsToProcess = [...new Set([...missingTags, ...outdatedTags])];
 
-## Changelog
+            if (allTagsToProcess.length > 0) {
+              console.log('Missing releases for tags:', missingTags);
+              console.log('Outdated releases (missing changelog) for tags:', outdatedTags);
+              core.setOutput('missing_tags', missingTags.join('\n'));
+              core.setOutput('outdated_tags', outdatedTags.join('\n'));
+              core.setOutput('all_tags', allTagsToProcess.join('\n'));
+              core.setOutput('found_missing', 'true');
+            } else {
+              console.log('All tags have releases with changelog ✅');
+              core.setOutput('found_missing', 'false');
+            }
 
-${changelog}" >/dev/null
-            else
-              echo "Release ${tag} already synchronized."
-            fi
-          done
+      - name: Create or update releases
+        if: steps.missing.outputs.found_missing == 'true'
+        uses: actions/github-script@v9
+        env:
+          ALL_TAGS: ${{ steps.missing.outputs.all_tags }}
+          MISSING_TAGS: ${{ steps.missing.outputs.missing_tags }}
+          OUTDATED_TAGS: ${{ steps.missing.outputs.outdated_tags }}
+          RELEASES_MAP: ${{ steps.check-releases.outputs.releases_map }}
+        with:
+          script: |
+            const allTags = (process.env.ALL_TAGS || '').trim().split('\n').filter(t => t);
+            const missingTags = (process.env.MISSING_TAGS || '').trim().split('\n').filter(t => t);
+            const outdatedTags = (process.env.OUTDATED_TAGS || '').trim().split('\n').filter(t => t);
+            const releasesMap = JSON.parse(process.env.RELEASES_MAP || '{}');
+
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+
+            for (const tag of allTags) {
+              const isMissing = missingTags.includes(tag);
+              const isOutdated = outdatedTags.includes(tag);
+
+              // Extract version from tag (remove 'v' prefix)
+              const version = tag.replace(/^v/, '');
+
+              // Get tag message using git
+              let tagMessage = '';
+              try {
+                const gitCommand = 'git tag -l --format=\'%(contents)\' ' + tag;
+                tagMessage = execSync(gitCommand, { encoding: 'utf-8' }).trim();
+              } catch (e) {
+                tagMessage = 'Release ' + tag;
+              }
+
+              if (!tagMessage) {
+                tagMessage = 'Release ' + tag;
+              }
+
+              // Get changelog entry
+              let changelogEntry = '';
+              if (fs.existsSync('docs/CHANGELOG.md')) {
+                const changelog = fs.readFileSync('docs/CHANGELOG.md', 'utf-8');
+                const versionEscaped = version.replace(/\./g, '\\.');
+                const regexPattern = '^## \\[' + versionEscaped + '\\]([\\s\\S]*?)(?=^## \\[?[0-9]|$)';
+                const regex = new RegExp(regexPattern);
+                const match = changelog.match(regex);
+                if (match) {
+                  changelogEntry = match[1].trim();
+                }
+              }
+
+              // Build release body
+              let releaseBody = tagMessage;
+              if (changelogEntry) {
+                releaseBody = tagMessage + '\n\n## Changelog\n\n' + changelogEntry;
+              }
+
+              // Determine if prerelease
+              const isPrerelease = tag.includes('-alpha') || tag.includes('-beta') || tag.includes('-rc');
+
+              if (isMissing) {
+                // Create new release (check if it exists first to avoid errors)
+                try {
+                  console.log('Creating release for tag: ' + tag);
+                  await github.rest.repos.createRelease({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    tag_name: tag,
+                    name: 'Release ' + tag,
+                    body: releaseBody,
+                    draft: false,
+                    prerelease: isPrerelease,
+                    generate_release_notes: true
+                  });
+                  console.log('✅ Created release for ' + tag);
+                } catch (error) {
+                  if (error.status === 422) {
+                    console.log('⚠️ Release for ' + tag + ' already exists, skipping creation');
+                  } else {
+                    throw error;
+                  }
+                }
+              } else if (isOutdated) {
+                // Update existing release
+                const release = releasesMap[tag];
+                console.log('Updating release for tag: ' + tag + ' (release ID: ' + release.id + ')');
+                try {
+                  await github.rest.repos.updateRelease({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    release_id: release.id,
+                    body: releaseBody,
+                    prerelease: isPrerelease
+                  });
+                  console.log('✅ Updated release for ' + tag + ' with changelog');
+                } catch (error) {
+                  if (error.status === 422) {
+                    console.log('⚠️ Could not update release for ' + tag + ' (422): ' + error.message + '; skipping');
+                  } else {
+                    throw error;
+                  }
+                }
+              }
+            }
+
+      - name: Summary
+        if: always()
+        uses: actions/github-script@v9
+        env:
+          FOUND_MISSING: ${{ steps.missing.outputs.found_missing }}
+          MISSING_TAGS: ${{ steps.missing.outputs.missing_tags }}
+          OUTDATED_TAGS: ${{ steps.missing.outputs.outdated_tags }}
+        with:
+          script: |
+            const foundMissing = process.env.FOUND_MISSING === 'true';
+            const missingTags = foundMissing ? (process.env.MISSING_TAGS || '').trim().split('\n').filter(t => t) : [];
+            const outdatedTags = foundMissing ? (process.env.OUTDATED_TAGS || '').trim().split('\n').filter(t => t) : [];
+
+            let summary = '';
+            if (foundMissing) {
+              let parts = [];
+              if (missingTags.length > 0) {
+                parts.push('Created releases for the following tags:\n```\n' + missingTags.join('\n') + '\n```');
+              }
+              if (outdatedTags.length > 0) {
+                parts.push('Updated releases (added changelog) for the following tags:\n```\n' + outdatedTags.join('\n') + '\n```');
+              }
+              summary = '## ✅ Sync Complete\n\n' + parts.join('\n\n');
+            } else {
+              summary = '## ✅ All tags have releases with changelog\n\nNo missing or outdated releases found. Everything is in sync! 🎉';
+            }
+
+            core.summary.addRaw(summary);
+            await core.summary.write();
+
+# Maintainer: Héctor Franco Aceituno (@HecFranco)
+# Organization: nowo-tech (https://github.com/nowo-tech)
