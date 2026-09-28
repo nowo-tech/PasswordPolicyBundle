@@ -3,7 +3,16 @@
 
 ## Unreleased
 
+## To 1.4.6
+
+From **1.4.5** — CI workflow YAML only. **No application upgrade steps.**
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
+
 ## To 1.4.5
+
 
 From **1.4.4** — REQ-CS-008 Igor FrankenPHP worker audit (igor-php require-dev, igor.json, make igor).
 

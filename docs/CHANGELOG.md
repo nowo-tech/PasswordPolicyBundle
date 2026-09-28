@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.4.6] - 2026-09-28](#146---2026-09-28)
 - [[1.4.5] - 2026-09-27](#145---2026-09-27)
 - [[1.4.4] - 2026-09-24](#144---2026-09-24)
 - [[1.4.3] - 2026-08-24](#143---2026-08-24)
@@ -38,7 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.6] - 2026-09-28
+
+### Fixed
+
+- CI: restore valid `sync-releases` workflow YAML so scheduled/release sync jobs parse correctly.
+
 ## [1.4.5] - 2026-09-27
+
 
 ### Added
 
