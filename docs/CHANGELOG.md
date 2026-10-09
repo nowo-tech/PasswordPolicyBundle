@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.4.7] - 2026-10-09](#147---2026-10-09)
 - [[1.4.6] - 2026-09-28](#146---2026-09-28)
 - [[1.4.5] - 2026-09-27](#145---2026-09-27)
 - [[1.4.4] - 2026-09-24](#144---2026-09-24)
@@ -38,6 +39,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[0.0.1] - 2025-12-15](#001---2025-12-15)
 
 ## [Unreleased]
+
+## [1.4.7] - 2026-10-09
+
+### Changed
+
+- CI: bump `actions/github-script` to v9, `actions/stale` to v11, `softprops/action-gh-release` to v3.
+- Dependencies (Dependabot + lock refresh): `doctrine/orm` 3.7.3, `nesbot/carbon` 3.14.2, Symfony 7.4.20; dev `igor-php/igor-php` 0.10, PHPStan 2.3.1 (+ phpunit extension 2.1.1), Rector 2.7.0, `nowo-tech/phpstan-frankenphp` 1.2.3.
+- Demo (Symfony 8): `doctrine/orm` 3.7.4, `doctrine/dbal` 4.5.0, Twig 3.30.0, HotReloadBundle 1.5.5, TwigInspectorBundle 1.1.7; regenerated `config/reference.php`.
+
+[1.4.7]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.4.7
 
 ## [1.4.6] - 2026-09-28
 

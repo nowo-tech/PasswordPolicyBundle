@@ -3,6 +3,14 @@
 
 ## Unreleased
 
+## To 1.4.7
+
+From **1.4.6** — dependency and CI refresh only. No breaking changes. **No application upgrade steps.**
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
+
 ## To 1.4.6
 
 From **1.4.5** — CI workflow YAML only. **No application upgrade steps.**
@@ -27,6 +35,8 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Table of contents
 
+- [To 1.4.7](#to-147)
+- [To 1.4.6](#to-146)
 - [From 1.4.3 to 1.4.4](#from-143-to-144)
 - [General Upgrade Process](#general-upgrade-process)
 - [Upgrade Instructions by Version](#upgrade-instructions-by-version)
