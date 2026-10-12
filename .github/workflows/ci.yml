@@ -269,7 +269,7 @@ jobs:
           echo "✅ Code coverage is ${COVERAGE_PERCENT}% (meets minimum threshold of ${MIN_COVERAGE}%)"
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage.xml
           fail_ci_if_error: false
