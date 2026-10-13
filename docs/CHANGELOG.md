@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[Unreleased]](#unreleased)
   - [Fixed](#fixed)
   - [Changed](#changed)
+- [[1.6.0] - 2026-10-13](#160---2026-10-13)
 - [[1.5.0] - 2026-10-13](#150---2026-10-13)
 - [[1.4.8] - 2026-10-13](#148---2026-10-13)
 - [[1.4.7] - 2026-10-09](#147---2026-10-09)
@@ -44,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-13
+
 ### Fixed
 
 - **`PasswordPolicy` accepted the current password as a "new" one**: the password in use only enters the history on the next change. The validator now also compares the new plain password with the entity's current hash (same message and `PASSWORD_IN_HISTORY` code; `PasswordReuseAttemptedEvent` carries a transient `CurrentPasswordHistory`). Opt out per constraint with `checkCurrentPassword = false` when the application hashes and sets the new password before validating.
@@ -54,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Minimum Symfony version is now **6.4** (`^6.4 || ^7.0 || ^8.0`), the lowest version tested in CI.
 - `docs/CONFIGURATION.md` documents `detect_password_extensions`, `extension_min_length` and the current-password check.
+
+[1.6.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.6.0
 
 ## [1.5.0] - 2026-10-13
 
