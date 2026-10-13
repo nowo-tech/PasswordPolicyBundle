@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+  - [Fixed](#fixed)
   - [Changed](#changed)
 - [[1.4.8] - 2026-10-13](#148---2026-10-13)
 - [[1.4.7] - 2026-10-09](#147---2026-10-09)
@@ -41,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[0.0.1] - 2025-12-15](#001---2025-12-15)
 
 ## [Unreleased]
+
+### Fixed
+
+- **Events, logging and `enable_cache` were silently disabled in real applications**: the extension decided whether to inject `logger`, `event_dispatcher`, `cache.app` and `router` with `has()` inside `load()`, which runs on an isolated container and always returned false, so `null` was injected. They are now optional references resolved against the final container: `PasswordChangedEvent`, `PasswordExpiredEvent`, `PasswordHistoryCreatedEvent` and `PasswordReuseAttemptedEvent` are dispatched, `enable_logging` logs, and `enable_cache: true` caches the expiry status.
+
+### Changed
+
+- `doctrine/orm`, `doctrine/collections`, `symfony/password-hasher` and `symfony/security-core` moved from `require-dev` to `require` (the bundle uses them at runtime).
+- Password history checks no longer call the Symfony password hasher for hashes PHP recognises (`password_get_info()`: bcrypt, argon2i, argon2id): `password_verify()` already gave the final answer. Avoids up to N history entries × 36 extension candidates extra hash verifications; custom/legacy hash formats still use the hasher.
 
 ## [1.4.8] - 2026-10-13
 

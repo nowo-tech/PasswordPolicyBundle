@@ -14,6 +14,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 
 use function ctype_digit;
 use function function_exists;
+use function password_get_info;
 use function strlen;
 
 /**
@@ -77,8 +78,9 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface
      * Check if a password matches a hashed password.
      *
      * This method tries multiple approaches to verify the password:
-     * 1. First tries password_verify() for any hash format (most reliable)
-     * 2. Then tries UserPasswordHasherInterface which handles Symfony's password hashers
+     * 1. First tries password_verify() for any hash format (most reliable); its answer is final for
+     *    formats recognised by password_get_info()
+     * 2. Otherwise tries UserPasswordHasherInterface which handles Symfony's custom password hashers
      * 3. Never compares hashes directly (security requirement)
      */
     private function isPasswordValid(
@@ -93,6 +95,13 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface
             $result = password_verify($plainPassword, $hashedPassword);
             if ($result) {
                 return true;
+            }
+
+            // A password_hash() format (bcrypt, argon2i, argon2id) was answered definitively by password_verify();
+            // the Symfony hasher would only repeat the same costly check (N history entries x up to 36 extension
+            // candidates). Keep the hasher fallback for formats PHP does not recognise (custom/legacy hashers).
+            if (password_get_info($hashedPassword)['algo'] !== null) {
+                return false;
             }
         }
 

@@ -20,6 +20,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+use const PASSWORD_ARGON2ID;
 use const PASSWORD_BCRYPT;
 
 final class PasswordPolicyServiceTest extends UnitTestCase
@@ -865,6 +866,109 @@ final class PasswordPolicyServiceTest extends UnitTestCase
 
         $actual = $service->getHistoryByPassword($plainPassword, $entity);
         $this->assertNull($actual);
+    }
+
+    /**
+     * Regression: native password_hash() formats are settled by password_verify(); the Symfony hasher
+     * fallback must not re-check them (N history entries x up to 36 extension candidates).
+     */
+    public function testNativeHashesDoNotFallBackToSymfonyHasher(): void
+    {
+        $entity = $this->makeHasherCapableEntity(
+            $this->makePasswordHistoryMock(password_hash('first-old-pwd', PASSWORD_BCRYPT, ['cost' => 4])),
+            $this->makePasswordHistoryMock(password_hash('second-old-pwd', PASSWORD_ARGON2ID, ['memory_cost' => 1024, 'time_cost' => 1, 'threads' => 1])),
+        );
+
+        $this->userPasswordHasherMock->shouldNotReceive('isPasswordValid');
+
+        $this->assertNull($this->passwordPolicyService->getHistoryByPassword('Brand-new-pwd', $entity));
+        $this->assertNull($this->passwordPolicyService->getHistoryByPasswordExtension('123Brand-new-pwd456!', $entity, 4));
+    }
+
+    /**
+     * Hashes PHP does not recognise (custom/legacy Symfony hashers) still use the Symfony hasher.
+     */
+    public function testUnknownHashFormatStillFallsBackToSymfonyHasher(): void
+    {
+        $history = $this->makePasswordHistoryMock('{SHA512}legacy-hash');
+        $entity  = $this->makeHasherCapableEntity($history);
+
+        $this->userPasswordHasherMock->shouldReceive('isPasswordValid')
+            ->once()
+            ->with(Mockery::type(PasswordAuthenticatedUserInterface::class), 'old-pwd')
+            ->andReturn(true);
+
+        $this->assertSame($history, $this->passwordPolicyService->getHistoryByPassword('old-pwd', $entity));
+    }
+
+    private function makeHasherCapableEntity(PasswordHistoryInterface ...$history): HasPasswordPolicyInterface&PasswordAuthenticatedUserInterface
+    {
+        return new class(array_values($history)) implements HasPasswordPolicyInterface, UserInterface, PasswordAuthenticatedUserInterface {
+            public string $password = '';
+
+            /** @var Collection<int, PasswordHistoryInterface> */
+            public Collection $passwordHistory;
+
+            /** @param list<PasswordHistoryInterface> $history */
+            public function __construct(array $history)
+            {
+                $this->passwordHistory = new ArrayCollection($history);
+            }
+
+            public function getPasswordHistory(): Collection
+            {
+                return $this->passwordHistory;
+            }
+
+            public function getPassword(): string
+            {
+                return $this->password;
+            }
+
+            public function setPassword(string $password): void
+            {
+                $this->password = $password;
+            }
+
+            public function getId(): int
+            {
+                return 1;
+            }
+
+            public function getPasswordChangedAt(): ?DateTime
+            {
+                return null;
+            }
+
+            public function setPasswordChangedAt(DateTime $dateTime): static
+            {
+                return $this;
+            }
+
+            public function addPasswordHistory(PasswordHistoryInterface $ph): static
+            {
+                return $this;
+            }
+
+            public function removePasswordHistory(PasswordHistoryInterface $ph): static
+            {
+                return $this;
+            }
+
+            public function getUserIdentifier(): string
+            {
+                return 'user';
+            }
+
+            public function getRoles(): array
+            {
+                return ['ROLE_USER'];
+            }
+
+            public function eraseCredentials(): void
+            {
+            }
+        };
     }
 
     private function makePasswordHistoryMock(string $hashedPassword = 'hashed_pwd'): PasswordHistoryInterface
