@@ -1,7 +1,16 @@
 # Upgrade Guide
 
-
 ## Unreleased
+
+## To 1.4.8
+
+From **1.4.7** — dependency refresh and repository maintenance.
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
+
+- No breaking changes. No application upgrade steps.
 
 ## To 1.4.7
 
@@ -21,7 +30,6 @@ composer update nowo-tech/password-policy-bundle
 
 ## To 1.4.5
 
-
 From **1.4.4** — REQ-CS-008 Igor FrankenPHP worker audit (igor-php require-dev, igor.json, make igor).
 
 ```bash
@@ -35,6 +43,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Table of contents
 
+- [To 1.4.8](#to-148)
 - [To 1.4.7](#to-147)
 - [To 1.4.6](#to-146)
 - [From 1.4.3 to 1.4.4](#from-143-to-144)

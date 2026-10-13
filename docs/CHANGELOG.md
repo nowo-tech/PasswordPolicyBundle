@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [[Unreleased]](#unreleased)
   - [Changed](#changed)
+- [[1.4.8] - 2026-10-13](#148---2026-10-13)
 - [[1.4.7] - 2026-10-09](#147---2026-10-09)
 - [[1.4.6] - 2026-09-28](#146---2026-09-28)
 - [[1.4.5] - 2026-09-27](#145---2026-09-27)
@@ -41,9 +42,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.8] - 2026-10-13
+
 ### Changed
 
 - Development: `composer.json` pins `config.platform.php` to 8.2.0 so the committed lock stays installable on the minimum PHP; CI overrides the platform per matrix cell.
+
+### Dependencies
+
+- GitHub Actions: `actions/checkout` v6 → v7 and `codecov/codecov-action` v5 → v7 (#23, #24).
+- `actions/cache` 5 → 6 (GitHub Actions; #22).
+- `doctrine/orm` 3.7.4 → 3.7.5 (development lock; #25).
+
+[1.4.8]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.4.8
 
 ## [1.4.7] - 2026-10-09
 
@@ -62,7 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI: restore valid `sync-releases` workflow YAML so scheduled/release sync jobs parse correctly.
 
 ## [1.4.5] - 2026-09-27
-
 
 ### Added
 
