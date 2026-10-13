@@ -1,5 +1,48 @@
 # Upgrade Guide
 
+## Table of contents
+
+- [Unreleased](#unreleased)
+- [To 1.6.0](#to-160)
+- [To 1.5.0](#to-150)
+- [To 1.4.8](#to-148)
+- [To 1.4.7](#to-147)
+- [To 1.4.6](#to-146)
+- [To 1.4.5](#to-145)
+- [General Upgrade Process](#general-upgrade-process)
+- [From 1.4.3 to 1.4.4](#from-143-to-144)
+- [Upgrade Instructions by Version](#upgrade-instructions-by-version)
+  - [Upgrading to 1.4.4](#upgrading-to-144)
+  - [Upgrading to 1.4.2](#upgrading-to-142)
+  - [Upgrading to 1.4.1](#upgrading-to-141)
+  - [Upgrading to 1.4.0](#upgrading-to-140)
+  - [Upgrading to 1.3.0](#upgrading-to-130)
+  - [Upgrading to 1.2.3](#upgrading-to-123)
+  - [Upgrading to 1.2.2](#upgrading-to-122)
+  - [Upgrading to 1.2.1](#upgrading-to-121)
+  - [Upgrading to 1.2.0](#upgrading-to-120)
+  - [Upgrading to 1.1.1](#upgrading-to-111)
+  - [Upgrading to 1.1.0](#upgrading-to-110)
+  - [Upgrading to 1.0.0](#upgrading-to-100)
+  - [Upgrading to 0.0.14](#upgrading-to-0014)
+  - [Upgrading to 0.0.13](#upgrading-to-0013)
+  - [Upgrading to 0.0.12](#upgrading-to-0012)
+  - [Upgrading to 0.0.11](#upgrading-to-0011)
+  - [Upgrading to 0.0.10](#upgrading-to-0010)
+  - [Upgrading to 0.0.9](#upgrading-to-009)
+  - [Upgrading to 0.0.8](#upgrading-to-008)
+  - [Upgrading to 0.0.6](#upgrading-to-006)
+  - [Upgrading to 0.0.5](#upgrading-to-005)
+  - [Upgrading to 0.0.4](#upgrading-to-004)
+  - [Upgrading to 0.0.3](#upgrading-to-003)
+  - [Upgrading to 0.0.2](#upgrading-to-002)
+  - [Upgrading to 0.0.1](#upgrading-to-001)
+- [Troubleshooting Upgrades](#troubleshooting-upgrades)
+  - [Common Issues](#common-issues)
+  - [Getting Help](#getting-help)
+- [Version Compatibility](#version-compatibility)
+- [Notes](#notes)
+
 ## Unreleased
 
 ## To 1.6.0
@@ -64,47 +107,6 @@ php bin/console cache:clear
 - No application upgrade steps for require-dev Igor tooling (REQ-CS-008). Consumers do not pull `igor-php/igor-php` transitively.
 
 This guide provides step-by-step instructions for upgrading the Password Policy Bundle between versions.
-
-## Table of contents
-
-- [To 1.6.0](#to-160)
-- [To 1.5.0](#to-150)
-- [To 1.4.8](#to-148)
-- [To 1.4.7](#to-147)
-- [To 1.4.6](#to-146)
-- [From 1.4.3 to 1.4.4](#from-143-to-144)
-- [General Upgrade Process](#general-upgrade-process)
-- [Upgrade Instructions by Version](#upgrade-instructions-by-version)
-  - [Upgrading to 1.4.4](#upgrading-to-144)
-  - [Upgrading to 1.4.2](#upgrading-to-142)
-  - [Upgrading to 1.4.1](#upgrading-to-141)
-  - [Upgrading to 1.4.0](#upgrading-to-140)
-  - [Upgrading to 1.3.0](#upgrading-to-130)
-  - [Upgrading to 1.2.3](#upgrading-to-123)
-  - [Upgrading to 1.2.2](#upgrading-to-122)
-  - [Upgrading to 1.2.1](#upgrading-to-121)
-  - [Upgrading to 1.2.0](#upgrading-to-120)
-  - [Upgrading to 1.1.1](#upgrading-to-111)
-  - [Upgrading to 1.1.0](#upgrading-to-110)
-  - [Upgrading to 1.0.0](#upgrading-to-100)
-  - [Upgrading to 0.0.14](#upgrading-to-0014)
-  - [Upgrading to 0.0.13](#upgrading-to-0013)
-  - [Upgrading to 0.0.12](#upgrading-to-0012)
-  - [Upgrading to 0.0.11](#upgrading-to-0011)
-  - [Upgrading to 0.0.10](#upgrading-to-0010)
-  - [Upgrading to 0.0.9](#upgrading-to-009)
-  - [Upgrading to 0.0.8](#upgrading-to-008)
-  - [Upgrading to 0.0.6](#upgrading-to-006)
-  - [Upgrading to 0.0.5](#upgrading-to-005)
-  - [Upgrading to 0.0.4](#upgrading-to-004)
-  - [Upgrading to 0.0.3](#upgrading-to-003)
-  - [Upgrading to 0.0.2](#upgrading-to-002)
-  - [Upgrading to 0.0.1](#upgrading-to-001)
-- [Troubleshooting Upgrades](#troubleshooting-upgrades)
-  - [Common Issues](#common-issues)
-  - [Getting Help](#getting-help)
-- [Version Compatibility](#version-compatibility)
-- [Notes](#notes)
 
 ## General Upgrade Process
 
