@@ -28,7 +28,10 @@ final class PasswordPolicyTestKernel extends Kernel
 {
     use MicroKernelTrait;
 
-    public function __construct()
+    /**
+     * @param array<string, mixed> $expiryListenerConfig extra nowo_password_policy.expiry_listener options
+     */
+    public function __construct(private readonly array $expiryListenerConfig = [])
     {
         parent::__construct('test', false);
     }
@@ -46,12 +49,12 @@ final class PasswordPolicyTestKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir() . '/nowo-password-policy-test-kernel/cache';
+        return sys_get_temp_dir() . '/nowo-password-policy-test-kernel/' . $this->configHash() . '/cache';
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir() . '/nowo-password-policy-test-kernel/log';
+        return sys_get_temp_dir() . '/nowo-password-policy-test-kernel/' . $this->configHash() . '/log';
     }
 
     protected function build(ContainerBuilder $container): void
@@ -81,8 +84,9 @@ final class PasswordPolicyTestKernel extends Kernel
             'cache'                => ['app' => 'cache.adapter.array'],
         ]);
         $container->loadFromExtension('nowo_password_policy', [
-            'enable_cache' => true,
-            'entities'     => [
+            'enable_cache'    => true,
+            'expiry_listener' => $this->expiryListenerConfig,
+            'entities'        => [
                 KernelUser::class => ['reset_password_route_name' => 'reset_password', 'expiry_days' => 90],
             ],
         ]);
@@ -93,6 +97,13 @@ final class PasswordPolicyTestKernel extends Kernel
         $container->register(UserPasswordHasherInterface::class, UserPasswordHasher::class)
             ->setArguments([new Definition(PasswordHasherFactory::class, [[KernelUser::class => ['algorithm' => 'bcrypt', 'cost' => 4]]])]);
         $container->register('logger', BufferingLogger::class)->setPublic(true);
+        // Application-defined storage for the flash_throttle_storage_service option.
+        $container->register('app.flash_storage', InMemoryFlashThrottleStorage::class);
+    }
+
+    private function configHash(): string
+    {
+        return md5(serialize($this->expiryListenerConfig));
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void

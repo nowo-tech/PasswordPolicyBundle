@@ -456,7 +456,8 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->assertTrue($container->hasDefinition('nowo_password_policy.expiry_flash_throttle_storage.cache'));
     }
 
-    public function testRegisterFlashThrottleStorageThrowsWhenCacheServiceMissing(): void
+    /** The cache pool is defined by FrameworkBundle, so load() cannot see it: reference it without has(). */
+    public function testRegisterFlashThrottleStorageReferencesCacheServiceNotVisibleInLoad(): void
     {
         $container = new ContainerBuilder();
 
@@ -468,10 +469,10 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
             ],
         ];
 
-        $this->expectException(ConfigurationException::class);
-        $this->expectExceptionMessage('flash_throttle_storage is "cache"');
+        $reference = $method->invoke($this->extension, $container, $config);
 
-        $method->invoke($this->extension, $container, $config);
+        $this->assertSame('nowo_password_policy.expiry_flash_throttle_storage.cache', (string) $reference);
+        $this->assertSame('cache.app', (string) $container->getDefinition('nowo_password_policy.expiry_flash_throttle_storage.cache')->getArgument(0));
     }
 
     public function testLoadThrowsWhenResetPasswordRoutePatternIsNotString(): void
@@ -492,21 +493,19 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         ]], $container);
     }
 
-    public function testRegisterFlashThrottleStorageThrowsWhenCustomServiceMissing(): void
+    /** The custom storage is an application service, invisible to load(): reference it without has(). */
+    public function testRegisterFlashThrottleStorageReferencesCustomServiceNotVisibleInLoad(): void
     {
         $container  = new ContainerBuilder();
         $reflection = new ReflectionClass($this->extension);
         $method     = $reflection->getMethod('registerFlashThrottleStorage');
         $config     = [
             'expiry_listener' => [
-                'flash_throttle_storage_service' => 'missing.storage',
+                'flash_throttle_storage_service' => 'app.flash_storage',
             ],
         ];
 
-        $this->expectException(ConfigurationException::class);
-        $this->expectExceptionMessage('flash_throttle_storage_service "missing.storage" was not found');
-
-        $method->invoke($this->extension, $container, $config);
+        $this->assertSame('app.flash_storage', (string) $method->invoke($this->extension, $container, $config));
     }
 
     public function testValidateRoutePatternSyntaxIgnoresEmptyAndShortPatterns(): void

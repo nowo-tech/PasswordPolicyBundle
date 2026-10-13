@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Events, logging and `enable_cache` were silently disabled in real applications**: the extension decided whether to inject `logger`, `event_dispatcher`, `cache.app` and `router` with `has()` inside `load()`, which runs on an isolated container and always returned false, so `null` was injected. They are now optional references resolved against the final container: `PasswordChangedEvent`, `PasswordExpiredEvent`, `PasswordHistoryCreatedEvent` and `PasswordReuseAttemptedEvent` are dispatched, `enable_logging` logs, and `enable_cache: true` caches the expiry status.
+- **`flash_throttle_storage: cache` and `flash_throttle_storage_service` made the kernel fail to boot**: the extension checked `cache.app` / the custom service with `has()` inside `load()` and always threw a `ConfigurationException`. The services are now plain references; a missing service id is reported by the container when it is compiled.
 
 ### Changed
 

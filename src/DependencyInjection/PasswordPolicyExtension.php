@@ -12,7 +12,6 @@ use Nowo\PasswordPolicyBundle\Model\ExpiryFlashThrottleStorageType;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\CacheExpiryFlashThrottleStorage;
-use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStorage;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
@@ -193,11 +192,10 @@ final class PasswordPolicyExtension extends Extension
         $expiryListenerConfig = $config['expiry_listener'] ?? [];
         $customService        = $expiryListenerConfig['flash_throttle_storage_service'] ?? null;
 
+        // Services defined by the application or other bundles are invisible here (load() runs on an isolated
+        // container), so has() cannot validate them: a plain Reference lets the compiled container report a
+        // missing service id instead.
         if (is_string($customService) && $customService !== '') {
-            if (!$containerBuilder->has($customService)) {
-                throw new ConfigurationException(sprintf('flash_throttle_storage_service "%s" was not found. Register a service implementing %s.', $customService, ExpiryFlashThrottleStorageInterface::class));
-            }
-
             return new Reference($customService);
         }
 
@@ -205,9 +203,6 @@ final class PasswordPolicyExtension extends Extension
 
         if ($storageType === ExpiryFlashThrottleStorageType::CACHE) {
             $cacheServiceId = $expiryListenerConfig['flash_throttle_cache_service'] ?? 'cache.app';
-            if (!$containerBuilder->has($cacheServiceId)) {
-                throw new ConfigurationException(sprintf('flash_throttle_storage is "cache" but service "%s" was not found. Configure Symfony Cache with a Redis or Memcached adapter (framework.cache.app) or set flash_throttle_storage to "session". See docs/CONFIGURATION.md#flash-notification-strategies.', $cacheServiceId));
-            }
 
             $serviceId = 'nowo_password_policy.expiry_flash_throttle_storage.cache';
             $containerBuilder->register($serviceId, CacheExpiryFlashThrottleStorage::class)
