@@ -43,14 +43,29 @@ final class PasswordPolicy extends Constraint
     /**
      * Whether to detect password extensions (e.g., "password123" is an extension of "password").
      *
-     * @var bool
+     * null (default) uses the entity's `detect_password_extensions` YAML setting (false when unset).
+     *
+     * @var bool|null
      */
-    public $detectExtensions = false;
+    public $detectExtensions;
 
     /**
      * Minimum length of the base password to consider for extension detection.
      *
-     * @var int
+     * null (default) uses the entity's `extension_min_length` YAML setting (4 when unset).
+     *
+     * @var int|null
      */
-    public $extensionMinLength = 4;
+    public $extensionMinLength;
+
+    /**
+     * Whether to reject the entity's current password too (it only enters the history on the next change).
+     *
+     * Requires the entity to still hold the current hash when it is validated, which is the usual flow
+     * (validate the plain password, then hash and set it). Disable it if your application hashes and
+     * sets the new password before validating the entity.
+     *
+     * @var bool
+     */
+    public $checkCurrentPassword = true;
 }

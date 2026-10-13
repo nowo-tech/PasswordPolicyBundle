@@ -78,6 +78,8 @@ Each entity that implements `HasPasswordPolicyInterface` must be configured unde
 | `reset_password_route_pattern` | `string` \| `null` | `null` | Optional pattern to select the reset route name from the application router: **first match in alphabetical order** among registered route names. Same syntax as entries in `notified_routes` (see [Route name patterns](#route-name-patterns)). If unset or no match, `reset_password_route_name` is used. |
 | `notified_routes` | `array` | `[]` | Entries where expiry is enforced (literals or patterns; see [Route name patterns](#route-name-patterns)). The listener compares the current request route name (`_route`) against each entry. |
 | `excluded_notified_routes` | `array` | `[]` | Entries where expiry handling is skipped if the current route matches any of them (literals or patterns). Use for login, logout, API auth, or routes that would cause redirect loops. |
+| `detect_password_extensions` | `bool` | `false` | If `true`, the `PasswordPolicy` validator also rejects a new password that is an old one plus a single special/digit character or a numeric (0–999) prefix/suffix (e.g. `password123` when `password` is in history). See [Password History](#password-history) for the cost. The constraint option `detectExtensions` overrides it per field. |
+| `extension_min_length` | `int` | `4` | Minimum length of the base password considered by extension detection: the new password must be longer than this value and each stripped candidate must be at least this long, otherwise no extension check is made (avoids matching trivial bases such as `abc`). Only used when `detect_password_extensions` is `true`; the constraint option `extensionMinLength` overrides it per field. |
 
 ### Expiry Listener Configuration
 
@@ -121,6 +123,8 @@ The bundle uses Doctrine lifecycle events (`onFlush`) to:
 4. Limit history to configured number of passwords
 
 **Validation cost**: On password change, the `PasswordPolicy` validator compares the new plain password against each stored hash (`password_verify` / Symfony hasher). Keep `passwords_to_remember` low (default `3`).
+
+**Current password**: the password in use only enters the history on the *next* change, so the validator also compares the new plain password with the entity's current hash (`getPassword()`) and reports it with the same message and code (`PASSWORD_IN_HISTORY`) as a history match. This relies on the usual flow — validate the form, *then* hash and set the new password. If your application hashes and sets the new password on the entity before validating it, disable the check per constraint with `#[PasswordPolicy(checkCurrentPassword: false)]` (otherwise every change would be rejected).
 
 **Extension detection** (`detect_password_extensions: true`): the service strips allowed single-character and numeric (0–999) prefixes/suffixes, deduplicates candidate base passwords, then verifies each candidate against history. Work is bounded by password length and history size—not by scanning 0–999 on every hash. Leave extension detection disabled unless required; each verification still invokes the password hasher.
 

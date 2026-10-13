@@ -7,6 +7,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Service;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Error;
 use Exception;
 use Mockery;
 use Mockery\MockInterface;
@@ -979,6 +980,28 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         $mock->shouldReceive('getCreatedAt')->andReturn(new DateTime());
 
         return $mock;
+    }
+
+    public function testMatchesCurrentPasswordTrueForCurrentHash(): void
+    {
+        $this->entityMock->shouldReceive('getPassword')->andReturn(password_hash('current-pwd', PASSWORD_BCRYPT));
+
+        $this->assertTrue($this->passwordPolicyService->matchesCurrentPassword('current-pwd', $this->entityMock));
+        $this->assertFalse($this->passwordPolicyService->matchesCurrentPassword('other-pwd', $this->entityMock));
+    }
+
+    public function testMatchesCurrentPasswordFalseWhenNoCurrentHash(): void
+    {
+        $this->entityMock->shouldReceive('getPassword')->andReturn('');
+
+        $this->assertFalse($this->passwordPolicyService->matchesCurrentPassword('', $this->entityMock));
+    }
+
+    public function testMatchesCurrentPasswordFalseWhenPasswordNotInitialised(): void
+    {
+        $this->entityMock->shouldReceive('getPassword')->andThrow(new Error('must not be accessed before initialization'));
+
+        $this->assertFalse($this->passwordPolicyService->matchesCurrentPassword('pwd', $this->entityMock));
     }
 }
 

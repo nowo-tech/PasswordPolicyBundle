@@ -14,6 +14,7 @@ use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Service\CurrentPasswordMatcherInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
@@ -22,9 +23,11 @@ use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
+use Stringable;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use Symfony\Component\Validator\Exception\UnexpectedValueException;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -368,6 +371,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
           ->withArgs(['pwd', $this->entityMock])
           ->andReturn(null);
         $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPasswordExtension')
+          ->once()
           ->withArgs(['pwd', $this->entityMock, 5])
           ->andReturn(null);
 
@@ -877,5 +881,116 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         } finally {
             Carbon::setLocale($previousLocale);
         }
+    }
+
+    public function testValidateNonStringValueThrowsUnexpectedValue(): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+
+        $this->validator->initialize($this->contextMock);
+        $this->validator->validate(['not', 'a', 'string'], new PasswordPolicy());
+    }
+
+    public function testValidateStringableValueIsCast(): void
+    {
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')
+          ->once()
+          ->withArgs(['pwd', $this->entityMock])
+          ->andReturn(null);
+
+        $value = new class implements Stringable {
+            public function __toString(): string
+            {
+                return 'pwd';
+            }
+        };
+
+        $this->validator->initialize($this->contextMock);
+        $this->validator->validate($value, new PasswordPolicy());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testValidateRejectsCurrentPassword(): void
+    {
+        $service = Mockery::mock(PasswordPolicyServiceInterface::class, CurrentPasswordMatcherInterface::class);
+        $service->shouldReceive('getHistoryByPassword')->once()->andReturn(null);
+        $service->shouldReceive('matchesCurrentPassword')->once()->with('pwd', $this->entityMock)->andReturn(true);
+
+        $this->entityMock->shouldReceive('getPassword')->andReturn('current-hash');
+        $this->entityMock->shouldReceive('getPasswordChangedAt')->andReturn(new DateTime('-3 days'));
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+
+        $builder = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $builder->shouldReceive('setParameter')->once()->with('{{ days }}', Mockery::type('string'))->andReturnSelf();
+        $builder->shouldReceive('setCode')->once()->with(PasswordPolicy::PASSWORD_IN_HISTORY)->andReturnSelf();
+        $builder->shouldReceive('addViolation')->once();
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($builder);
+
+        $dispatcher = Mockery::mock(EventDispatcherInterface::class);
+        $dispatcher->shouldReceive('dispatch')
+          ->once()
+          ->with(Mockery::on(static fn ($event): bool => $event instanceof PasswordReuseAttemptedEvent
+              && $event->getPasswordHistory()->getPassword() === 'current-hash'))
+          ->andReturnArg(0);
+
+        $translator = Mockery::mock(TranslatorInterface::class);
+        $translator->shouldReceive('getLocale')->andReturn('en');
+        $validator = new PasswordPolicyValidator($service, $translator, null, false, 'info', $dispatcher);
+        $validator->initialize($this->contextMock);
+        $validator->validate('pwd', new PasswordPolicy());
+        $this->addToAssertionCount(1);
+    }
+
+    public function testValidateCurrentPasswordCheckCanBeDisabled(): void
+    {
+        $service = Mockery::mock(PasswordPolicyServiceInterface::class, CurrentPasswordMatcherInterface::class);
+        $service->shouldReceive('getHistoryByPassword')->once()->andReturn(null);
+        $service->shouldNotReceive('matchesCurrentPassword');
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $this->contextMock->shouldNotReceive('buildViolation');
+
+        $translator                       = Mockery::mock(TranslatorInterface::class);
+        $constraint                       = new PasswordPolicy();
+        $constraint->checkCurrentPassword = false;
+
+        $validator = new PasswordPolicyValidator($service, $translator);
+        $validator->initialize($this->contextMock);
+        $validator->validate('pwd', $constraint);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testConstraintOptionsOverrideConfigServiceExtensionSettings(): void
+    {
+        $configService = new PasswordPolicyConfigurationService();
+        $configService->setEntityConfiguration($this->entityMock::class, [
+            'detect_password_extensions' => true,
+            'extension_min_length'       => 5,
+        ]);
+
+        $translatorMock = Mockery::mock(TranslatorInterface::class);
+        $validator      = new PasswordPolicyValidator($this->passwordPolicyServiceMock, $translatorMock, null, true, 'info', null, $configService);
+
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')->andReturn(null);
+        $this->passwordPolicyServiceMock->shouldNotReceive('getHistoryByPasswordExtension');
+
+        $constraint                   = new PasswordPolicy();
+        $constraint->detectExtensions = false;
+
+        $validator->initialize($this->contextMock);
+        $validator->validate('pwd', $constraint);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testExtensionDetectionIsOffByDefaultWithoutConfig(): void
+    {
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')->andReturn(null);
+        $this->passwordPolicyServiceMock->shouldNotReceive('getHistoryByPasswordExtension');
+
+        $this->validator->initialize($this->contextMock);
+        $this->validator->validate('pwd', new PasswordPolicy());
+        $this->addToAssertionCount(1);
     }
 }

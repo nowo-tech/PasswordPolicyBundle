@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Symfony **6.0–6.3** is no longer supported: the bundle requires `^6.4 || ^7.0 || ^8.0`.
+- `PasswordPolicy` now rejects the user's **current** password too. This assumes the usual flow (validate, then hash and set the new password). If you hash and set the new password on the entity before validating it, set `checkCurrentPassword` to `false` on the constraint.
+- `detect_password_extensions` / `extension_min_length` in YAML now take effect when the constraint does not set `detectExtensions` / `extensionMinLength`. If you enabled them in YAML, extension detection starts running.
+
 ## To 1.5.0
 
 From **1.4.8** — DI wiring fixed - events, logging, cache and flash throttle storage now work in real apps; runtime dependencies declared.

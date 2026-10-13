@@ -44,6 +44,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`PasswordPolicy` accepted the current password as a "new" one**: the password in use only enters the history on the next change. The validator now also compares the new plain password with the entity's current hash (same message and `PASSWORD_IN_HISTORY` code; `PasswordReuseAttemptedEvent` carries a transient `CurrentPasswordHistory`). Opt out per constraint with `checkCurrentPassword = false` when the application hashes and sets the new password before validating.
+- **Non-string values made the validator throw a `TypeError`**: `Stringable` values are cast, other types raise Symfony's `UnexpectedValueException` (reported as a type violation by the validator).
+- **YAML `detect_password_extensions` / `extension_min_length` were ignored**: the constraint's `detectExtensions` / `extensionMinLength` defaulted to `false` / `4`, so the per-entity configuration fallback never applied. They now default to `null` (effective defaults unchanged: off, 4) and explicit constraint options still win.
+
+### Changed
+
+- Minimum Symfony version is now **6.4** (`^6.4 || ^7.0 || ^8.0`), the lowest version tested in CI.
+- `docs/CONFIGURATION.md` documents `detect_password_extensions`, `extension_min_length` and the current-password check.
+
 ## [1.5.0] - 2026-10-13
 
 ### Fixed

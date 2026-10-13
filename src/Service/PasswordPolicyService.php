@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Service;
 
 use Closure;
+use Error;
 use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -23,7 +24,7 @@ use function strlen;
  * This service checks if a password has been used before by comparing it against
  * the password history of an entity.
  */
-final class PasswordPolicyService implements PasswordPolicyServiceInterface
+final class PasswordPolicyService implements PasswordPolicyServiceInterface, CurrentPasswordMatcherInterface
 {
     /**
      * Single-character extensions checked when extension detection is enabled.
@@ -72,6 +73,27 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface
         }
 
         return null;
+    }
+
+    /**
+     * Checks the plain password against the entity's current password hash.
+     *
+     * Returns false when the entity has no usable current hash (empty, or the typed property is not
+     * initialised yet, e.g. a user being registered).
+     */
+    public function matchesCurrentPassword(string $password, HasPasswordPolicyInterface $hasPasswordPolicy): bool
+    {
+        try {
+            $currentHash = $hasPasswordPolicy->getPassword();
+        } catch (Error) {
+            return false;
+        }
+
+        if ($currentHash === '') {
+            return false;
+        }
+
+        return $this->isPasswordValid($hasPasswordPolicy, $currentHash, $password);
     }
 
     /**

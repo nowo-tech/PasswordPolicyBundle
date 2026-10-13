@@ -9,19 +9,24 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
+use Nowo\PasswordPolicyBundle\Model\CurrentPasswordHistory;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Service\CurrentPasswordMatcherInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Stringable;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
+use Symfony\Component\Validator\Exception\UnexpectedValueException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+use function is_string;
 use function sprintf;
 
 /**
@@ -74,6 +79,14 @@ class PasswordPolicyValidator extends ConstraintValidator
             return;
         }
 
+        if ($value instanceof Stringable) {
+            $value = (string) $value;
+        }
+
+        if (!is_string($value)) {
+            throw new UnexpectedValueException($value, 'string');
+        }
+
         $entity = $this->context->getObject();
 
         if (!$entity instanceof HasPasswordPolicyInterface) {
@@ -84,6 +97,17 @@ class PasswordPolicyValidator extends ConstraintValidator
         $history = $this->passwordPolicyService->getHistoryByPassword($value, $entity);
         if ($history instanceof PasswordHistoryInterface && $constraint instanceof PasswordPolicy) {
             $this->handlePasswordReuse($entity, $history, $constraint, 'exact');
+
+            return;
+        }
+
+        // The current password only enters the history on the next change: reject "changing" to it.
+        if ($constraint instanceof PasswordPolicy
+            && $constraint->checkCurrentPassword
+            && $this->passwordPolicyService instanceof CurrentPasswordMatcherInterface
+            && $this->passwordPolicyService->matchesCurrentPassword($value, $entity)
+        ) {
+            $this->handlePasswordReuse($entity, new CurrentPasswordHistory($entity->getPassword(), $entity->getPasswordChangedAt()), $constraint, 'current');
 
             return;
         }
@@ -114,7 +138,7 @@ class PasswordPolicyValidator extends ConstraintValidator
      * @param HasPasswordPolicyInterface $entity The entity with password history
      * @param PasswordHistoryInterface $history The matching password history entry
      * @param PasswordPolicy $constraint The constraint instance
-     * @param string $type The type of match: 'exact' or 'extension'
+     * @param string $type The type of match: 'exact', 'current' or 'extension'
      */
     private function handlePasswordReuse(
         HasPasswordPolicyInterface $entity,
