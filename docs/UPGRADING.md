@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## To 1.5.0
+
+From **1.4.8** — DI wiring fixed - events, logging, cache and flash throttle storage now work in real apps; runtime dependencies declared.
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
+
+- Events are now actually dispatched, logging works and `enable_cache` takes effect: existing listeners/subscribers will start receiving events.
+- `flash_throttle_storage: cache` and `flash_throttle_storage_service` now work (the kernel used to fail to boot); a wrong service id fails at compile time with `ServiceNotFoundException`.
+- `doctrine/orm`, `doctrine/collections`, `symfony/password-hasher` and `symfony/security-core` are now hard dependencies. Native password hashes no longer go through the Symfony hasher fallback.
+
 ## To 1.4.8
 
 From **1.4.7** — dependency refresh and repository maintenance.
@@ -43,6 +55,7 @@ This guide provides step-by-step instructions for upgrading the Password Policy 
 
 ## Table of contents
 
+- [To 1.5.0](#to-150)
 - [To 1.4.8](#to-148)
 - [To 1.4.7](#to-147)
 - [To 1.4.6](#to-146)
