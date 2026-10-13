@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.6.1] - 2026-10-13](#161---2026-10-13)
 - [[1.6.0] - 2026-10-13](#160---2026-10-13)
 - [[1.5.0] - 2026-10-13](#150---2026-10-13)
 - [[1.4.8] - 2026-10-13](#148---2026-10-13)
@@ -43,10 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-10-13
+
 ### Fixed
 
 - **`PasswordPolicy` rejected named arguments**: the constraint had no constructor, so `#[PasswordPolicy(checkCurrentPassword: false)]` (the documented opt-out of the 1.6.0 current-password check) and `detectExtensions:` / `extensionMinLength:` / `message:` / `extensionMessage:` failed with "Unknown named parameter", and on Symfony 8 an options array was silently ignored. The constraint now has a `#[HasNamedArguments]` constructor; the legacy options array still works where Symfony supports it.
 - README: PHP requirement corrected to `>=8.2 <8.6` (matches `composer.json`); constraint example uses attribute named arguments.
+
+[1.6.1]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.6.1
 
 ## [1.6.0] - 2026-10-13
 

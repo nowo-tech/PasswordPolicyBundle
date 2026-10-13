@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.6.1](#to-161)
 - [To 1.6.0](#to-160)
 - [To 1.5.0](#to-150)
 - [To 1.4.8](#to-148)
@@ -44,6 +45,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.6.1
+
+From **1.6.0** — constraint accepts named arguments (checkCurrentPassword opt-out works).
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 - `PasswordPolicy` now accepts named arguments (`#[PasswordPolicy(checkCurrentPassword: false, detectExtensions: true)]`). Prefer them over the options array, which Symfony 7.4 deprecates and Symfony 8 ignores.
 
