@@ -416,15 +416,15 @@ The bundle includes a complete demo project for Symfony 8. It includes:
 
 Login page with demo credentials and password status indicators:
 
-![Demo login](docs/images/demo-login.png)
+![Demo login](docs/images/demo/demo-login.webp)
 
-Home page after login: password expiry testing info and quick access to use cases and user management.
+Home page after signing in as `expired@example.com`: the expiry listener flash ("Your password has expired"), password expiry testing info and quick access to use cases and user management.
 
-![Demo home](docs/images/demo-home.png)
+![Demo home](docs/images/demo/demo-home.webp)
 
 Users management: list with password status (Active, Expiring Soon, Expired), password history and actions.
 
-![Demo users management](docs/images/demo-users-management.png)
+![Demo users management](docs/images/demo/demo-users-management.webp)
 
 ### Running the Demo
 
