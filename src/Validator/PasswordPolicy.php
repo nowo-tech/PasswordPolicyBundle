@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Validator;
 
 use Attribute;
+use Symfony\Component\Validator\Attribute\HasNamedArguments;
 use Symfony\Component\Validator\Constraint;
 
 /**
@@ -12,6 +13,8 @@ use Symfony\Component\Validator\Constraint;
  *
  * This constraint ensures that users cannot reuse passwords that are stored
  * in their password history.
+ *
+ * Usage: `#[PasswordPolicy]` or `#[PasswordPolicy(detectExtensions: true, checkCurrentPassword: false)]`.
  */
 #[Attribute(Attribute::TARGET_PROPERTY | Attribute::TARGET_METHOD)]
 final class PasswordPolicy extends Constraint
@@ -68,4 +71,30 @@ final class PasswordPolicy extends Constraint
      * @var bool
      */
     public $checkCurrentPassword = true;
+
+    /**
+     * Named arguments override the defaults above; null keeps the default.
+     *
+     * @param array<string, mixed>|null $options Legacy options array (deprecated by Symfony 7.4, ignored by 8.0; prefer named arguments)
+     * @param list<string>|null $groups
+     */
+    #[HasNamedArguments]
+    public function __construct(
+        ?array $options = null,
+        ?string $message = null,
+        ?string $extensionMessage = null,
+        ?bool $detectExtensions = null,
+        ?int $extensionMinLength = null,
+        ?bool $checkCurrentPassword = null,
+        ?array $groups = null,
+        mixed $payload = null,
+    ) {
+        parent::__construct($options, $groups, $payload);
+
+        $this->message              = $message ?? $this->message;
+        $this->extensionMessage     = $extensionMessage ?? $this->extensionMessage;
+        $this->detectExtensions     = $detectExtensions ?? $this->detectExtensions;
+        $this->extensionMinLength   = $extensionMinLength ?? $this->extensionMinLength;
+        $this->checkCurrentPassword = $checkCurrentPassword ?? $this->checkCurrentPassword;
+    }
 }

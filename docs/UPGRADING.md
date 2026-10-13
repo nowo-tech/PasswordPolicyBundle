@@ -45,6 +45,8 @@
 
 ## Unreleased
 
+- `PasswordPolicy` now accepts named arguments (`#[PasswordPolicy(checkCurrentPassword: false, detectExtensions: true)]`). Prefer them over the options array, which Symfony 7.4 deprecates and Symfony 8 ignores.
+
 ## To 1.6.0
 
 From **1.5.0** — current password rejected, non-string values handled, YAML extension settings honoured, Symfony >=6.4.
