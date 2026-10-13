@@ -21,6 +21,7 @@ use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
@@ -72,15 +73,13 @@ final class PasswordPolicyExtension extends Extension
 
         $definition = $containerBuilder->getDefinition(PasswordExpiryService::class);
 
-        // Configure cache for PasswordExpiryService
-        $cacheService = $containerBuilder->has('cache.app') ? new Reference('cache.app') : null;
-        $definition->setArgument('$cache', $cacheService);
+        // Configure cache for PasswordExpiryService. Optional services are referenced with
+        // NULL_ON_INVALID_REFERENCE: load() runs on an isolated container, so has() is always false here.
+        $definition->setArgument('$cache', $this->optionalReference('cache.app'));
         $definition->setArgument('$cacheEnabled', $config['enable_cache'] ?? false);
         $definition->setArgument('$cacheTtl', $config['cache_ttl'] ?? 3600);
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
-        if ($containerBuilder->has('router')) {
-            $definition->setArgument('$router', new Reference('router'));
-        }
+        $definition->setArgument('$router', $this->optionalReference('router'));
 
         foreach ($config['entities'] as $entityClass => $settings) {
             if (!class_exists($entityClass)) {
@@ -177,10 +176,10 @@ final class PasswordPolicyExtension extends Extension
               $config['expiry_listener']['redirect_on_expiry'] ?? false, // $redirectOnExpiry
               $config['expiry_listener']['flash_strategy'] ?? 'always', // $flashStrategy
               $config['expiry_listener']['flash_interval_minutes'] ?? 30, // $flashIntervalMinutes
-              $containerBuilder->has('logger') ? new Reference('logger') : null, // $logger (optional)
+              $this->optionalReference('logger'), // $logger (optional)
               $config['enable_logging'] ?? true, // $enableLogging
               $config['log_level'] ?? 'info', // $logLevel
-              $containerBuilder->has('event_dispatcher') ? new Reference('event_dispatcher') : null, // $eventDispatcher (optional)
+              $this->optionalReference('event_dispatcher'), // $eventDispatcher (optional)
           ]);
 
         return $definition;
@@ -305,10 +304,10 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$passwordHistoryField', $settings['password_history_field']);
         $definition->setArgument('$historyLimit', $settings['passwords_to_remember']);
         $definition->setArgument('$entityClass', $entityClass);
-        $definition->setArgument('$logger', $containerBuilder->has('logger') ? new Reference('logger') : null);
+        $definition->setArgument('$logger', $this->optionalReference('logger'));
         $definition->setArgument('$enableLogging', $config['enable_logging'] ?? true);
         $definition->setArgument('$logLevel', $config['log_level'] ?? 'info');
-        $definition->setArgument('$eventDispatcher', $containerBuilder->has('event_dispatcher') ? new Reference('event_dispatcher') : null);
+        $definition->setArgument('$eventDispatcher', $this->optionalReference('event_dispatcher'));
         $definition->setArgument('$passwordExpiryService', new Reference(PasswordExpiryServiceInterface::class));
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
 
@@ -329,10 +328,10 @@ final class PasswordPolicyExtension extends Extension
         $definition = $containerBuilder->getDefinition(PasswordPolicyValidator::class);
 
         // Add logging parameters (will override if already set via autowiring)
-        $definition->setArgument('$logger', $containerBuilder->has('logger') ? new Reference('logger') : null);
+        $definition->setArgument('$logger', $this->optionalReference('logger'));
         $definition->setArgument('$enableLogging', $config['enable_logging'] ?? true);
         $definition->setArgument('$logLevel', $config['log_level'] ?? 'info');
-        $definition->setArgument('$eventDispatcher', $containerBuilder->has('event_dispatcher') ? new Reference('event_dispatcher') : null);
+        $definition->setArgument('$eventDispatcher', $this->optionalReference('event_dispatcher'));
         $definition->setArgument('$configService', new Reference(PasswordPolicyConfigurationService::class));
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
     }
@@ -357,6 +356,17 @@ final class PasswordPolicyExtension extends Extension
             ];
             $definition->addMethodCall('setEntityConfiguration', [$entityClass, $entityConfig]);
         }
+    }
+
+    /**
+     * Reference to a service owned by another bundle: injected when it exists in the final container, null otherwise.
+     *
+     * Never decide with has() inside load(): extensions are loaded on an isolated container that does not
+     * contain other bundles' services, so has() would always be false and drop the dependency.
+     */
+    private function optionalReference(string $id): Reference
+    {
+        return new Reference($id, ContainerInterface::NULL_ON_INVALID_REFERENCE);
     }
 
     /**
