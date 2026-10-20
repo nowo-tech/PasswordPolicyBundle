@@ -9,6 +9,8 @@
   - [Disclosure Policy](#disclosure-policy)
 - [Preferred Languages](#preferred-languages)
 - [Contact](#contact)
+- [Release security checklist (12.4.1)](#release-security-checklist-1241)
+- [AI security audit](#ai-security-audit)
 
 ## Supported Versions
 

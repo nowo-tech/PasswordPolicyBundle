@@ -2,11 +2,11 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/password-policy-bundle`  
-**Last audited**: 2026-09-24
+**Last audited**: 2026-10-20
 
 This file proves that **every production source artifact** under `src/` is referenced by the baseline specification. Test-only files under `tests/` and demo trees are out of Packagist scope unless promoted in the spec.
 
-## PHP classes (`src/**/*.php`)
+## PHP classes
 
 | Source file | Spec section | Requirement IDs |
 | --- | --- | --- |
@@ -42,6 +42,8 @@ This file proves that **every production source artifact** under `src/` is refer
 | `Exceptions/ConfigurationException.php` | Config errors | FR-ERR-001 |
 | `Exceptions/RuntimeException.php` | Runtime errors | FR-ERR-002 |
 | `Exceptions/ValidationException.php` | Validator errors | FR-ERR-003 |
+| `Model/CurrentPasswordHistory.php` | Transient history entry for the current password (reuse of the active password) | FR-MODEL-006, FR-VAL-002 |
+| `Service/CurrentPasswordMatcherInterface.php` | Optional capability: plain password matches the current hash | FR-VAL-003 |
 
 ## Symfony config (`src/Resources/config/`)
 
@@ -97,7 +99,9 @@ All locale files expose validator violation messages and expiry flash copy under
 
 | Category | Files | Mapped |
 | --- | ---: | ---: |
-| PHP classes | 31 | 31 |
+| PHP classes | 34 | 34 |
 | Symfony config | 1 | 1 |
 | Translations | 37 | 37 |
-| **Total production sources** | **69** | **69** |
+| **Total production sources** | **72** | **72** |
+
+Audit command: `git ls-files src | wc -l` → 72.

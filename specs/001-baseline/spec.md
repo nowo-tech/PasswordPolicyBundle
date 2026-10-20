@@ -112,6 +112,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - **FR-MODEL-003**: `PasswordExpiryConfiguration` MUST carry per-entity expiry days, notified/excluded routes, and reset route resolution settings.
 - **FR-MODEL-004**: `ExpiryFlashStrategy` MUST define allowed `flash_strategy` values: `always`, `once_per_session`, `interval`, `never`.
 - **FR-MODEL-005**: `ExpiryFlashThrottleStorageType` MUST define built-in throttle backends: `session`, `cache`.
+- **FR-MODEL-006**: `CurrentPasswordHistory` MUST represent the entity's current password as a transient (never persisted) history entry so reuse of the active password gets the same violation, logging and `PasswordReuseAttemptedEvent` as older history entries.
 - **FR-TRAIT-001**: `PasswordHistoryTrait` MUST provide default history collection helpers for Doctrine entities.
 
 ### Expiry flash throttling
@@ -131,6 +132,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - **FR-POL-001**: `PasswordPolicyService` MUST locate history by plain password (`getHistoryByPassword`) and by extension heuristics (`getHistoryByPasswordExtension`) using secure verification only.
 - **FR-VAL-001**: `PasswordPolicy` constraint MUST expose `message`, `extensionMessage`, `detectExtensions`, `extensionMinLength` options.
 - **FR-VAL-002**: `PasswordPolicyValidator` MUST dispatch `PasswordReuseAttemptedEvent`, log attempts when enabled, and build violations with translation parameters. Locale for `{{ days }}` MUST be applied on a local Carbon instance; MUST NOT call `Carbon::setLocale()` (process-wide).
+- **FR-VAL-003**: Policy services MAY implement `CurrentPasswordMatcherInterface` to tell whether a plain password matches the current (still active) hash; the validator then rejects reusing the current password before it enters the history.
 
 ### Password expiry
 
@@ -162,7 +164,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 
 ## Success Criteria
 
-- **SC-001**: **69/69** production files mapped in [`code-inventory.md`](code-inventory.md).
+- **SC-001**: **72/72** production files under `src/` mapped (audited 2026-10-20) in [`code-inventory.md`](code-inventory.md).
 - **SC-002**: Configuration keys in `docs/CONFIGURATION.md` match `Configuration.php`.
 - **SC-003**: PHPUnit + PHPStan pass (`composer qa`).
 - **SC-004**: Reuse and expiry flows covered by tests under `tests/`.

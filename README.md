@@ -1,6 +1,6 @@
 # Password Policy Bundle
 
-[![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6.4%2B%20%7C%207.0%2B%20%7C%208.0%20%7C%208.1%2B-000000?logo=symfony)](https://symfony.com)
+[![CI](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml/badge.svg)](https://github.com/nowo-tech/PasswordPolicyBundle/actions/workflows/ci.yml) [![Packagist Version](https://img.shields.io/packagist/v/nowo-tech/password-policy-bundle.svg?style=flat)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![Packagist Downloads](https://img.shields.io/packagist/dt/nowo-tech/password-policy-bundle.svg)](https://packagist.org/packages/nowo-tech/password-policy-bundle) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php)](https://php.net) [![Symfony](https://img.shields.io/badge/Symfony-6.4%2B%20%7C%207.0%2B%20%7C%208.0%20%7C%208.1%2B-000000?logo=symfony)](https://symfony.com) [![GitHub stars](https://img.shields.io/github/stars/nowo-tech/password-policy-bundle.svg?style=social&label=Star)](https://github.com/nowo-tech/PasswordPolicyBundle) [![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)](#tests-and-coverage)
 
 > ⭐ **Found this useful?** Give it a star on GitHub! It helps us maintain and improve the project.
 
@@ -507,8 +507,6 @@ See `.github/workflows/ci.yml` for details.
 
 - [Installation](docs/INSTALLATION.md)
 - [Configuration](docs/CONFIGURATION.md)
-- [PSR evaluation (REQ-CS-007)](docs/PSR.md)
-- [Expiry flash & cache examples](docs/examples/expiry-flash-and-cache.yaml) (Redis, Memcached, session, custom storage)
 - [Usage](docs/USAGE.md)
 - [Contributing](docs/CONTRIBUTING.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
@@ -522,10 +520,13 @@ See `.github/workflows/ci.yml` for details.
 
 ### Additional documentation
 
+- [PSR evaluation (REQ-CS-007)](docs/PSR.md)
+- [Expiry flash & cache examples](docs/examples/expiry-flash-and-cache.yaml) (Redis, Memcached, session, custom storage)
 - [GitHub Actions CI requirements](docs/GITHUB_CI.md) — REQ-GIT-001 CI hygiene and history cleanup
 - [Demo with FrankenPHP (development and production)](docs/DEMO-FRANKENPHP.md) — Run the Symfony 8 demo in dev (no cache) or production (worker)
 - [FrankenPHP worker audit](docs/FRANKENPHP-WORKER-AUDIT.md) — Compatibility with worker mode when the kernel is not reset (`reset_kernel: false`)
 - [Events](docs/EVENTS.md) — Custom events and event listeners
+
 ## Testing
 
 The bundle includes comprehensive test coverage. All tests are located in the `tests/` directory.

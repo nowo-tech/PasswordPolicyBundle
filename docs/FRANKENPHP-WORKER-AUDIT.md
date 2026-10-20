@@ -9,6 +9,20 @@
 | **Verdict** | ✅ **Viable under scenario B** (after remediation) — no bundle service keeps per-request state across requests, the Carbon global locale is no longer touched, and the expiry listener ignores requests that did not pass a firewall. Residual framework responsibility: a stale token on `security: false` firewalls (see W-04) |
 | Remediation (2026-09-23/24) | W-01, W-02, W-03, W-04 resolved; W-05 accepted. Shipped in **1.4.4**. Regression tests simulate consecutive requests/flushes on the same service instances without `reset()` |
 
+## Table of contents
+
+- [Execution model assumed](#execution-model-assumed)
+- [Summary](#summary)
+- [Services reviewed](#services-reviewed)
+- [Findings](#findings)
+  - [W-01 — `$processedPasswords` survives across requests and skips later password history entries (High)](#w-01--processedpasswords-survives-across-requests-and-skips-later-password-history-entries-high)
+  - [W-02 — Password history entities and their users are retained forever (Medium)](#w-02--password-history-entities-and-their-users-are-retained-forever-medium)
+  - [W-03 — `Carbon::setLocale()` changes a process-wide default on every validation (Medium)](#w-03--carbonsetlocale-changes-a-process-wide-default-on-every-validation-medium)
+  - [W-04 — Expiry decisions read `security.token_storage` at call time (Medium)](#w-04--expiry-decisions-read-securitytoken_storage-at-call-time-medium)
+  - [W-05 — Reset route pattern resolution scans all routes on each redirect (Low)](#w-05--reset-route-pattern-resolution-scans-all-routes-on-each-redirect-low)
+- [Usage recommendations in worker mode](#usage-recommendations-in-worker-mode)
+- [Re-audit triggers](#re-audit-triggers)
+
 ## Execution model assumed
 
 FrankenPHP worker mode boots the Symfony kernel once per worker and serves many requests with the same container. This audit assumes the **strict** variant: the kernel is **not** rebooted between requests, so every shared service, static property and PHP global survives from one request to the next. Two scenarios are evaluated:
