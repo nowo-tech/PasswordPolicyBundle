@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.7.0] - 2026-10-21](#170---2026-10-21)
 - [[1.6.1] - 2026-10-13](#161---2026-10-13)
 - [[1.6.0] - 2026-10-13](#160---2026-10-13)
 - [[1.5.0] - 2026-10-13](#150---2026-10-13)
@@ -44,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-21
+
+Security guide, clock-based expiry flash throttle, release-check gates, single Flex recipe tree, demo fixes. See [UPGRADING](UPGRADING.md#to-170).
+
 ### Changed
 
 - Dependencies refreshed (Composer and pnpm/npm lock files of the bundle and its demos, campaign 2026-10-19).
@@ -65,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Demo: `make up` installs Composer dependencies in a one-off container before FrankenPHP starts (a fresh checkout crash-looped the worker), `up-symfony8` delegates to it instead of stopping whatever container held the demo port, the smoke follows redirects, and the duplicated `release-check` target is removed (REQ-TEST-011).
 - `.php-cs-fixer.dist.php`: `new ParallelConfig(2)` (REQ-CS-001).
 - Documentation: wave-1 REQ compliance — README GitHub stars and Coverage badges, documentation list order (PSR/examples under Additional documentation), de-duplicated CODEOWNERS, CONTRIBUTING Cursor Agent queue settings (REQ-IDE-006), tables of contents on long docs (fixed emoji anchors), Spec Kit inventory refresh (72/72).
+
+[1.7.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.7.0
 
 ## [1.6.1] - 2026-10-13
 

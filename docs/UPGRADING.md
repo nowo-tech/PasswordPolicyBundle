@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.7.0](#to-170)
 - [To 1.6.1](#to-161)
 - [To 1.6.0](#to-160)
 - [To 1.5.0](#to-150)
@@ -45,6 +46,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.7.0
+
+From **1.6.1**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 - `PasswordExpiryListener::__construct()` gains an optional last argument `?ClockInterface $clock = null`. If you register the listener yourself or subclass it, nothing breaks; pass a clock to freeze time in tests.
 - The listener no longer carries `#[AsEventListener]` (it was never autoconfigured). If you relied on autoconfiguration of a subclass, tag it with `kernel.event_listener` (event `kernel.request`) yourself.
