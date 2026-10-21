@@ -55,7 +55,7 @@ final class PasswordHistoryServiceTest extends UnitTestCase
                 continue;
             }
             $createdAt            = $item->getCreatedAt();
-            $expectedTimestamps[] = $createdAt !== null ? $createdAt->format('U') : '0';
+            $expectedTimestamps[] = $createdAt?->format('U') ?? '0';
         }
 
         $this->assertEquals($expectedTimestamps, $actualTimestamps);

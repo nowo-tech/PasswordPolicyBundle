@@ -80,45 +80,18 @@ help:
 # Generate up targets for each demo
 define up-target-template
 up-$(1):
-	@VERSION=$$$$(echo $(1) | sed 's/symfony/Symfony /' | sed 's/6/6.4/' | sed 's/7/7.0/' | sed 's/8/8.0/'); \
-	echo "🚀 Starting $$$$VERSION demo..."; \
-	cd $(1) && \
-	if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || true; fi && \
-	PORT=$$$$(grep "^PORT=" .env 2>/dev/null | cut -d= -f2 | head -1 || echo 8001); \
-	echo "🔍 Checking port $$$$PORT..."; \
-	CONTAINER=$$$$(docker ps --format "{{.Names}}" --filter "publish=$$$$PORT" 2>/dev/null | head -1); \
-	if [ -n "$$$$CONTAINER" ]; then \
-		echo "⚠️  Port $$$$PORT is in use by container: $$$$CONTAINER"; \
-		echo "🛑 Stopping container $$$$CONTAINER..."; \
-		docker stop $$$$CONTAINER 2>/dev/null || true; \
-		docker rm $$$$CONTAINER 2>/dev/null || true; \
-		echo "✅ Port $$$$PORT is now free"; \
-	fi && \
-	$(COMPOSE) build && \
-	$(COMPOSE) up -d && \
-	echo "⏳ Waiting for containers to be ready..." && \
-	sleep 5 && \
-	echo "📦 Installing dependencies (bundle from /var/password-policy-bundle)..." && \
-	($(COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer install --no-interaction 2>&1 || \
-		(echo "⚠️  Lock file out of sync, updating dependencies..." && \
-		 sleep 2 && $(COMPOSE) exec -T -e COMPOSER_MEMORY_LIMIT=-1 php composer update --no-interaction 2>&1)) && \
-	echo "🗄️  Setting up database..." && \
-	($(COMPOSE) exec -T php composer database 2>&1 || echo "⚠️  Database setup may have failed or already been executed") && \
-	echo "⏳ Waiting for demo to be ready..." && \
-	sleep 3 && \
-	MAX_ATTEMPTS=12 && \
-	ATTEMPT=1 && \
-	while [ $$$$ATTEMPT -le $$$$MAX_ATTEMPTS ]; do \
-		if curl -s -o /dev/null -w "%{http_code}" http://localhost:$$$$PORT 2>/dev/null | grep -q "200"; then \
-			echo "✅ $$$$VERSION demo is running and responding at http://localhost:$$$$PORT"; \
-			exit 0; \
+	@# Delegates to the demo's own `up` (one-off composer install, database, cache). It no longer stops
+	@# whatever container holds the port: a busy port now fails loudly instead of killing another stack.
+	@$(MAKE) -C $(1) up
+	@PORT=$$$$(grep "^PORT=" $(1)/.env 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	[ -z "$$$$PORT" ] && PORT=$$$$(grep "^PORT=" $(1)/.env.example 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do \
+		if curl -sL -o /dev/null -w "%{http_code}" "http://127.0.0.1:$$$$PORT/" 2>/dev/null | grep -q "^200$$$$"; then \
+			echo "Demo $(1) is responding at http://localhost:$$$$PORT"; exit 0; \
 		fi; \
-		echo "⏳ Attempt $$$$ATTEMPT/$$$$MAX_ATTEMPTS: Waiting for demo to respond..."; \
-		sleep 5; \
-		ATTEMPT=$$$$((ATTEMPT + 1)); \
-	done && \
-	echo "❌ Demo did not respond with HTTP 200 after $$$$MAX_ATTEMPTS attempts" && \
-	exit 1
+		echo "Waiting for demo $(1)... $$$$i/12"; sleep 5; \
+	done; \
+	echo "Demo $(1) did not respond with HTTP 200"; exit 1
 endef
 
 # Generate down targets for each demo
@@ -421,14 +394,11 @@ demo-smoke:
 	@PORT=$$(grep "^PORT=" symfony8/.env.example 2>/dev/null | cut -d= -f2 | tr -d '\r'); \
 	[ -z "$$PORT" ] && PORT=8003; \
 	echo "Demo smoke: symfony8 (http://127.0.0.1:$$PORT)"; \
-	$(MAKE) up-symfony8; sleep 12; \
-	code=$$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$$PORT" 2>/dev/null || echo "000"); \
+	$(MAKE) up-symfony8; \
+	code=$$(curl -sL -o /dev/null -w "%{http_code}" "http://127.0.0.1:$$PORT/" 2>/dev/null || echo "000"); \
 	$(MAKE) down-symfony8 2>/dev/null || true; \
 	if [ "$$code" != "200" ]; then echo "symfony8 failed with HTTP $$code"; exit 1; fi; \
 	echo "symfony8 OK (HTTP $$code)"
-
-release-check: update-bundle-all test-coverage-all release-verify
-	@echo "✅ All demos passed release-check."
 
 update-bundle-all:
 	@echo "🔄 Updating bundle in all demos..."

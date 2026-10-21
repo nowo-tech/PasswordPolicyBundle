@@ -179,6 +179,7 @@ final class PasswordPolicyExtension extends Extension
               $config['enable_logging'] ?? true, // $enableLogging
               $config['log_level'] ?? 'info', // $logLevel
               $this->optionalReference('event_dispatcher'), // $eventDispatcher (optional)
+              new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE), // $clock (optional, REQ-DI-001)
           ]);
 
         return $definition;

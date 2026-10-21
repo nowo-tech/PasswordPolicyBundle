@@ -14,12 +14,12 @@ use function sprintf;
  * This class holds the configuration for password expiry, including the number
  * of days before expiry, locked routes, and excluded routes.
  */
-final class PasswordExpiryConfiguration
+final readonly class PasswordExpiryConfiguration
 {
     /**
      * The fully qualified class name of the entity.
      */
-    private readonly string $entityClass;
+    private string $entityClass;
 
     /**
      * PasswordExpiryConfiguration constructor.
@@ -35,11 +35,11 @@ final class PasswordExpiryConfiguration
      */
     public function __construct(
         string $class,
-        private readonly int $expiryDays,
-        private readonly array $lockRoutes = [],
-        private readonly array $excludedRoutes = [],
-        private readonly string $resetPasswordRouteName = '',
-        private readonly ?string $resetPasswordRoutePattern = null,
+        private int $expiryDays,
+        private array $lockRoutes = [],
+        private array $excludedRoutes = [],
+        private string $resetPasswordRouteName = '',
+        private ?string $resetPasswordRoutePattern = null,
     ) {
         if (!is_a($class, HasPasswordPolicyInterface::class, true)) {
             throw new RuntimeException(sprintf('Entity %s must implement %s interface', $class, HasPasswordPolicyInterface::class));

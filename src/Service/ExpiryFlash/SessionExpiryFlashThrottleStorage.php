@@ -15,12 +15,12 @@ use function is_int;
  * (for example Redis session handler). Not reliable across FrankenPHP workers or Kubernetes
  * pods when sessions are file-based or sticky sessions are disabled.
  */
-final class SessionExpiryFlashThrottleStorage implements ExpiryFlashThrottleStorageInterface
+final readonly class SessionExpiryFlashThrottleStorage implements ExpiryFlashThrottleStorageInterface
 {
     private const SESSION_KEY_PREFIX = '_nowo_password_policy.expiry_flash_last_shown_at.';
 
     public function __construct(
-        private readonly RequestStack $requestStack,
+        private RequestStack $requestStack,
     ) {
     }
 

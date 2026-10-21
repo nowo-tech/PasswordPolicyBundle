@@ -24,7 +24,7 @@ final class KernelUser implements HasPasswordPolicyInterface, UserInterface, Pas
     public ?DateTime $passwordChangedAt = null;
 
     /** @var Collection<int, PasswordHistoryInterface> */
-    private Collection $passwordHistory;
+    private readonly Collection $passwordHistory;
 
     public function __construct(private string $password = '')
     {

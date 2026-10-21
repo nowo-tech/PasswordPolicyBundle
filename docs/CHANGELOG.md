@@ -47,6 +47,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Dependencies refreshed (Composer and pnpm/npm lock files of the bundle and its demos, campaign 2026-10-19).
+- `PasswordExpiryListener` takes an optional `Psr\Clock\ClockInterface` (last constructor argument, wired to the `clock` service) for the flash throttle instead of `time()` (REQ-DI-001); the dead `#[AsEventListener]` attribute is removed — the extension registers the listener with the configurable priority (REQ-SF-003).
+- `docs/SECURITY.md` is now the technical security guide (scope, attack surface, threat model, mitigations, logging policy, dependencies, exposure) next to the disclosure policy (REQ-SEC-001 / REQ-OBS-001).
+- Rector targets the PHP 8.2 floor (`withPhpSets(php82: true)`, REQ-CS-003); applied: `PasswordExpiryConfiguration` and the two flash throttle storages are `final readonly` classes.
+- `release-check` runs sequentially from `ensure-up` and adds `check-open-prs` and `validate-translations`; `validate-translations` checks key parity across all 37 shipped locales (REQ-MAKE-002 / REQ-MAKE-004).
+- Single Flex recipe tree under `.symfony/recipe/` (the duplicate `.symfony/recipes/` copy is merged into it) (REQ-RECIPE-001).
+- `composer.json`: author e-mail `hectorfranco@nowo.tech`, `support.docs` added (REQ-PKG-004).
+- New `Demo smoke` workflow (`make demo-smoke`, tags / weekly / manual) (REQ-TEST-011).
+- `docs/USAGE.md` documents the intentionally non-final extension points (REQ-PHP-001).
+
+### Fixed
+
+- Igor worker audit passes: the transient `CurrentPasswordHistory` setters carry a justified `@igor-ignore` (REQ-CS-008).
+- README demo paragraph described the old `APP_ENV=dev` Caddyfile swap; it now documents `FRANKENPHP_MODE` (REQ-DEMO-008).
+- `.scripts/check-no-cursor-coauthor.sh` also runs inside git worktrees (`.git` file instead of directory).
+- `make validate-translations` failed with a PHP parse error (Make expanded `$f` inside the inline script); it now parses every catalogue.
+- Demo: `make up` installs Composer dependencies in a one-off container before FrankenPHP starts (a fresh checkout crash-looped the worker), `up-symfony8` delegates to it instead of stopping whatever container held the demo port, the smoke follows redirects, and the duplicated `release-check` target is removed (REQ-TEST-011).
 - `.php-cs-fixer.dist.php`: `new ParallelConfig(2)` (REQ-CS-001).
 - Documentation: wave-1 REQ compliance — README GitHub stars and Coverage badges, documentation list order (PSR/examples under Additional documentation), de-duplicated CODEOWNERS, CONTRIBUTING Cursor Agent queue settings (REQ-IDE-006), tables of contents on long docs (fixed emoji anchors), Spec Kit inventory refresh (72/72).
 

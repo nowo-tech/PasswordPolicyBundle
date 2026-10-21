@@ -8,7 +8,7 @@ COMPOSE_BIN := $(shell docker compose version >/dev/null 2>&1 && echo "docker co
 COMPOSE     := $(COMPOSE_BIN) -f $(COMPOSE_FILE)
 SERVICE_PHP := php
 
-.PHONY: help up down down-dev build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan igor qa release-check release-check-demos demo-smoke composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor strip-cursor-coauthor-from-history
+.PHONY: help up down down-dev build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan igor qa release-check release-check-demos demo-smoke composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor strip-cursor-coauthor-from-history check-open-prs
 
 # Default target
 help:
@@ -121,7 +121,26 @@ qa: ensure-up
 # Run Igor worker-state audit (REQ-CS-008)
 igor: ensure-up
 	$(COMPOSE) exec -T php composer igor
-release-check: ensure-up check-no-cursor-coauthor composer-sync cs-fix cs-check rector-dry phpstan igor test-coverage release-check-demos
+# REQ-MAKE-002: sequential chain, ensure-up first. check-no-raw-html-form is not wired yet: the demo login and
+# user action templates still use raw <form>/<input> (REQ-TWIG-005, scheduled with the Twig wave).
+release-check:
+	@$(MAKE) ensure-up
+	@$(MAKE) check-no-cursor-coauthor
+	@$(MAKE) check-open-prs
+	@$(MAKE) composer-sync
+	@$(MAKE) cs-fix
+	@$(MAKE) cs-check
+	@$(MAKE) rector-dry
+	@$(MAKE) phpstan
+	@$(MAKE) igor
+	@$(MAKE) validate-translations
+	@$(MAKE) test-coverage
+	@$(MAKE) release-check-demos
+
+# REQ-REL-003: fail on unresolved open pull requests.
+check-open-prs:
+	@chmod +x .scripts/check-open-prs.sh
+	@GH_REPO=nowo-tech/PasswordPolicyBundle ./.scripts/check-open-prs.sh
 
 check-no-cursor-coauthor:
 	@chmod +x .scripts/check-no-cursor-coauthor.sh
@@ -155,8 +174,10 @@ validate: ensure-up
 	$(COMPOSE) exec -T $(SERVICE_PHP) composer validate --strict
 
 # Validate translation files when the bundle provides translations.
+# REQ-MAKE-004: key parity across every shipped locale (7 required + extras) + YAML syntax.
 validate-translations: ensure-up
-	$(COMPOSE) exec -T $(SERVICE_PHP) php -r "require 'vendor/autoload.php'; foreach (glob('src/Resources/translations/*.yaml') as \$file) { Symfony\\Component\\Yaml\\Yaml::parseFile(\$file); } echo 'Translation files are valid.' . PHP_EOL;"
+	python3 .scripts/check-translation-key-parity.py
+	$(COMPOSE) exec -T $(SERVICE_PHP) php -r 'require "vendor/autoload.php"; foreach (glob("src/Resources/translations/*.yaml") as $$f) { Symfony\Component\Yaml\Yaml::parseFile($$f); } echo "Translation files are valid.\n";'
 
 # No-op for bundles without frontend assets
 assets:

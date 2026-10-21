@@ -46,6 +46,9 @@
 
 ## Unreleased
 
+- `PasswordExpiryListener::__construct()` gains an optional last argument `?ClockInterface $clock = null`. If you register the listener yourself or subclass it, nothing breaks; pass a clock to freeze time in tests.
+- The listener no longer carries `#[AsEventListener]` (it was never autoconfigured). If you relied on autoconfiguration of a subclass, tag it with `kernel.event_listener` (event `kernel.request`) yourself.
+
 ## To 1.6.1
 
 From **1.6.0** — constraint accepts named arguments (checkCurrentPassword opt-out works).

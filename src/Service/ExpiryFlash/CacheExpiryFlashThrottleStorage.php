@@ -14,13 +14,13 @@ use function is_int;
  * Recommended for FrankenPHP worker mode and Kubernetes multi-pod deployments where session
  * storage is not shared between workers or pods.
  */
-final class CacheExpiryFlashThrottleStorage implements ExpiryFlashThrottleStorageInterface
+final readonly class CacheExpiryFlashThrottleStorage implements ExpiryFlashThrottleStorageInterface
 {
     private const CACHE_KEY_PREFIX = 'nowo_password_policy.expiry_flash.';
 
     public function __construct(
-        private readonly CacheItemPoolInterface $cache,
-        private readonly int $cacheTtlSeconds,
+        private CacheItemPoolInterface $cache,
+        private int $cacheTtlSeconds,
     ) {
     }
 

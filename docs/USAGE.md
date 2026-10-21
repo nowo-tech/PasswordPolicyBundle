@@ -9,6 +9,7 @@ This document describes typical usage of the Password Policy Bundle. For full co
 - [Password history](#password-history)
 - [Customization](#customization)
 - [Translation overrides](#translation-overrides)
+- [Extension points (non-final classes)](#extension-points-non-final-classes)
 
 ## Basic usage
 
@@ -61,3 +62,17 @@ nowo_password_policy:
   expired:
     title: "Your password has expired."
 ```
+
+## Extension points (non-final classes)
+
+Most services are `final`. The following classes are intentionally **not** final (REQ-PHP-001) because hosts extend them or their subclasses are part of the 1.x API; prefer the interfaces when you only need a different behaviour:
+
+| Class | Why it is open | Prefer |
+| --- | --- | --- |
+| `Service\PasswordExpiryService`, `Service\PasswordHistoryService` | Subclasses may override single methods (custom expiry rules, history pruning) | `PasswordExpiryServiceInterface`, `PasswordHistoryServiceInterface` + service decoration |
+| `Validator\PasswordPolicyValidator` | Custom constraint validators may extend it to add rules | Decorate the validator service |
+| `EventListener\PasswordEntityListener`, `EventListener\PasswordExpiryListener` | Registered by the extension with explicit arguments; subclasses can replace the service class | Listen to the bundle events instead |
+| `Event\*` | Event subclasses carry extra host data | — |
+| `Exceptions\*` | Hosts may catch and extend the bundle exceptions | — |
+
+They may become `final` in a future major version; UPGRADING.md will announce it.

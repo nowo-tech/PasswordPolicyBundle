@@ -49,7 +49,7 @@ This bundle is **FrankenPHP worker mode friendly**.
 - ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English
 - ✅ **Demo Project** - Full-featured Symfony 8 demo with visual expiry indicators
 
-**FrankenPHP:** The demo uses a **single PHP service** (FrankenPHP, no nginx). With **`APP_ENV=dev`** (default), the Docker **entrypoint swaps in `Caddyfile.dev`** — **`php_server` without workers** for comfortable local development. The baked-in production `Caddyfile` can use **`php_server { worker … }`**; see [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md). Access the demo at `http://localhost:PORT` (see `demo/README.md` and `.env`).
+**FrankenPHP:** The demo uses a **single PHP service** (FrankenPHP, no nginx). `FRANKENPHP_MODE` in `demo/symfony8/.env` selects the Caddyfile: **`worker`** (default, `php_server { worker … }`, the mode the bundle is audited for) or **`classic`** (`Caddyfile.dev`, one PHP process per request); see [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md#switching-classic-vs-worker-frankenphp_mode). Access the demo at `http://localhost:PORT` (see `demo/README.md` and `.env`).
 
 ## Installation
 

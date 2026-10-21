@@ -29,6 +29,7 @@ final class CurrentPasswordHistory implements PasswordHistoryInterface
 
     public function setPassword(string $password): self
     {
+        // @igor-ignore - Transient per-validation value object (never a shared service), required by PasswordHistoryInterface
         $this->password = $password;
 
         return $this;
@@ -41,6 +42,7 @@ final class CurrentPasswordHistory implements PasswordHistoryInterface
 
     public function setCreatedAt(DateTimeInterface $createdAt): self
     {
+        // @igor-ignore - Transient per-validation value object (never a shared service), required by PasswordHistoryInterface
         $this->createdAt = $createdAt;
 
         return $this;

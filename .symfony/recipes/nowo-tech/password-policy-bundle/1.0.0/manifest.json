@@ -1,9 +1,0 @@
-{
-    "bundles": {
-        "Nowo\\PasswordPolicyBundle\\PasswordPolicyBundle": ["all"]
-    },
-    "copy-from-recipe": {
-        "config/": "%CONFIG_DIR%/"
-    }
-}
-

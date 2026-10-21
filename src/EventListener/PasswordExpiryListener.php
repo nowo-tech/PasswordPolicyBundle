@@ -10,15 +10,14 @@ use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -35,9 +34,9 @@ use function is_object;
  * This listener checks if a password has expired when accessing locked routes
  * and displays appropriate error messages to the user.
  *
- * Priority is applied from bundle config via the DI Extension (REQ-SF-003 attribute + configurable tag).
+ * Registered by the DI extension (not autoconfigured): the kernel.request tag carries the configurable
+ * `expiry_listener.priority`, which an #[AsEventListener] attribute cannot read (REQ-SF-003 exception).
  */
-#[AsEventListener(event: KernelEvents::REQUEST, method: 'onKernelRequest')]
 class PasswordExpiryListener
 {
     /**
@@ -69,6 +68,7 @@ class PasswordExpiryListener
      * @param bool $enableLogging Whether logging is enabled
      * @param string $logLevel The logging level to use
      * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
+     * @param ClockInterface|null $clock Time source for the flash throttle (REQ-DI-001); system time when null
      */
     public function __construct(
         public PasswordExpiryServiceInterface $passwordExpiryService,
@@ -86,7 +86,8 @@ class PasswordExpiryListener
         private readonly ?LoggerInterface $logger = null,
         private readonly bool $enableLogging = true,
         private readonly string $logLevel = 'info',
-        private readonly ?EventDispatcherInterface $eventDispatcher = null
+        private readonly ?EventDispatcherInterface $eventDispatcher = null,
+        private readonly ?ClockInterface $clock = null,
     ) {
     }
 
@@ -251,6 +252,14 @@ class PasswordExpiryListener
         };
     }
 
+    /**
+     * Current Unix time from the injected clock, system time when none is wired.
+     */
+    private function timestamp(): int
+    {
+        return $this->clock?->now()->getTimestamp() ?? time();
+    }
+
     private function isFlashIntervalElapsed(string $subjectKey): bool
     {
         $lastShown = $this->flashThrottleStorage->getLastShownAt($subjectKey);
@@ -258,7 +267,7 @@ class PasswordExpiryListener
             return true;
         }
 
-        return (time() - $lastShown) >= ($this->flashIntervalMinutes * 60);
+        return ($this->timestamp() - $lastShown) >= ($this->flashIntervalMinutes * 60);
     }
 
     private function markExpiryFlashShown(?string $subjectKey): void
@@ -269,7 +278,7 @@ class PasswordExpiryListener
             return;
         }
 
-        $this->flashThrottleStorage->markShown($subjectKey, time());
+        $this->flashThrottleStorage->markShown($subjectKey, $this->timestamp());
     }
 
     private function resolveSubjectKey(?object $user): ?string
