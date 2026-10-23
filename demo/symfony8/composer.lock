@@ -1473,7 +1473,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/password-policy-bundle",
-                "reference": "6faf90fbb7459c7ffd14884a6c6934580658e7cf"
+                "reference": "b816454536737e9c77c7a8b7b8f1003aed0eff09"
             },
             "require": {
                 "doctrine/collections": "^1.8 || ^2.0",
@@ -1560,7 +1560,7 @@
             "authors": [
                 {
                     "name": "Héctor Franco Aceituno",
-                    "email": "hectorfranco@nowo.com",
+                    "email": "hectorfranco@nowo.tech",
                     "homepage": "https://github.com/HecFranco",
                     "role": "Developer"
                 },
@@ -1585,7 +1585,8 @@
             ],
             "support": {
                 "issues": "https://github.com/nowo-tech/PasswordPolicyBundle/issues",
-                "source": "https://github.com/nowo-tech/PasswordPolicyBundle"
+                "source": "https://github.com/nowo-tech/PasswordPolicyBundle",
+                "docs": "https://github.com/nowo-tech/PasswordPolicyBundle/blob/main/README.md"
             },
             "transport-options": {
                 "relative": false
@@ -6444,16 +6445,16 @@
         },
         {
             "name": "nowo-tech/hot-reload-bundle",
-            "version": "v1.6.1",
+            "version": "v1.6.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/HotReloadBundle.git",
-                "reference": "6d3117328bd9d7f55a70743567d04ee25d6bc366"
+                "reference": "cf84e69a6f93f95f06876638337f9f792b2bcb0a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/HotReloadBundle/zipball/6d3117328bd9d7f55a70743567d04ee25d6bc366",
-                "reference": "6d3117328bd9d7f55a70743567d04ee25d6bc366",
+                "url": "https://api.github.com/repos/nowo-tech/HotReloadBundle/zipball/cf84e69a6f93f95f06876638337f9f792b2bcb0a",
+                "reference": "cf84e69a6f93f95f06876638337f9f792b2bcb0a",
                 "shasum": ""
             },
             "require": {
@@ -6531,7 +6532,7 @@
                 "issues": "https://github.com/nowo-tech/HotReloadBundle/issues",
                 "source": "https://github.com/nowo-tech/HotReloadBundle"
             },
-            "time": "2026-10-13T10:57:34+00:00"
+            "time": "2026-10-21T05:26:17+00:00"
         },
         {
             "name": "nowo-tech/twig-inspector-bundle",
