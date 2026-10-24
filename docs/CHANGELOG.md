@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Developer tooling (REQ-MAKE-002):** `make release-check` runs the full REQ-MAKE-002 chain in order (ensure-up, co-author and open-PR gates, composer-sync, cs-fix, cs-check, rector-dry, phpstan, igor, validate-translations, test-coverage, demo release-check). New `make check-no-raw-html-form` target (`.scripts/check-no-raw-html-form.sh`, REQ-TWIG-005); it joins the chain once the demo raw form markup is migrated. `check-twig-extra` does not apply (no bundle Twig views).
 - Demo: the user create/edit and change-password templates render their forms through the child loop instead of hard-coded `form_label` / `form_widget` / `form_errors` per field; the `.form-group` wrapper moves to `row_attr` and the edit-page hint to the `help` option of the demo FormTypes (REQ-TWIG-003).
 
 ## [1.7.0] - 2026-10-21

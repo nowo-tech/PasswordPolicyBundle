@@ -8,7 +8,7 @@ COMPOSE_BIN := $(shell docker compose version >/dev/null 2>&1 && echo "docker co
 COMPOSE     := $(COMPOSE_BIN) -f $(COMPOSE_FILE)
 SERVICE_PHP := php
 
-.PHONY: help up down down-dev build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan igor qa release-check release-check-demos demo-smoke composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor strip-cursor-coauthor-from-history check-open-prs
+.PHONY: help up down down-dev build shell install test test-coverage coverage-php-percent cs-check cs-fix rector rector-dry phpstan igor qa release-check release-check-demos demo-smoke composer-sync clean update validate validate-translations assets setup-hooks check-no-cursor-coauthor strip-cursor-coauthor-from-history check-open-prs check-no-raw-html-form
 
 # Default target
 help:
@@ -121,8 +121,10 @@ qa: ensure-up
 # Run Igor worker-state audit (REQ-CS-008)
 igor: ensure-up
 	$(COMPOSE) exec -T php composer igor
-# REQ-MAKE-002: sequential chain, ensure-up first. check-no-raw-html-form is not wired yet: the demo login and
-# user action templates still use raw <form>/<input> (REQ-TWIG-005, scheduled with the Twig wave).
+
+# REQ-MAKE-002: sequential chain, ensure-up first.
+# check-twig-extra (REQ-TWIG-004) is omitted: the bundle ships no Twig views.
+# check-no-raw-html-form (REQ-TWIG-005) is wired once the remaining raw form markup is migrated
 release-check:
 	@$(MAKE) ensure-up
 	@$(MAKE) check-no-cursor-coauthor
@@ -136,6 +138,10 @@ release-check:
 	@$(MAKE) validate-translations
 	@$(MAKE) test-coverage
 	@$(MAKE) release-check-demos
+
+# Fail on raw <form>/<input>/<textarea>/<select> in Twig (REQ-TWIG-005)
+check-no-raw-html-form:
+	@bash .scripts/check-no-raw-html-form.sh
 
 # REQ-REL-003: fail on unresolved open pull requests.
 check-open-prs:
