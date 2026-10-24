@@ -21,11 +21,14 @@ class UserType extends AbstractType
             ->add('email', EmailType::class, [
                 'label'    => 'Email',
                 'required' => true,
+                'row_attr' => ['class' => 'form-group'],
             ])
             ->add('plainPassword', PasswordType::class, [
                 'label'       => 'Password',
                 'mapped'      => false,
                 'required'    => !$options['is_edit'],
+                'help'        => $options['is_edit'] ? 'Leave blank to keep current password' : null,
+                'row_attr'    => ['class' => 'form-group'],
                 'constraints' => [
                     new NotBlank(message: 'Please enter a password'),
                     new Length(

@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Demo: the user create/edit and change-password templates render their forms through the child loop instead of hard-coded `form_label` / `form_widget` / `form_errors` per field; the `.form-group` wrapper moves to `row_attr` and the edit-page hint to the `help` option of the demo FormTypes (REQ-TWIG-003).
+
 ## [1.7.0] - 2026-10-21
 
 Security guide, clock-based expiry flash throttle, release-check gates, single Flex recipe tree, demo fixes. See [UPGRADING](UPGRADING.md#to-170).

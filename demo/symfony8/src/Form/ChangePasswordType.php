@@ -21,6 +21,7 @@ class ChangePasswordType extends AbstractType
                 'mapped'        => false,
                 'first_options' => [
                     'label'       => 'New Password',
+                    'row_attr'    => ['class' => 'form-group'],
                     'constraints' => [
                         new NotBlank(message: 'Please enter a password'),
                         new Length(
@@ -31,7 +32,8 @@ class ChangePasswordType extends AbstractType
                     ],
                 ],
                 'second_options' => [
-                    'label' => 'Repeat Password',
+                    'label'    => 'Repeat Password',
+                    'row_attr' => ['class' => 'form-group'],
                 ],
                 'invalid_message' => 'The password fields must match.',
             ]);
