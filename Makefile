@@ -32,6 +32,7 @@ help:
 	@echo "  phpstan       Run PHPStan static analysis"
 	@echo "  igor          Run Igor worker-state audit (REQ-CS-008)"
 	@echo "  qa            Run all QA checks (cs-check + test)"
+	@echo "  check-no-raw-html-form Fail on raw <form>/<input>/<textarea>/<select> in Twig (REQ-TWIG-005)"
 	@echo "  release-check Pre-release: co-author audit, cs-fix, cs-check, rector-dry, phpstan, igor, test-coverage, demo healthchecks"
 	@echo "  demo-smoke    REQ-TEST-011: boot demo + HTTP 200 (make -C demo demo-smoke)"
 	@echo "  composer-sync Validate composer.json and align composer.lock (no install)"
@@ -124,11 +125,11 @@ igor: ensure-up
 
 # REQ-MAKE-002: sequential chain, ensure-up first.
 # check-twig-extra (REQ-TWIG-004) is omitted: the bundle ships no Twig views.
-# check-no-raw-html-form (REQ-TWIG-005) is wired once the remaining raw form markup is migrated
 release-check:
 	@$(MAKE) ensure-up
 	@$(MAKE) check-no-cursor-coauthor
 	@$(MAKE) check-open-prs
+	@$(MAKE) check-no-raw-html-form
 	@$(MAKE) composer-sync
 	@$(MAKE) cs-fix
 	@$(MAKE) cs-check

@@ -47,7 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Developer tooling (REQ-MAKE-002):** `make release-check` runs the full REQ-MAKE-002 chain in order (ensure-up, co-author and open-PR gates, composer-sync, cs-fix, cs-check, rector-dry, phpstan, igor, validate-translations, test-coverage, demo release-check). New `make check-no-raw-html-form` target (`.scripts/check-no-raw-html-form.sh`, REQ-TWIG-005); it joins the chain once the demo raw form markup is migrated. `check-twig-extra` does not apply (no bundle Twig views).
+- Demo: the login page (`App\Form\LoginType`: flat `_username` / `_password`, `_csrf_token` with token id `authenticate`) and the user-list delete buttons (`App\Form\CsrfOnlyType`, token id `delete{id}`, same confirm prompt) render through Symfony Form Types with `form_start` / child loop / `form_end`; `user_delete` validates with `handleRequest` + `isValid()` (REQ-TWIG-005).
+- **Developer tooling (REQ-MAKE-002):** `make release-check` runs the full REQ-MAKE-002 chain in order (ensure-up, co-author and open-PR gates, composer-sync, cs-fix, cs-check, rector-dry, phpstan, igor, validate-translations, test-coverage, demo release-check). New `make check-no-raw-html-form` target (`.scripts/check-no-raw-html-form.sh`, REQ-TWIG-005) fails on raw `<form>` / `<input>` / `<textarea>` / `<select>` in demo templates and runs in the chain after `check-open-prs`. `check-twig-extra` does not apply (no bundle Twig views).
 - Demo: the user create/edit and change-password templates render their forms through the child loop instead of hard-coded `form_label` / `form_widget` / `form_errors` per field; the `.form-group` wrapper moves to `row_attr` and the edit-page hint to the `help` option of the demo FormTypes (REQ-TWIG-003).
 
 ## [1.7.0] - 2026-10-21

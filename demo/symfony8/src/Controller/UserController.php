@@ -6,11 +6,13 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\ChangePasswordType;
+use App\Form\CsrfOnlyType;
 use App\Form\UserType;
 use App\Repository\UserRepository;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -28,8 +30,15 @@ class UserController extends AbstractController
     #[Route('/', name: 'user_index', methods: ['GET'])]
     public function index(UserRepository $userRepository): Response
     {
+        $users       = $userRepository->findAll();
+        $deleteForms = [];
+        foreach ($users as $user) {
+            $deleteForms[$user->getId()] = $this->createDeleteForm($user)->createView();
+        }
+
         return $this->render('user/index.html.twig', [
-            'users' => $userRepository->findAll(),
+            'users'        => $users,
+            'delete_forms' => $deleteForms,
         ]);
     }
 
@@ -120,7 +129,9 @@ class UserController extends AbstractController
     #[Route('/{id}', name: 'user_delete', methods: ['POST'])]
     public function delete(Request $request, User $user): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $user->getId(), $request->request->get('_token'))) {
+        $form = $this->createDeleteForm($user);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
             $this->entityManager->remove($user);
             $this->entityManager->flush();
 
@@ -128,5 +139,22 @@ class UserController extends AbstractController
         }
 
         return $this->redirectToRoute('user_index');
+    }
+
+    /**
+     * CSRF-only delete form for one user row (token id "delete{id}", field "_token"; REQ-TWIG-005).
+     *
+     * @return FormInterface<null>
+     */
+    private function createDeleteForm(User $user): FormInterface
+    {
+        return $this->container->get('form.factory')->createNamed('delete_' . $user->getId(), CsrfOnlyType::class, null, [
+            'action'        => $this->generateUrl('user_delete', ['id' => $user->getId()]),
+            'csrf_token_id' => 'delete' . $user->getId(),
+            'attr'          => [
+                'style'    => 'display: inline;',
+                'onsubmit' => "return confirm('Are you sure you want to delete this user?');",
+            ],
+        ]);
     }
 }
