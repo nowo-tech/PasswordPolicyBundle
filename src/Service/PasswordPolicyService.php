@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Service;
 
 use Closure;
+use DateTimeInterface;
 use Error;
 use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -13,10 +14,13 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+use function array_slice;
 use function ctype_digit;
 use function function_exists;
+use function max;
 use function password_get_info;
 use function strlen;
+use function usort;
 
 /**
  * Service for enforcing password policies.
@@ -45,10 +49,13 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
      *
      * @param UserPasswordHasherInterface $userPasswordHasher The password hasher service for verifying passwords
      * @param Closure(object): bool|null $isCloneable Optional; when null, cloneability is determined via method_exists
+     * @param array<string, int> $historyLimits passwords_to_remember per entity class: only that many newest history
+     *                                          entries are checked (one hash verification each)
      */
     public function __construct(
         public UserPasswordHasherInterface $userPasswordHasher,
-        private readonly ?Closure $isCloneable = null
+        private readonly ?Closure $isCloneable = null,
+        private readonly array $historyLimits = [],
     ) {
     }
 
@@ -64,9 +71,7 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
         string $password,
         HasPasswordPolicyInterface $hasPasswordPolicy
     ): ?PasswordHistoryInterface {
-        $collection = $hasPasswordPolicy->getPasswordHistory();
-
-        foreach ($collection as $passwordHistory) {
+        foreach ($this->rememberedHistory($hasPasswordPolicy) as $passwordHistory) {
             if ($this->isPasswordValid($hasPasswordPolicy, $passwordHistory->getPassword(), $password)) {
                 return $passwordHistory;
             }
@@ -215,7 +220,7 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
             return null;
         }
 
-        $collection = $hasPasswordPolicy->getPasswordHistory();
+        $collection = $this->rememberedHistory($hasPasswordPolicy);
 
         foreach ($candidates as $basePassword) {
             foreach ($collection as $passwordHistory) {
@@ -226,6 +231,40 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
         }
 
         return null;
+    }
+
+    /**
+     * The newest passwords_to_remember entries of the entity's history (the whole history when no limit is configured
+     * for its class). History is trimmed only when the password changes, so a lowered limit or imported rows could
+     * otherwise make every validation cost one hash verification per stored entry.
+     *
+     * @return iterable<PasswordHistoryInterface>
+     */
+    private function rememberedHistory(HasPasswordPolicyInterface $hasPasswordPolicy): iterable
+    {
+        $history = $hasPasswordPolicy->getPasswordHistory();
+        $limit   = null;
+        foreach ($this->historyLimits as $class => $classLimit) {
+            if ($hasPasswordPolicy instanceof $class) {
+                $limit = $classLimit;
+                break;
+            }
+        }
+
+        if ($limit === null || $history->count() <= $limit) {
+            return $history;
+        }
+
+        $entries = $history->toArray();
+        usort($entries, static function (PasswordHistoryInterface $a, PasswordHistoryInterface $b): int {
+            $aCreatedAt = $a->getCreatedAt();
+            $bCreatedAt = $b->getCreatedAt();
+
+            return ($bCreatedAt instanceof DateTimeInterface ? (int) $bCreatedAt->format('U') : 0)
+                <=> ($aCreatedAt instanceof DateTimeInterface ? (int) $aCreatedAt->format('U') : 0);
+        });
+
+        return array_slice($entries, 0, max(0, $limit));
     }
 
     /**

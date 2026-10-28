@@ -10,6 +10,7 @@ use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
+use Nowo\PasswordPolicyBundle\Util\LogIdentifier;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -152,10 +153,8 @@ class PasswordExpiryListener
             }
 
             $userId         = $user instanceof HasPasswordPolicyInterface ? (string) $user->getId() : 'unknown';
-            $userIdentifier = $user instanceof UserInterface
-                ? $user->getUserIdentifier()
-                : 'unknown';
-            $subjectKey = $this->resolveSubjectKey($user);
+            $userIdentifier = LogIdentifier::redact($user instanceof UserInterface ? $user->getUserIdentifier() : 'unknown');
+            $subjectKey     = $this->resolveSubjectKey($user);
 
             // Log password expiry detection
             if ($this->enableLogging && $this->logger instanceof LoggerInterface) {

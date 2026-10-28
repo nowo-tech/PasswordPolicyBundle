@@ -972,6 +972,44 @@ final class PasswordPolicyServiceTest extends UnitTestCase
         };
     }
 
+    public function testGetHistoryByPasswordOnlyChecksRememberedEntries(): void
+    {
+        $old     = $this->makeDatedHistoryMock(password_hash('pwd', PASSWORD_BCRYPT), '-30 days');
+        $recent  = $this->makeDatedHistoryMock(password_hash('other', PASSWORD_BCRYPT), '-1 day');
+        $undated = $this->makeDatedHistoryMock(password_hash('third', PASSWORD_BCRYPT), null);
+        $this->entityMock->shouldReceive('getPasswordHistory')->andReturn(new ArrayCollection([$old, $undated, $recent]));
+
+        $limited = new PasswordPolicyService($this->userPasswordHasherMock, historyLimits: [HasPasswordPolicyInterface::class => 1]);
+        $this->assertNull($limited->getHistoryByPassword('pwd', $this->entityMock));
+
+        $wide = new PasswordPolicyService($this->userPasswordHasherMock, historyLimits: [HasPasswordPolicyInterface::class => 2]);
+        $this->assertSame($old, $wide->getHistoryByPassword('pwd', $this->entityMock));
+
+        $otherClass = new PasswordPolicyService($this->userPasswordHasherMock, historyLimits: [DateTime::class => 1]);
+        $this->assertSame($old, $otherClass->getHistoryByPassword('pwd', $this->entityMock));
+    }
+
+    public function testGetHistoryByPasswordExtensionOnlyChecksRememberedEntries(): void
+    {
+        $old    = $this->makeDatedHistoryMock(password_hash('secret', PASSWORD_BCRYPT), '-30 days');
+        $recent = $this->makeDatedHistoryMock(password_hash('other', PASSWORD_BCRYPT), '-1 day');
+        $this->entityMock->shouldReceive('getPasswordHistory')->andReturn(new ArrayCollection([$old, $recent]));
+
+        $limited = new PasswordPolicyService($this->userPasswordHasherMock, historyLimits: [HasPasswordPolicyInterface::class => 1]);
+        $this->assertNull($limited->getHistoryByPasswordExtension('secret1', $this->entityMock));
+
+        $this->assertSame($old, $this->passwordPolicyService->getHistoryByPasswordExtension('secret1', $this->entityMock));
+    }
+
+    private function makeDatedHistoryMock(string $hashedPassword, ?string $createdAt): PasswordHistoryInterface
+    {
+        $mock = Mockery::mock(PasswordHistoryInterface::class);
+        $mock->shouldReceive('getPassword')->andReturn($hashedPassword);
+        $mock->shouldReceive('getCreatedAt')->andReturn($createdAt === null ? null : new DateTime($createdAt));
+
+        return $mock;
+    }
+
     private function makePasswordHistoryMock(string $hashedPassword = 'hashed_pwd'): PasswordHistoryInterface
     {
         $mock = Mockery::mock(PasswordHistoryInterface::class);

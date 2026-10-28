@@ -16,6 +16,7 @@ use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStor
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
+use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
@@ -26,6 +27,7 @@ use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
 
+use function array_map;
 use function in_array;
 use function is_string;
 use function sprintf;
@@ -134,6 +136,13 @@ final class PasswordPolicyExtension extends Extension
             ]);
 
             $definition->addMethodCall('addEntity', [$passwordExpiryConfig]);
+        }
+
+        if ($containerBuilder->hasDefinition(PasswordPolicyService::class)) {
+            $containerBuilder->getDefinition(PasswordPolicyService::class)->setArgument(
+                '$historyLimits',
+                array_map(static fn (array $settings): int => (int) $settings['passwords_to_remember'], $config['entities']),
+            );
         }
     }
 

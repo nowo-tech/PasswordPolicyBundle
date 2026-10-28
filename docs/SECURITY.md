@@ -116,7 +116,7 @@ When `enable_logging` is true (default), events are logged at `log_level` (defau
 | `Password changed successfully` | `bundle`, `user_id`, `entity_class`, `history_entries_removed` |
 | `Password expired detected` | `bundle`, `user_id`, `user_identifier`, `route`, `redirect_on_expiry` |
 
-Plaintext passwords, password hashes, session ids and tokens are **never** logged. `user_identifier` (usually the e-mail or username) **is** logged so operators can act on reuse attempts; set `enable_logging: false`, raise `log_level` or route the channel to a restricted handler when that is personal data you must not keep in logs.
+Plaintext passwords, password hashes, session ids and tokens are **never** logged. `user_identifier` is **pseudonymised** since 1.8.0: `sha256:` plus the first 16 hex characters of the SHA-256 of the user identifier (usually the e-mail or username), so entries of one user stay correlatable without storing the identifier itself. Compute the same hash to find a user's entries; `user_id` is logged as is. Set `enable_logging: false`, raise `log_level` or route the channel to a restricted handler if even that must not be kept.
 
 ## Dependencies and updates
 

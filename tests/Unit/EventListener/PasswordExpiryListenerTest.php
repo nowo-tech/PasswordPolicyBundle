@@ -928,7 +928,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(static fn ($context): bool => isset($context['user_identifier'])
-                          && $context['user_identifier'] === 'test@example.com'
+                          && $context['user_identifier'] === 'sha256:973dfe463ec85785'
                           && isset($context['user_id'])
                           && isset($context['route'])
                           && isset($context['redirect_on_expiry'])
@@ -1062,7 +1062,7 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $loggerMock->shouldReceive('info')
                    ->once()
                    ->with('Password expired detected', Mockery::on(static fn ($context): bool => isset($context['user_identifier'])
-                          && $context['user_identifier'] === 'test@example.com'
+                          && $context['user_identifier'] === 'sha256:973dfe463ec85785'
                           && isset($context['user_id'])
                           && isset($context['route'])
                           && isset($context['redirect_on_expiry'])

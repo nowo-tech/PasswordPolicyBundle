@@ -15,6 +15,7 @@ use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\CurrentPasswordMatcherInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
+use Nowo\PasswordPolicyBundle\Util\LogIdentifier;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -155,9 +156,9 @@ class PasswordPolicyValidator extends ConstraintValidator
         // Log password reuse attempt
         if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
             $userId         = $entity->getId();
-            $userIdentifier = $entity instanceof UserInterface
+            $userIdentifier = LogIdentifier::redact($entity instanceof UserInterface
                 ? $entity->getUserIdentifier()
-                : (method_exists($entity, 'getEmail') ? $entity->getEmail() : 'unknown');
+                : (method_exists($entity, 'getEmail') ? (string) $entity->getEmail() : 'unknown'));
             $createdAt = $history->getCreatedAt();
             $message   = $type === 'extension'
                 ? 'Password extension detected (new password is an extension of an old password)'

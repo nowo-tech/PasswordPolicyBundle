@@ -425,7 +425,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
           ->once()
-          ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'email@example.com'));
+          ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'sha256:2a539d6520266b56'));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');
@@ -760,7 +760,7 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $loggerMock = Mockery::mock(LoggerInterface::class);
         $loggerMock->shouldReceive('info')
             ->once()
-            ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'auth_user_10'));
+            ->with('Password reuse attempt detected', Mockery::on(static fn (array $context): bool => isset($context['user_identifier']) && $context['user_identifier'] === 'sha256:92fe6dd6b229782e'));
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');

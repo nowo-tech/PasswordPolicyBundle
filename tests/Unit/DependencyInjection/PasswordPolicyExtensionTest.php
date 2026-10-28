@@ -10,6 +10,7 @@ use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
+use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use ReflectionClass;
@@ -103,6 +104,7 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
 
         $this->assertTrue($container->hasDefinition(PasswordExpiryListener::class));
         $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . $mockEntityClass));
+        $this->assertSame([$mockEntityClass => 5], $container->getDefinition(PasswordPolicyService::class)->getArgument('$historyLimits'));
     }
 
     public function testLoadThrowsExceptionForNonExistentEntity(): void

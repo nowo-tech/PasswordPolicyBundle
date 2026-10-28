@@ -47,6 +47,10 @@
 
 ## Unreleased
 
+- Log context `user_identifier` is now a pseudonym (`sha256:` + 16 hex characters of the SHA-256 of the identifier) instead of the raw e-mail / username. Update log searches or alerts that matched the raw value.
+- The reuse / extension check only looks at the newest `passwords_to_remember` history entries of the entity class. Rows beyond that limit (for example after lowering it) no longer block a password.
+- `PasswordPolicyService::__construct()` has a new optional `$historyLimits` argument (wired by the extension).
+
 ## To 1.7.0
 
 From **1.6.1**:

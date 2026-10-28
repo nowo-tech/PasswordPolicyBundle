@@ -45,6 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **User identifiers are pseudonymised in logs.** Reuse / extension attempts and expiry redirects logged the raw
+  `getUserIdentifier()` (usually the e-mail). `user_identifier` now holds `sha256:` + 16 hex characters of its SHA-256
+  (`Util\LogIdentifier`); `user_id` is unchanged.
+
+### Fixed
+
+- **Reuse check is bounded by `passwords_to_remember`.** `getHistoryByPassword()` and `getHistoryByPasswordExtension()`
+  verified every stored history entry (one bcrypt/argon2 check each). History is trimmed only on a password change, so
+  a lowered limit or imported rows made validation cost grow with the table. Only the newest `passwords_to_remember`
+  entries of the entity class are checked now (also the documented semantics).
+
 ### Changed
 
 - Demo: the login page (`App\Form\LoginType`: flat `_username` / `_password`, `_csrf_token` with token id `authenticate`) and the user-list delete buttons (`App\Form\CsrfOnlyType`, token id `delete{id}`, same confirm prompt) render through Symfony Form Types with `form_start` / child loop / `form_end`; `user_delete` validates with `handleRequest` + `isValid()` (REQ-TWIG-005).
