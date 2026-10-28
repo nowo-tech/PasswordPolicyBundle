@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.8.0](#to-180)
 - [To 1.7.0](#to-170)
 - [To 1.6.1](#to-161)
 - [To 1.6.0](#to-160)
@@ -46,6 +47,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.8.0
+
+From **1.7.0**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 - Log context `user_identifier` is now a pseudonym (`sha256:` + 16 hex characters of the SHA-256 of the identifier) instead of the raw e-mail / username. Update log searches or alerts that matched the raw value.
 - The reuse / extension check only looks at the newest `passwords_to_remember` history entries of the entity class. Rows beyond that limit (for example after lowering it) no longer block a password.
