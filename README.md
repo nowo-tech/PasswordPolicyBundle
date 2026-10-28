@@ -10,6 +10,19 @@ Symfony bundle for password policy enforcements including password history, expi
 
 This bundle is **FrankenPHP worker mode friendly**.
 
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/demo/password-expired-flash.webp" alt="Expired password: the expiry listener flash after login" />
+      <br /><sub>Expiry listener — notice right after login</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/demo/demo-users-management.webp" alt="Users list with Active, Expiring Soon and Expired password status" />
+      <br /><sub>Password status per user — active, expiring soon, expired</sub>
+    </td>
+  </tr>
+</table>
+
 ## Table of contents
 
 - [Features](#features)
@@ -414,17 +427,7 @@ The bundle includes a complete demo project for Symfony 8. It includes:
 
 ### Screenshots (Symfony 8 demo)
 
-Login page with demo credentials and password status indicators:
-
-![Demo login](docs/images/demo/demo-login.webp)
-
-Home page after signing in as `expired@example.com`: the expiry listener flash ("Your password has expired"), password expiry testing info and quick access to use cases and user management.
-
-![Demo home](docs/images/demo/demo-home.webp)
-
-Users management: list with password status (Active, Expiring Soon, Expired), password history and actions.
-
-![Demo users management](docs/images/demo/demo-users-management.webp)
+The screenshots at the top of this README come from the demo: signing in as `expired@example.com` shows the expiry listener flash, and the users list shows each password status (Active, Expiring Soon, Expired). Refresh them with `make -C demo/symfony8 demo-screenshots`; `make -C demo/symfony8 test-e2e` runs the Playwright happy path.
 
 ### Running the Demo
 

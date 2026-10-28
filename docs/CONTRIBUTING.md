@@ -15,6 +15,7 @@ Thank you for your interest in contributing to Password Policy Bundle! This docu
     - [Pull Request Process](#pull-request-process)
     - [Checklist Before PR](#checklist-before-pr)
 - [Project Structure](#project-structure)
+- [End-to-end tests and screenshots (REQ-DEMO-013)](#end-to-end-tests-and-screenshots-req-demo-013)
 - [Branching Policy](#branching-policy)
 - [Questions](#questions)
 - [Acknowledgments](#acknowledgments)
@@ -207,6 +208,17 @@ password-policy-bundle/
 ├── .github/                # GitHub configuration
 └── docs/                   # Documentation
 ```
+
+## End-to-end tests and screenshots (REQ-DEMO-013)
+
+The Symfony 8 demo ships a Playwright suite in `demo/symfony8/e2e/` (official Playwright image, nothing to install on the host):
+
+```bash
+make -C demo/symfony8 test-e2e          # starts the demo if needed, runs the happy-path specs
+make -C demo/symfony8 demo-screenshots  # recaptures docs/images/demo/*.webp (PNG → WebP via sharp)
+```
+
+Refresh the screenshots when the demo UI changes and commit only the `.webp` files.
 
 ## Branching Policy
 

@@ -22,15 +22,10 @@ test.beforeAll(() => {
 test.describe('PasswordPolicy screenshots', () => {
   test.use({ viewport: { width: 1280, height: 1000 } });
 
-  test('demo-login — login with demo credentials and password states', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('input[name="_username"]')).toBeVisible();
-    await page.screenshot({ path: resolve(outDir, 'demo-login.png'), fullPage: true });
-  });
-
-  test('demo-home — expired user sees the expiry flash', async ({ page }) => {
+  test('password-expired-flash — expired user gets the expiry notice', async ({ page }) => {
     await login(page, 'expired@example.com', 'expired123');
-    await page.screenshot({ path: resolve(outDir, 'demo-home.png'), fullPage: true });
+    await expect(page.locator('.alert, .flash, [class*="alert"]').filter({ hasText: /expired|caducad/i }).first()).toBeVisible();
+    await page.screenshot({ path: resolve(outDir, 'password-expired-flash.png'), fullPage: true });
   });
 
   test('demo-users-management — users with password status', async ({ page }) => {
