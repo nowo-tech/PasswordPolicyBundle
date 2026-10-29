@@ -109,6 +109,7 @@ Each entity that implements `HasPasswordPolicyInterface` must be configured unde
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
+| `expire_when_never_changed` | `bool` | `false` | Treat a null `passwordChangedAt` as an expired password (fail closed). New entities get `passwordChangedAt` on creation since 1.9.0; back-fill existing rows before enabling it. Default becomes `true` in 2.0. |
 | `enable_cache` | `bool` | `false` | Enable caching for password expiry checks. When enabled, expiry status is cached per user to improve performance. Cache is automatically invalidated when password changes. Requires Symfony Cache component. |
 | `cache_ttl` | `int` | `3600` | Cache time-to-live in seconds. Default is 3600 (1 hour). Only used when `enable_cache` is `true`. The cache key includes user ID, class, and password change timestamp, so it's automatically invalidated when password changes. |
 

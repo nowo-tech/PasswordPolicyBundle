@@ -61,6 +61,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $this->entityMock = Mockery::mock(HasPasswordPolicyInterface::class);
 
         $this->uowMock = Mockery::mock(UnitOfWork::class);
+        $this->uowMock->shouldReceive('getScheduledEntityInsertions')->andReturn([])->byDefault();
 
         $this->passwordEntityListener = Mockery::mock(PasswordEntityListener::class, [
             $this->passwordHistoryServiceMock,
@@ -580,5 +581,26 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $this->passwordHistoryServiceMock->shouldReceive('getHistoryItemsForCleanup')->times($times)->andReturn([]);
         $this->uowMock->shouldReceive('computeChangeSet')->times($times);
         $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')->times($times);
+    }
+
+    public function testOnFlushStampsPasswordChangedAtOnNewEntities(): void
+    {
+        $metadata = Mockery::mock(ClassMetadata::class);
+        $new      = Mockery::mock(HasPasswordPolicyInterface::class);
+        $new->shouldReceive('getPasswordChangedAt')->andReturn(null);
+        $new->shouldReceive('setPasswordChangedAt')->once()->with(Mockery::type(DateTime::class))->andReturnSelf();
+        $dated = Mockery::mock(HasPasswordPolicyInterface::class);
+        $dated->shouldReceive('getPasswordChangedAt')->andReturn(new DateTime('-1 day'));
+        $dated->shouldNotReceive('setPasswordChangedAt');
+
+        $this->uowMock->shouldReceive('getScheduledEntityInsertions')->andReturn([$new, $dated, new stdClass()]);
+        $this->uowMock->shouldReceive('getIdentityMap')->andReturn([]);
+        $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet')->once()->with($metadata, $new);
+        $this->emMock->shouldReceive('getUnitOfWork')->andReturn($this->uowMock);
+        $this->emMock->shouldReceive('getClassMetadata')->with($new::class)->andReturn($metadata);
+
+        $listener = new PasswordEntityListener($this->passwordHistoryServiceMock, 'password', 'passwordHistory', 3, HasPasswordPolicyInterface::class);
+        $listener->onFlush(new OnFlushEventArgs($this->emMock));
+        $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
     }
 }

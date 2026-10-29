@@ -658,4 +658,21 @@ final class PasswordExpiryServiceTest extends UnitTestCase
 
         $this->assertSame('fallback_reset', $service->getResetPasswordRouteName());
     }
+
+    public function testNeverChangedPasswordFollowsExpireWhenNeverChanged(): void
+    {
+        $this->userMock->shouldReceive('getPasswordChangedAt')->andReturn(null);
+        $token = Mockery::mock(TokenInterface::class);
+        $token->shouldReceive('getUser')->andReturn($this->userMock);
+        $this->tokenStorageMock->shouldReceive('getToken')->andReturn($token);
+        $configuration = new PasswordExpiryConfiguration($this->userMock::class, 90, ['lock'], [], 'reset_password');
+
+        $legacy = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock);
+        $legacy->addEntity($configuration);
+        $this->assertFalse($legacy->isPasswordExpired());
+
+        $strict = new PasswordExpiryService($this->tokenStorageMock, $this->routerMock, expireWhenNeverChanged: true);
+        $strict->addEntity($configuration);
+        $this->assertTrue($strict->isPasswordExpired());
+    }
 }

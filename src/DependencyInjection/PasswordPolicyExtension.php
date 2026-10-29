@@ -81,6 +81,7 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$cacheTtl', $config['cache_ttl'] ?? 3600);
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
         $definition->setArgument('$router', $this->optionalReference('router'));
+        $definition->setArgument('$expireWhenNeverChanged', (bool) ($config['expire_when_never_changed'] ?? false));
 
         foreach ($config['entities'] as $entityClass => $settings) {
             if (!class_exists($entityClass)) {

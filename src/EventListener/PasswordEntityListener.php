@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\EventListener;
 
 use Carbon\Carbon;
+use DateTime;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
@@ -89,6 +90,16 @@ class PasswordEntityListener implements ResetInterface
 
         $em         = $onFlushEventArgs->getObjectManager();
         $unitOfWork = $em->getUnitOfWork();
+
+        // New entities are not in the identity map yet (IDENTITY ids): stamp passwordChangedAt at creation, otherwise
+        // their password would never expire until the first change.
+        foreach ($unitOfWork->getScheduledEntityInsertions() as $entity) {
+            if (is_a($entity, $this->entityClass, true) && $entity instanceof HasPasswordPolicyInterface
+                && !$entity->getPasswordChangedAt() instanceof DateTime) {
+                $entity->setPasswordChangedAt(Carbon::instance($this->now()));
+                $unitOfWork->recomputeSingleEntityChangeSet($em->getClassMetadata($entity::class), $entity);
+            }
+        }
 
         foreach ($unitOfWork->getIdentityMap() as $entities) {
             foreach ($entities as $entity) {

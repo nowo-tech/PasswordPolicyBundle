@@ -48,6 +48,11 @@
 
 ## Unreleased
 
+- New users now get `passwordChangedAt` when they are persisted. Rows created before this release may still have it
+  null and never expire; back-fill them, e.g. `UPDATE app_user SET password_changed_at = NOW() WHERE password_changed_at IS NULL`
+  (adapt table / column), then optionally enable `nowo_password_policy.expire_when_never_changed: true` so any remaining
+  null date counts as expired.
+
 ## To 1.8.0
 
 From **1.7.0**:

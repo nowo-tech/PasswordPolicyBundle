@@ -46,6 +46,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Passwords of new users expire.** `passwordChangedAt` was only set when an existing entity changed its password;
+  entities created with an IDENTITY id are not in the identity map during `onFlush`, so a new user had a null date and
+  their password never expired. `PasswordEntityListener` now stamps `passwordChangedAt` on scheduled insertions when it
+  is null (SEC-004 re-audit L1, 2026-10-29).
+
+### Added
+
+- `expire_when_never_changed` (default `false`): treat a null `passwordChangedAt` as expired (fail closed). Back-fill
+  existing rows first (see UPGRADING); the default becomes `true` in 2.0.
+
 ## [1.8.0] - 2026-10-28
 
 PasswordPolicy: user identifiers are pseudonymised in logs; the reuse check is bounded by passwords_to_remember. See [UPGRADING](UPGRADING.md#to-180).

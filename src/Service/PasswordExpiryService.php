@@ -63,6 +63,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
         bool $cacheEnabled = false,
         private readonly int $cacheTtl = 3600,
         private readonly ?ClockInterface $clock = null,
+        private readonly bool $expireWhenNeverChanged = false,
     ) {
         $this->cacheEnabled = $cacheEnabled && $cache instanceof CacheItemPoolInterface;
     }
@@ -100,6 +101,11 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             $now       = $this->now();
             foreach ($this->entities as $entityClass => $config) {
                 $passwordLastChange = $user->getPasswordChangedAt();
+                if ($passwordLastChange === null && $this->expireWhenNeverChanged && $user instanceof $entityClass) {
+                    // expire_when_never_changed: an unknown change date is treated as expired (fail closed).
+                    $isExpired = true;
+                    break;
+                }
                 if ($passwordLastChange instanceof DateTime && $user instanceof $entityClass) {
                     // Validate that passwordChangedAt is not in the future
                     if ($passwordLastChange > $now) {
