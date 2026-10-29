@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.9.0](#to-190)
 - [To 1.8.0](#to-180)
 - [To 1.7.0](#to-170)
 - [To 1.6.1](#to-161)
@@ -47,6 +48,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.9.0
+
+From **1.8.0**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 - New users now get `passwordChangedAt` when they are persisted. Rows created before this release may still have it
   null and never expire; back-fill them, e.g. `UPDATE app_user SET password_changed_at = NOW() WHERE password_changed_at IS NULL`

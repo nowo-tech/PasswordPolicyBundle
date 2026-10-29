@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.9.0] - 2026-10-29](#190---2026-10-29)
 - [[1.8.0] - 2026-10-28](#180---2026-10-28)
 - [[1.7.0] - 2026-10-21](#170---2026-10-21)
 - [[1.6.1] - 2026-10-13](#161---2026-10-13)
@@ -46,6 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-29
+
+PasswordPolicy: new users get passwordChangedAt; opt-in expire_when_never_changed. See [UPGRADING](UPGRADING.md#to-190).
+
 ### Security
 
 - **Passwords of new users expire.** `passwordChangedAt` was only set when an existing entity changed its password;
@@ -57,6 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `expire_when_never_changed` (default `false`): treat a null `passwordChangedAt` as expired (fail closed). Back-fill
   existing rows first (see UPGRADING); the default becomes `true` in 2.0.
+
+[1.9.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.9.0
 
 ## [1.8.0] - 2026-10-28
 
