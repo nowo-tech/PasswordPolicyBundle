@@ -10,6 +10,7 @@ This document describes typical usage of the Password Policy Bundle. For full co
 - [Customization](#customization)
 - [Translation overrides](#translation-overrides)
 - [Extension points (non-final classes)](#extension-points-non-final-classes)
+- [Using it from a DDD / hexagonal application](#using-it-from-a-ddd--hexagonal-application)
 - [Forms in Twig (REQ-TWIG-005)](#forms-in-twig-req-twig-005)
 
 ## Basic usage
@@ -77,6 +78,52 @@ Most services are `final`. The following classes are intentionally **not** final
 | `Exceptions\*` | Hosts may catch and extend the bundle exceptions | — |
 
 They may become `final` in a future major version; UPGRADING.md will announce it.
+
+## Using it from a DDD / hexagonal application
+
+The bundle is an **infrastructure** component that works on your user entity: it does not ship entities or tables,
+but it expects the entity to implement `HasPasswordPolicyInterface`, a password-history entity mapped with Doctrine
+ORM, and it records history in a Doctrine `onFlush` listener. Keep that coupling on the persistence side:
+
+- **Implement the interfaces on the Doctrine-mapped class, not on a pure domain model.** If your domain `User` is
+  persistence-free, implement `HasPasswordPolicyInterface` on the ORM entity/mapping class of your infrastructure layer
+  (or accept the interface on the aggregate: it needs `getPasswordHistory(): Collection`, `DateTime` setters and
+  `add/removePasswordHistory()`).
+- **History** is written when Doctrine flushes a change of `password_field`. The user ↔ history relation must be a
+  bidirectional `OneToMany(mappedBy: …)`, the history class needs a no-argument constructor and a `set<MappedBy>()`
+  setter. Saving the user through any other path (DBAL, a non-Doctrine repository) records no history.
+- **Validation** (`#[PasswordPolicy]`) runs against the object that holds the property, which must be the
+  `HasPasswordPolicyInterface` entity. To validate a command/DTO, validate the entity in your adapter instead:
+
+```php
+// App\Infrastructure\Security\DoctrinePasswordReuseCheck — implements your own port
+public function isReused(UserId $id, string $plainPassword): bool
+{
+    $user = $this->users->find($id->toString());         // the HasPasswordPolicyInterface entity
+
+    return null !== $this->policy->getHistoryByPassword($plainPassword, $user)
+        || ($this->policy instanceof CurrentPasswordMatcherInterface
+            && $this->policy->matchesCurrentPassword($plainPassword, $user));
+}
+```
+
+  where `$this->policy` is `PasswordPolicyServiceInterface`.
+- **Expiry** reads the security token user: it must implement `HasPasswordPolicyInterface`. If your security user is a
+  separate adapter class, implement the interface there (delegating to the entity) or call
+  `PasswordExpiryServiceInterface` yourself.
+- **Events**: subscribe in your infrastructure layer to `PasswordChangedEvent`, `PasswordHistoryCreatedEvent`,
+  `PasswordReuseAttemptedEvent` and `PasswordExpiredEvent`, and translate them into your own domain/application events
+  using the entity id (`$event->getUser()->getId()`); do not pass the bundle events into the domain.
+
+Known limitations (planned improvements):
+
+- History recording is Doctrine-ORM only and lives in an `onFlush` listener; there is no repository port yet.
+- `#[PasswordPolicy]` cannot be used on a DTO/command; the validated object must be the entity.
+- Events expose the entity, not a scalar subject id.
+- For hash formats that `password_verify()` does not recognise, the check clones the entity or temporarily calls
+  `setPassword()` on it.
+- `PasswordHistoryTrait` uses docblock annotations, which Doctrine ORM 3 ignores: map the history entity with
+  attributes yourself.
 
 ## Forms in Twig (REQ-TWIG-005)
 
