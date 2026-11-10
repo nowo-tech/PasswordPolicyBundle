@@ -8,13 +8,18 @@ use Carbon\Carbon;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordReuseDetectedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\CurrentPasswordHistory;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Model\PasswordPolicySubjectInterface;
+use Nowo\PasswordPolicyBundle\Model\PasswordReuseMatch;
 use Nowo\PasswordPolicyBundle\Service\CurrentPasswordMatcherInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
+use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
+use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Util\LogIdentifier;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
@@ -27,6 +32,7 @@ use Symfony\Component\Validator\Exception\UnexpectedValueException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+use function is_object;
 use function is_string;
 use function sprintf;
 
@@ -34,7 +40,9 @@ use function sprintf;
  * Validator for the PasswordPolicy constraint.
  *
  * This validator checks if a password has been used before by comparing it against
- * the password history of the entity implementing HasPasswordPolicyInterface.
+ * the password history of the entity implementing HasPasswordPolicyInterface. On any other object (a command, a
+ * DTO) the subject resolver supplies the entity or a read-only PasswordPolicySubjectInterface, which is checked
+ * through the history port.
  */
 class PasswordPolicyValidator extends ConstraintValidator
 {
@@ -48,6 +56,8 @@ class PasswordPolicyValidator extends ConstraintValidator
      * @param string $logLevel The logging level to use
      * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
      * @param PasswordPolicyConfigurationService|null $configService The configuration service (optional)
+     * @param PasswordPolicySubjectResolverInterface|null $subjectResolver Finds the subject when the validated object is not the entity (optional)
+     * @param PasswordReuseCheckerInterface|null $reuseChecker Checks read-only subjects through the history port (optional)
      */
     public function __construct(
         private readonly PasswordPolicyServiceInterface $passwordPolicyService,
@@ -58,6 +68,8 @@ class PasswordPolicyValidator extends ConstraintValidator
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
         private readonly ?PasswordPolicyConfigurationService $configService = null,
         private readonly ?ClockInterface $clock = null,
+        private readonly ?PasswordPolicySubjectResolverInterface $subjectResolver = null,
+        private readonly ?PasswordReuseCheckerInterface $reuseChecker = null,
     ) {
     }
 
@@ -91,7 +103,21 @@ class PasswordPolicyValidator extends ConstraintValidator
         $entity = $this->context->getObject();
 
         if (!$entity instanceof HasPasswordPolicyInterface) {
-            throw new ValidationException(message: sprintf('Expected validation entity to implements %s', HasPasswordPolicyInterface::class));
+            // A command/DTO: ask the subject resolver for the entity or a read-only subject.
+            $subject = is_object($entity) ? $this->subjectResolver?->resolve($entity) : null;
+
+            if ($subject instanceof PasswordPolicySubjectInterface && !$subject instanceof HasPasswordPolicyInterface
+                && $this->reuseChecker instanceof PasswordReuseCheckerInterface && $constraint instanceof PasswordPolicy) {
+                $this->validateSubject($value, $subject, $constraint, $this->reuseChecker);
+
+                return;
+            }
+
+            if (!$subject instanceof HasPasswordPolicyInterface) {
+                throw new ValidationException(message: sprintf('Expected validation entity to implements %s', HasPasswordPolicyInterface::class));
+            }
+
+            $entity = $subject;
         }
 
         // First, check for exact password match
@@ -131,6 +157,64 @@ class PasswordPolicyValidator extends ConstraintValidator
                 return;
             }
         }
+    }
+
+    /**
+     * Checks a read-only subject through the history port and reports a violation like the entity path.
+     */
+    private function validateSubject(
+        string $value,
+        PasswordPolicySubjectInterface $subject,
+        PasswordPolicy $constraint,
+        PasswordReuseCheckerInterface $reuseChecker,
+    ): void {
+        $match = $reuseChecker->findReuse(
+            $value,
+            $subject,
+            $constraint->checkCurrentPassword,
+            $constraint->detectExtensions,
+            $constraint->extensionMinLength,
+        );
+
+        if (!$match instanceof PasswordReuseMatch) {
+            return;
+        }
+
+        $subjectClass = $subject->getPasswordPolicySubjectClass();
+        $subjectId    = $subject->getPasswordPolicySubjectId();
+
+        $this->eventDispatcher?->dispatch(new PasswordReuseDetectedEvent($subjectClass, $subjectId, $match->type, $match->usedAt));
+
+        if ($this->enableLogging && $this->logger instanceof LoggerInterface) {
+            $this->log($this->logLevel, $match->type === PasswordReuseMatch::TYPE_EXTENSION
+                ? 'Password extension detected (new password is an extension of an old password)'
+                : 'Password reuse attempt detected', [
+                    'user_id'                => $subjectId,
+                    'entity_class'           => $subjectClass,
+                    'password_used_days_ago' => $match->usedAt instanceof DateTimeInterface ? Carbon::instance($match->usedAt)->diffInDays(Carbon::instance($this->now())) : 0,
+                    'match_type'             => $match->type,
+                ]);
+        }
+
+        $isExtension = $match->type === PasswordReuseMatch::TYPE_EXTENSION;
+        $message     = $isExtension && !empty($constraint->extensionMessage) ? $constraint->extensionMessage : $constraint->message;
+
+        $this->context->buildViolation($message)
+                      ->setParameter('{{ days }}', $this->humanDays($match->usedAt))
+                      ->setCode($isExtension ? PasswordPolicy::PASSWORD_EXTENSION : PasswordPolicy::PASSWORD_IN_HISTORY)
+                      ->addViolation();
+    }
+
+    private function humanDays(?DateTimeInterface $usedAt): string
+    {
+        if (!$usedAt instanceof DateTimeInterface) {
+            return '';
+        }
+
+        $localized = Carbon::instance($usedAt);
+        $localized->locale($this->translator->getLocale());
+
+        return $localized->diffForHumans();
     }
 
     /**

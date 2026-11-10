@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\EventListener;
 
+use ArrayObject;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
@@ -11,6 +12,7 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use Mockery;
 use Mockery\MockInterface;
+use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -213,6 +215,75 @@ final class PasswordEntityListenerTest extends UnitTestCase
 
         $history = $listener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
         $this->assertInstanceOf(PasswordHistoryInterface::class, $history);
+    }
+
+    /**
+     * @param ArrayObject<int, object> $events
+     */
+    private function listenerRecordingEvents(ArrayObject $events): PasswordEntityListener
+    {
+        $dispatcher = Mockery::mock(EventDispatcherInterface::class);
+        $dispatcher->shouldReceive('dispatch')->andReturnUsing(static function (object $event) use ($events): object {
+            $events->append($event);
+
+            return $event;
+        });
+
+        $this->emMock->shouldReceive('getUnitOfWork')->andReturn($this->uowMock);
+        $classMetadata = new ClassMetadata(stdClass::class);
+        $this->setAssociationMapping($classMetadata, 'passwordHistory', PasswordHistoryMock::class, 'user');
+        $this->emMock->shouldReceive('getClassMetadata')->andReturn($classMetadata);
+        $this->entityMock->shouldReceive('addPasswordHistory');
+        $this->entityMock->shouldReceive('setPasswordChangedAt');
+        $this->entityMock->shouldReceive('getId')->andReturn(42);
+        $this->passwordHistoryServiceMock->shouldReceive('getHistoryItemsForCleanup')->andReturn([Mockery::mock(PasswordHistoryMock::class)]);
+        $this->emMock->shouldReceive('remove');
+        $this->emMock->shouldReceive('persist');
+        $this->uowMock->shouldReceive('computeChangeSet');
+        $this->uowMock->shouldReceive('recomputeSingleEntityChangeSet');
+
+        return new PasswordEntityListener($this->passwordHistoryServiceMock, 'password', 'passwordHistory', 3, $this->entityMock::class, null, false, 'info', $dispatcher);
+    }
+
+    public function testPostFlushDispatchesScalarChangeRecordedEventOnce(): void
+    {
+        /** @var ArrayObject<int, object> $events */
+        $events   = new ArrayObject();
+        $listener = $this->listenerRecordingEvents($events);
+
+        $listener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
+        self::assertCount(2, $events, 'onFlush keeps dispatching only the entity events');
+
+        $listener->postFlush();
+        $listener->postFlush();
+
+        self::assertCount(3, $events);
+        $recorded = $events[2];
+        self::assertInstanceOf(PasswordChangeRecordedEvent::class, $recorded);
+        self::assertSame($this->entityMock::class, $recorded->getSubjectClass());
+        self::assertSame('42', $recorded->getSubjectId());
+        self::assertSame(1, $recorded->getRemovedEntriesCount());
+    }
+
+    public function testFailedFlushChangesAreNotAnnounced(): void
+    {
+        /** @var ArrayObject<int, object> $events */
+        $events   = new ArrayObject();
+        $listener = $this->listenerRecordingEvents($events);
+
+        $listener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
+        // The next flush (or the kernel reset) starts from scratch: the failed flush never reached postFlush.
+        $listener->reset();
+        $listener->postFlush();
+
+        self::assertCount(2, $events);
+    }
+
+    public function testPostFlushWithoutDispatcherIsANoOp(): void
+    {
+        $listener = new PasswordEntityListener($this->passwordHistoryServiceMock, 'password', 'passwordHistory', 3, $this->entityMock::class);
+        $listener->postFlush();
+        $this->addToAssertionCount(1);
     }
 
     public function testCreatePasswordHistoryNullPassword(): void

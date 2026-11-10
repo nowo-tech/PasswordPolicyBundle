@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Integration\Kernel;
 
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorderInterface;
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface;
 use Nowo\PasswordPolicyBundle\NowoPasswordPolicyBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
@@ -68,6 +70,8 @@ final class PasswordPolicyTestKernel extends Kernel
                         $definition->setPublic(true);
                     }
                 }
+                // The host calls the recorder from its use case: keep it for the DDD port tests.
+                $container->getAlias(PasswordHistoryRecorderInterface::class)->setPublic(true);
             }
         }, PassConfig::TYPE_BEFORE_OPTIMIZATION);
     }
@@ -97,6 +101,9 @@ final class PasswordPolicyTestKernel extends Kernel
         $container->register(UserPasswordHasherInterface::class, UserPasswordHasher::class)
             ->setArguments([new Definition(PasswordHasherFactory::class, [[KernelUser::class => ['algorithm' => 'bcrypt', 'cost' => 4]]])]);
         $container->register('logger', BufferingLogger::class)->setPublic(true);
+        // Host adapter of the history port (no Doctrine in this kernel).
+        $container->register(InMemoryPasswordHistoryRepository::class)->setPublic(true);
+        $container->setAlias(PasswordHistoryRepositoryInterface::class, InMemoryPasswordHistoryRepository::class);
         // Application-defined storage for the flash_throttle_storage_service option.
         $container->register('app.flash_storage', InMemoryFlashThrottleStorage::class);
     }

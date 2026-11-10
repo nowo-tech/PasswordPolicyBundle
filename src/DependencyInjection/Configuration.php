@@ -23,9 +23,9 @@ final class Configuration implements ConfigurationInterface
 
     private const DEFAULT_PASSWORD_FIELD = 'password';
 
-    private const DEFAULT_PASSWORD_HISTORY_FIELD = 'passwordHistory';
+    public const DEFAULT_PASSWORD_HISTORY_FIELD = 'passwordHistory';
 
-    private const DEFAULT_PASSWORDS_TO_REMEMBER = 3;
+    public const DEFAULT_PASSWORDS_TO_REMEMBER = 3;
 
     private const DEFAULT_EXPIRY_LISTENER_PRIORITY = 0;
 
@@ -59,7 +59,7 @@ final class Configuration implements ConfigurationInterface
               ->useAttributeAsKey('class')
               ->cannotBeEmpty()
               ->isRequired()
-              ->info('Configuration for entities that implement HasPasswordPolicyInterface. Each entity class can have its own password policy settings.')
+              ->info('Configuration for entities that implement HasPasswordPolicyInterface (or, with history_listener: false, any subject class). Each class can have its own password policy settings.')
               ->arrayPrototype()
                 ->addDefaultsIfNotSet()
                 ->children()
@@ -106,6 +106,10 @@ final class Configuration implements ConfigurationInterface
                   ->integerNode('extension_min_length')
                     ->defaultValue(4)
                     ->info('Minimum length of the base password to consider for extension detection. Only passwords longer than this value will be checked for extensions. Default is 4.')
+                  ->end()
+                  ->booleanNode('history_listener')
+                    ->defaultTrue()
+                    ->info('Record the password history in the Doctrine onFlush listener (default). Set false to record it yourself through PasswordHistoryRecorderInterface (e.g. a class that is not a HasPasswordPolicyInterface entity); the listener then neither writes history nor stamps passwordChangedAt for this class.')
                   ->end()
                 ->end()
               ->end()

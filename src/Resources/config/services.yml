@@ -25,3 +25,35 @@ services:
   Nowo\PasswordPolicyBundle\Service\PasswordExpiryService:
     arguments:
       $tokenStorage: '@security.token_storage'
+
+  # DDD / hexagonal ports: alias the interfaces to your own adapters to replace the defaults.
+  Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository:
+    arguments:
+      $managerRegistry: '@?doctrine'
+
+  Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface:
+    alias: Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository
+
+  Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder: ~
+
+  Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorderInterface:
+    alias: Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder
+
+  Nowo\PasswordPolicyBundle\Subject\DefaultPasswordPolicySubjectResolver: ~
+
+  Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface:
+    alias: Nowo\PasswordPolicyBundle\Subject\DefaultPasswordPolicySubjectResolver
+
+  Nowo\PasswordPolicyBundle\Subject\DefaultPasswordHashVerifier:
+    arguments:
+      $passwordHasherFactory: '@?security.password_hasher_factory'
+
+  Nowo\PasswordPolicyBundle\Subject\PasswordHashVerifierInterface:
+    alias: Nowo\PasswordPolicyBundle\Subject\DefaultPasswordHashVerifier
+
+  Nowo\PasswordPolicyBundle\Subject\PasswordReuseChecker:
+    arguments:
+      $configService: '@Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService'
+
+  Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface:
+    alias: Nowo\PasswordPolicyBundle\Subject\PasswordReuseChecker

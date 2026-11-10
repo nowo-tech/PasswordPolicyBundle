@@ -6,6 +6,7 @@ namespace Nowo\PasswordPolicyBundle\Event;
 
 use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Util\SubjectId;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
@@ -46,5 +47,21 @@ class PasswordChangedEvent extends Event
     public function getChangedAt(): DateTimeInterface
     {
         return $this->changedAt;
+    }
+
+    /**
+     * Class of the user (without Doctrine proxy prefix), for subscribers that must not depend on the entity.
+     */
+    public function getSubjectClass(): string
+    {
+        return SubjectId::classOf($this->user);
+    }
+
+    /**
+     * Identifier of the user as a string ('' when it has no scalar/Stringable id).
+     */
+    public function getSubjectId(): string
+    {
+        return SubjectId::of($this->user->getId());
     }
 }

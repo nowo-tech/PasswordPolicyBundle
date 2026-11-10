@@ -8,9 +8,20 @@ use Nowo\PasswordPolicyBundle\DependencyInjection\Configuration;
 use Nowo\PasswordPolicyBundle\DependencyInjection\PasswordPolicyExtension;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
+use Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository;
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder;
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorderInterface;
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
+use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
+use Nowo\PasswordPolicyBundle\Subject\DefaultPasswordHashVerifier;
+use Nowo\PasswordPolicyBundle\Subject\DefaultPasswordPolicySubjectResolver;
+use Nowo\PasswordPolicyBundle\Subject\PasswordHashVerifierInterface;
+use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
+use Nowo\PasswordPolicyBundle\Subject\PasswordReuseChecker;
+use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use ReflectionClass;
@@ -564,5 +575,57 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $reference = $method->invoke($this->extension, $container, $config);
 
         $this->assertSame('app.custom_flash_throttle', (string) $reference);
+    }
+
+    public function testListenerAlsoDispatchesOnPostFlush(): void
+    {
+        $container       = new ContainerBuilder();
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+        $this->extension->load([['entities' => [$mockEntityClass => ['reset_password_route_name' => 'reset']]]], $container);
+
+        $listener = $container->getDefinition('nowo_password_policy.entity_listener.' . strtolower(str_replace('\\', '_', $mockEntityClass)));
+        $this->assertSame([['event' => 'onFlush'], ['event' => 'postFlush']], $listener->getTag('doctrine.event_listener'));
+    }
+
+    public function testHistoryListenerFalseSkipsTheListenerAndAcceptsAnySubjectClass(): void
+    {
+        $container = new ContainerBuilder();
+        $this->extension->load([['entities' => [
+            stdClass::class => [
+                'reset_password_route_name' => 'reset',
+                'history_listener'          => false,
+                'passwords_to_remember'     => 5,
+                'password_history_field'    => 'previousPasswords',
+            ],
+        ]]], $container);
+
+        $this->assertFalse($container->hasDefinition('nowo_password_policy.entity_listener.stdclass'));
+        $this->assertTrue($container->hasDefinition('password_expiry_configuration.' . stdClass::class));
+
+        $configCalls = $container->getDefinition(PasswordPolicyConfigurationService::class)->getMethodCalls();
+        $this->assertSame(5, $configCalls[0][1][1]['passwords_to_remember']);
+
+        $repository = $container->getDefinition(DoctrinePasswordHistoryRepository::class);
+        $this->assertSame([stdClass::class => 'previousPasswords'], $repository->getArgument('$historyFields'));
+    }
+
+    public function testPortsAreWiredWithAliases(): void
+    {
+        $container       = new ContainerBuilder();
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+        $this->extension->load([['entities' => [$mockEntityClass => ['reset_password_route_name' => 'reset']], 'log_level' => 'notice']], $container);
+
+        $this->assertSame(DoctrinePasswordHistoryRepository::class, (string) $container->getAlias(PasswordHistoryRepositoryInterface::class));
+        $this->assertSame(PasswordHistoryRecorder::class, (string) $container->getAlias(PasswordHistoryRecorderInterface::class));
+        $this->assertSame(DefaultPasswordPolicySubjectResolver::class, (string) $container->getAlias(PasswordPolicySubjectResolverInterface::class));
+        $this->assertSame(PasswordReuseChecker::class, (string) $container->getAlias(PasswordReuseCheckerInterface::class));
+        $this->assertSame(DefaultPasswordHashVerifier::class, (string) $container->getAlias(PasswordHashVerifierInterface::class));
+
+        $recorder = $container->getDefinition(PasswordHistoryRecorder::class);
+        $this->assertSame('notice', $recorder->getArgument('$logLevel'));
+
+        $validator = $container->getDefinition(PasswordPolicyValidator::class);
+        $this->assertSame(PasswordPolicySubjectResolverInterface::class, (string) $validator->getArgument('$subjectResolver'));
+        $this->assertSame(PasswordReuseCheckerInterface::class, (string) $validator->getArgument('$reuseChecker'));
     }
 }

@@ -8,6 +8,8 @@ use Exception;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
+use Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository;
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder;
 use Nowo\PasswordPolicyBundle\Model\ExpiryFlashThrottleStorageType;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
@@ -17,6 +19,8 @@ use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
+use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
+use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
@@ -121,7 +125,9 @@ final class PasswordPolicyExtension extends Extension
                 $this->validateRoutePatternSyntax($resetPattern, $entityClass, 'reset_password_route_pattern');
             }
 
-            $this->addEntityListener($containerBuilder, $entityClass, $settings, $config);
+            if ($settings['history_listener'] ?? true) {
+                $this->addEntityListener($containerBuilder, $entityClass, $settings, $config);
+            }
 
             $passwordExpiryConfig = $containerBuilder->register(
                 'password_expiry_configuration.' . $entityClass,
@@ -138,6 +144,8 @@ final class PasswordPolicyExtension extends Extension
 
             $definition->addMethodCall('addEntity', [$passwordExpiryConfig]);
         }
+
+        $this->configurePorts($containerBuilder, $config);
 
         if ($containerBuilder->hasDefinition(PasswordPolicyService::class)) {
             $containerBuilder->getDefinition(PasswordPolicyService::class)->setArgument(
@@ -304,6 +312,7 @@ final class PasswordPolicyExtension extends Extension
         );
 
         $definition->addTag('doctrine.event_listener', ['event' => 'onFlush']);
+        $definition->addTag('doctrine.event_listener', ['event' => 'postFlush']);
         $definition->addTag('kernel.reset', ['method' => 'reset']);
 
         $definition->setArgument('$passwordField', $settings['password_field']);
@@ -318,6 +327,31 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
 
         return $definition;
+    }
+
+    /**
+     * Wires the DDD ports (history repository, recorder, subject resolver, reuse checker) with the bundle settings.
+     *
+     * @param array<string, mixed> $config The configuration array
+     */
+    private function configurePorts(ContainerBuilder $containerBuilder, array $config): void
+    {
+        if ($containerBuilder->hasDefinition(DoctrinePasswordHistoryRepository::class)) {
+            $containerBuilder->getDefinition(DoctrinePasswordHistoryRepository::class)->setArgument(
+                '$historyFields',
+                array_map(static fn (array $settings): string => (string) $settings['password_history_field'], $config['entities']),
+            );
+        }
+
+        if ($containerBuilder->hasDefinition(PasswordHistoryRecorder::class)) {
+            $containerBuilder->getDefinition(PasswordHistoryRecorder::class)
+                ->setArgument('$configService', new Reference(PasswordPolicyConfigurationService::class))
+                ->setArgument('$eventDispatcher', $this->optionalReference('event_dispatcher'))
+                ->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE))
+                ->setArgument('$logger', $this->optionalReference('logger'))
+                ->setArgument('$enableLogging', $config['enable_logging'] ?? true)
+                ->setArgument('$logLevel', $config['log_level'] ?? 'info');
+        }
     }
 
     /**
@@ -340,6 +374,8 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$eventDispatcher', $this->optionalReference('event_dispatcher'));
         $definition->setArgument('$configService', new Reference(PasswordPolicyConfigurationService::class));
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
+        $definition->setArgument('$subjectResolver', new Reference(PasswordPolicySubjectResolverInterface::class));
+        $definition->setArgument('$reuseChecker', new Reference(PasswordReuseCheckerInterface::class));
     }
 
     /**
@@ -359,6 +395,7 @@ final class PasswordPolicyExtension extends Extension
             $entityConfig = [
                 'detect_password_extensions' => $settings['detect_password_extensions'] ?? false,
                 'extension_min_length'       => $settings['extension_min_length'] ?? 4,
+                'passwords_to_remember'      => $settings['passwords_to_remember'],
             ];
             $definition->addMethodCall('setEntityConfiguration', [$entityClass, $entityConfig]);
         }
