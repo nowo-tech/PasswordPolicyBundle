@@ -63,6 +63,12 @@ No change is required: every new port is wired to a default that keeps the 1.9 b
 - The Doctrine entity listener is also tagged on `postFlush`, where it dispatches the new
   `PasswordChangeRecordedEvent` (scalar subject class and id) after each recorded change. Subscribers that count every
   event the bundle dispatches will see it.
+- `PasswordEntityListener` (not final) has a new public method `postFlush()`; a subclass that already defines one must
+  call the parent.
+- Passwords longer than 72 bytes or containing a NUL byte, hashed by Symfony's `auto` / `bcrypt` hasher, are now matched
+  by the reuse checks (they were never matched before): such users may now see a "password used before" violation.
+- `PasswordHistoryRecorderInterface::record()` and the read-only subject checker throw `ConfigurationException` for a
+  subject class that matches no `nowo_password_policy.entities` key.
 - `PasswordPolicyValidator::__construct()` has two new optional arguments, `$subjectResolver` and `$reuseChecker`
   (wired by the extension). Without them, `#[PasswordPolicy]` on a non-entity object still throws `ValidationException`.
 - The events `PasswordChangedEvent`, `PasswordExpiredEvent`, `PasswordHistoryCreatedEvent` and

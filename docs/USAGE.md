@@ -118,7 +118,7 @@ services:
 ```
 
 ```php
-// App\Application\User\ChangePasswordHandler
+// App\Application\User\ChangePasswordHandler — $command->userId is set server-side from the authenticated user
 public function __invoke(ChangePassword $command): void
 {
     $user         = $this->users->get(new UserId($command->userId));
@@ -148,21 +148,46 @@ final class ChangePassword implements PasswordPolicySubjectAwareInterface
         public readonly string $userId,
         #[PasswordPolicy(detectExtensions: true)]
         public readonly string $newPassword,
-        private readonly ?PasswordPolicySubjectInterface $subject = null, // filled by the controller / adapter
+        private readonly PasswordPolicySubjectInterface $subject,
     ) {
     }
 
-    public function getPasswordPolicySubject(): ?PasswordPolicySubjectInterface
+    public function getPasswordPolicySubject(): PasswordPolicySubjectInterface
     {
-        return $this->subject; // e.g. new PasswordPolicySubject(User::class, $userId, $currentHash, $changedAt)
+        return $this->subject;
     }
 }
+
+// In the controller: only the new password comes from the request; the subject comes from the logged-in user.
+$account = $this->security->getUser();                          // your SecurityUser adapter
+$user    = $this->users->get(new UserId($account->getUserIdentifier()));
+$command = new ChangePassword(
+    $user->id()->toString(),
+    $form->get('newPassword')->getData(),
+    new PasswordPolicySubject(User::class, $user->id()->toString(), $user->passwordHash(), $user->passwordChangedAt()),
+);
 ```
 
-Or alias `PasswordPolicySubjectResolverInterface` to a resolver that looks the subject up from the command's id.
+> **Warning:** the default resolver trusts the subject the object exposes. Build it from the authenticated user (the
+> security token) or a server-side lookup, never from request data, and do not let the serializer or a form populate a
+> `PasswordPolicySubjectInterface` or the user id: a client could otherwise pick another or a fresh subject (no history)
+> and bypass the reuse check.
+
+Returning `null` is an error: the validator throws `ValidationException` (fail closed). Or alias
+`PasswordPolicySubjectResolverInterface` to a resolver that looks the subject up from the authenticated user.
 Violations, codes (`PASSWORD_IN_HISTORY`, `PASSWORD_EXTENSION`) and messages are the same as on the entity; the event is
 `PasswordReuseDetectedEvent` (scalar) instead of `PasswordReuseAttemptedEvent`. An object the resolver does not
 support still throws `ValidationException`.
+
+The subject class must match a `nowo_password_policy.entities` key (exactly, without a Doctrine proxy prefix, or as a
+subclass / implementation of the key); otherwise the checker and the recorder throw `ConfigurationException` instead of
+silently applying default settings.
+
+Hashes are verified with `password_verify()` (bcrypt and argon2, including Symfony's pre-hashing of bcrypt passwords
+over 72 bytes or with a NUL byte). For other formats (legacy `migrate_from` hashes, MessageDigest, Pbkdf2, custom
+hashers) the verifier asks the Symfony hasher configured **for the subject class**: add a `security.password_hashers`
+entry for your domain class (it is often not the security user class), or alias `PasswordHashVerifierInterface` —
+otherwise those hashes never match and their reuse is accepted.
 
 ### Events
 

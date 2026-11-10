@@ -50,6 +50,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Target 1.10.0 — DDD / hexagonal ports: history repository + recorder, `#[PasswordPolicy]` on commands/DTOs, read-only
 subject, scalar events. Defaults unchanged. See [UPGRADING](UPGRADING.md#to-1100).
 
+### Security
+
+- **Reuse checks failed open for long or NUL-containing bcrypt passwords** (affects 1.5.0–1.9.0, entity path).
+  Symfony's `auto` / `bcrypt` `NativePasswordHasher` stores a password longer than 72 bytes or containing a NUL byte
+  as `bcrypt(base64(sha512(password)))`; since 1.5.0 the history, current-password and extension checks answered
+  `$2y$` hashes with `password_verify()` alone and never matched them, so such users could reuse their passwords.
+  Both the entity path (`PasswordPolicyService`) and the new `DefaultPasswordHashVerifier` now retry with the
+  pre-hashed form (audit JZ-M1).
+
 ### Added
 
 - `History\PasswordHistoryRepositoryInterface` port (`findRecent()`, `add()`, `prune()` by subject class + string id)
@@ -71,8 +80,12 @@ subject, scalar events. Defaults unchanged. See [UPGRADING](UPGRADING.md#to-1100
 
 ### Fixed
 
-- Extension detection threw a `TypeError` when a stripped base password was all digits (e.g. `12345!`): PHP turned the
-  candidate into an integer array key. Candidates are now always strings.
+- Extension detection threw a `TypeError` (HTTP 500 with `detect_password_extensions`, no bypass; 1.2.0–1.9.0) when a
+  stripped base password was all digits (e.g. `12345!`): PHP turned the candidate into an integer array key.
+  Candidates are now always strings.
+- The read-only subject checker and the recorder resolve the subject class to its configured key (proxy prefix,
+  subclasses) and throw `ConfigurationException` for an unconfigured class instead of applying default settings
+  (which could prune history rows to 3).
 
 ### Changed
 
