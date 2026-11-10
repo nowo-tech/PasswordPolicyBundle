@@ -14,11 +14,19 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * This trait provides the basic structure for password history entries,
  * including password storage, creation timestamp, and salt management.
+ *
+ * Mapping: the `@ORM\...` docblocks below are legacy Doctrine annotations. Only the annotation driver of Doctrine
+ * ORM 2 reads them (ORM 3 has no annotation driver), and they are kept unchanged so existing ORM 2 annotation
+ * mappings do not change. With attributes, XML or ORM 3 the trait maps nothing: map `password`, `salt` (nullable) and
+ * `createdAt` in your history entity (or its XML mapping) with your own identifier — do not use the password hash
+ * as the identifier. See docs/USAGE.md, "Password history".
  */
 trait PasswordHistoryTrait
 {
     /**
      * The hashed password.
+     *
+     * Legacy ORM 2 annotations (ignored by ORM 3 and by the attribute/XML drivers); do not rely on the Id mapping.
      *
      * @ORM\Column(type="string")
      *

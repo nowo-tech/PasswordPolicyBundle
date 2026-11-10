@@ -7,16 +7,19 @@ namespace Nowo\PasswordPolicyBundle\EventListener;
 use Carbon\Carbon;
 use DateTime;
 use DateTimeImmutable;
+use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Events;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryServiceInterface;
+use Nowo\PasswordPolicyBundle\Util\SubjectId;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -34,6 +37,12 @@ use function sprintf;
  *
  * This listener listens to Doctrine's onFlush event and automatically creates password
  * history entries when a password is changed, and updates the passwordChangedAt timestamp.
+ * On postFlush it dispatches PasswordChangeRecordedEvent (scalar ids) for those changes. Do not flush from a
+ * postFlush listener that runs before this one: the nested flush starts a new change set and the outer flush's
+ * PasswordChangeRecordedEvent is not dispatched.
+ *
+ * It is the default history adapter; set history_listener: false on an entity to record the history yourself
+ * through PasswordHistoryRecorderInterface.
  */
 class PasswordEntityListener implements ResetInterface
 {
@@ -44,6 +53,14 @@ class PasswordEntityListener implements ResetInterface
      * @var array<string, true>
      */
     private array $processedPasswords = [];
+
+    /**
+     * Changes recorded in the current flush, dispatched as PasswordChangeRecordedEvent on postFlush (after commit).
+     * Cleared at the start of every flush, so the changes of a failed flush are never announced.
+     *
+     * @var list<array{HasPasswordPolicyInterface, DateTimeInterface, int}>
+     */
+    private array $pendingChanges = [];
 
     /**
      * PasswordEntityListener constructor.
@@ -202,6 +219,8 @@ class PasswordEntityListener implements ResetInterface
             // Dispatch PasswordChangedEvent
             $changedEvent = new PasswordChangedEvent($hasPasswordPolicy, $changedAt);
             $this->eventDispatcher->dispatch($changedEvent);
+
+            $this->pendingChanges[] = [$hasPasswordPolicy, $changedAt, count($stalePasswords)];
         }
 
         // Log password change
@@ -217,9 +236,32 @@ class PasswordEntityListener implements ResetInterface
         return $history;
     }
 
+    /**
+     * Dispatches PasswordChangeRecordedEvent (scalar ids) for the changes of the flush that just committed.
+     */
+    public function postFlush(): void
+    {
+        $pendingChanges       = $this->pendingChanges;
+        $this->pendingChanges = [];
+
+        if (!$this->eventDispatcher instanceof EventDispatcherInterface) {
+            return;
+        }
+
+        foreach ($pendingChanges as [$user, $changedAt, $removedEntriesCount]) {
+            $this->eventDispatcher->dispatch(new PasswordChangeRecordedEvent(
+                SubjectId::classOf($user),
+                SubjectId::of($user->getId()),
+                DateTimeImmutable::createFromInterface($changedAt),
+                $removedEntriesCount,
+            ));
+        }
+    }
+
     public function reset(): void
     {
         $this->processedPasswords = [];
+        $this->pendingChanges     = [];
     }
 
     /**
