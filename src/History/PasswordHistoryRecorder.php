@@ -8,10 +8,13 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\DependencyInjection\Configuration;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
+use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+
+use function sprintf;
 
 /**
  * Default {@see PasswordHistoryRecorderInterface}: stores the previous hash through the history port, prunes it to
@@ -42,8 +45,13 @@ final readonly class PasswordHistoryRecorder implements PasswordHistoryRecorderI
         $changedAt = $changedAt instanceof DateTimeInterface
             ? DateTimeImmutable::createFromInterface($changedAt)
             : ($this->clock?->now() ?? new DateTimeImmutable());
-        $limit = (int) ($this->configService?->getEntityConfiguration($subjectClass, 'passwords_to_remember', Configuration::DEFAULT_PASSWORDS_TO_REMEMBER)
-            ?? Configuration::DEFAULT_PASSWORDS_TO_REMEMBER);
+        $limit = Configuration::DEFAULT_PASSWORDS_TO_REMEMBER;
+        if ($this->configService instanceof PasswordPolicyConfigurationService) {
+            // Never prune with default settings: an unconfigured class would lose history rows.
+            $subjectClass = $this->configService->resolveEntityClass($subjectClass)
+                ?? throw new ConfigurationException(sprintf('Password policy subject class %s matches no nowo_password_policy.entities key: configure it (or a parent class / interface) before recording its history.', $subjectClass));
+            $limit = (int) $this->configService->getEntityConfiguration($subjectClass, 'passwords_to_remember', Configuration::DEFAULT_PASSWORDS_TO_REMEMBER);
+        }
 
         // @igor-ignore - Writes through the history port (persistence I/O), no state is kept in this service.
         $this->repository->add($subjectClass, $subjectId, $previousHash, $changedAt);

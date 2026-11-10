@@ -14,6 +14,7 @@ use Mockery;
 use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository;
+use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryEntry;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryService;
@@ -162,5 +163,36 @@ final class DoctrinePasswordHistoryRepositoryTest extends UnitTestCase
 
         self::assertInstanceOf(ArrayCollection::class, $this->user->getPasswordHistory());
         self::assertCount(1, $this->user->getPasswordHistory());
+    }
+
+    public function testSubjectWithoutIdHasNoHistory(): void
+    {
+        $this->em->shouldNotReceive('find');
+
+        self::assertSame([], $this->repository()->findRecent(KernelUser::class, '', 3));
+        self::assertSame(0, $this->repository()->prune(KernelUser::class, '', 3));
+    }
+
+    public function testHistoryFieldOfAConfiguredParent(): void
+    {
+        $registry = Mockery::mock(ManagerRegistry::class);
+        $registry->shouldReceive('getManagerForClass')->andReturn($this->em);
+        $repository = new DoctrinePasswordHistoryRepository($registry, new PasswordHistoryService(), [HasPasswordPolicyInterface::class => 'oldPasswords']);
+        $this->em->shouldReceive('getClassMetadata')->andReturn(new ClassMetadata(KernelUser::class));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('no "oldPasswords" association');
+        $repository->add(KernelUser::class, '7', 'old-hash', new DateTimeImmutable());
+    }
+
+    public function testUnconfiguredClassUsesTheDefaultHistoryField(): void
+    {
+        $registry = Mockery::mock(ManagerRegistry::class);
+        $registry->shouldReceive('getManagerForClass')->andReturn($this->em);
+        $this->em->shouldReceive('getClassMetadata')->andReturn(new ClassMetadata(KernelUser::class));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('no "passwordHistory" association');
+        (new DoctrinePasswordHistoryRepository($registry, new PasswordHistoryService()))->add(KernelUser::class, '7', 'old-hash', new DateTimeImmutable());
     }
 }

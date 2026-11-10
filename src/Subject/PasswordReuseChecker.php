@@ -7,11 +7,14 @@ namespace Nowo\PasswordPolicyBundle\Subject;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\DependencyInjection\Configuration;
+use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordPolicySubjectInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordReuseMatch;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Util\PasswordExtensionCandidates;
+
+use function sprintf;
 
 /**
  * Default {@see PasswordReuseCheckerInterface}: same order and rules as the entity check (newest
@@ -33,7 +36,7 @@ final readonly class PasswordReuseChecker implements PasswordReuseCheckerInterfa
         ?bool $detectExtensions = null,
         ?int $extensionMinLength = null,
     ): ?PasswordReuseMatch {
-        $class   = $subject->getPasswordPolicySubjectClass();
+        $class   = $this->configuredClass($subject->getPasswordPolicySubjectClass());
         $limit   = (int) $this->setting($class, 'passwords_to_remember', Configuration::DEFAULT_PASSWORDS_TO_REMEMBER);
         $history = $this->repository->findRecent($class, $subject->getPasswordPolicySubjectId(), $limit);
 
@@ -68,6 +71,21 @@ final readonly class PasswordReuseChecker implements PasswordReuseCheckerInterfa
         }
 
         return null;
+    }
+
+    /**
+     * The configured key for the subject class; without a configuration service (manual construction) the class as is.
+     *
+     * @throws ConfigurationException When no nowo_password_policy.entities key applies to the class
+     */
+    private function configuredClass(string $class): string
+    {
+        if (!$this->configService instanceof PasswordPolicyConfigurationService) {
+            return $class;
+        }
+
+        return $this->configService->resolveEntityClass($class)
+            ?? throw new ConfigurationException(sprintf('Password policy subject class %s matches no nowo_password_policy.entities key: configure it (or a parent class / interface) so its settings apply.', $class));
     }
 
     private function setting(string $class, string $key, mixed $default): mixed

@@ -36,7 +36,14 @@ final class SubjectId
      */
     public static function classOf(object $subject): string
     {
-        $class    = $subject::class;
+        return self::withoutProxyPrefix($subject::class);
+    }
+
+    /**
+     * The class name without a Doctrine proxy prefix.
+     */
+    public static function withoutProxyPrefix(string $class): string
+    {
         $position = strrpos($class, self::PROXY_MARKER);
 
         return $position === false ? $class : substr($class, $position + strlen(self::PROXY_MARKER));

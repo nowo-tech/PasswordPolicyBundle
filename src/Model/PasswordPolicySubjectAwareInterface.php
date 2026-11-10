@@ -11,7 +11,10 @@ namespace Nowo\PasswordPolicyBundle\Model;
 interface PasswordPolicySubjectAwareInterface
 {
     /**
-     * The subject, a {@see HasPasswordPolicyInterface} entity (Doctrine path), or null when unknown.
+     * The subject: a read-only subject, or a {@see HasPasswordPolicyInterface} entity (checked like the entity itself).
+     *
+     * Build it from the authenticated user or a server-side lookup, never from request data. Null is an error: the
+     * validator fails closed and throws a ValidationException.
      */
     public function getPasswordPolicySubject(): HasPasswordPolicyInterface|PasswordPolicySubjectInterface|null;
 }

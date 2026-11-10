@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Service;
 
+use Nowo\PasswordPolicyBundle\Util\SubjectId;
+
+use function array_keys;
+use function is_a;
+
 /**
  * Service for storing and retrieving password policy configurations per entity.
  *
@@ -54,5 +59,29 @@ final class PasswordPolicyConfigurationService
     public function hasEntityConfiguration(string $entityClass, string $key): bool
     {
         return isset($this->entityConfigurations[$entityClass][$key]);
+    }
+
+    /**
+     * The configured class (a key of nowo_password_policy.entities) whose settings apply to $class: the exact key,
+     * the class without a Doctrine proxy prefix, then the first key $class is an instance of. Null when none applies.
+     */
+    public function resolveEntityClass(string $class): ?string
+    {
+        if (isset($this->entityConfigurations[$class])) {
+            return $class;
+        }
+
+        $class = SubjectId::withoutProxyPrefix($class);
+        if (isset($this->entityConfigurations[$class])) {
+            return $class;
+        }
+
+        foreach (array_keys($this->entityConfigurations) as $configuredClass) {
+            if (is_a($class, $configuredClass, true)) {
+                return $configuredClass;
+            }
+        }
+
+        return null;
     }
 }

@@ -20,6 +20,7 @@ use function array_map;
 use function array_slice;
 use function class_exists;
 use function count;
+use function is_a;
 use function max;
 use function method_exists;
 use function sprintf;
@@ -66,7 +67,7 @@ final readonly class DoctrinePasswordHistoryRepository implements PasswordHistor
         }
 
         $entityManager = $this->entityManager($subjectClass);
-        $field         = $this->historyFields[$subjectClass] ?? Configuration::DEFAULT_PASSWORD_HISTORY_FIELD;
+        $field         = $this->historyField($subjectClass);
         $metadata      = $entityManager->getClassMetadata($entity::class);
         if (!isset($metadata->associationMappings[$field])) {
             throw new RuntimeException(sprintf('%s has no "%s" association (password_history_field).', $subjectClass, $field));
@@ -112,6 +113,11 @@ final readonly class DoctrinePasswordHistoryRepository implements PasswordHistor
 
     private function find(string $subjectClass, string $subjectId): ?object
     {
+        // A subject without id (e.g. being registered) has no history; '' is not a valid id for every id type.
+        if ($subjectId === '') {
+            return null;
+        }
+
         return $this->entityManager($subjectClass)->find($this->className($subjectClass), $subjectId);
     }
 
@@ -123,6 +129,24 @@ final readonly class DoctrinePasswordHistoryRepository implements PasswordHistor
         }
 
         return $entityManager;
+    }
+
+    /**
+     * password_history_field of the configured class that applies (exact key, then a parent class / interface).
+     */
+    private function historyField(string $subjectClass): string
+    {
+        if (isset($this->historyFields[$subjectClass])) {
+            return $this->historyFields[$subjectClass];
+        }
+
+        foreach ($this->historyFields as $configuredClass => $field) {
+            if (is_a($subjectClass, $configuredClass, true)) {
+                return $field;
+            }
+        }
+
+        return Configuration::DEFAULT_PASSWORD_HISTORY_FIELD;
     }
 
     /**

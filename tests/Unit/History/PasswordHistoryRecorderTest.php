@@ -7,10 +7,13 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\History;
 use DateTimeImmutable;
 use Mockery;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
+use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder;
+use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryEntry;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Tests\Integration\Kernel\InMemoryPasswordHistoryRepository;
+use Nowo\PasswordPolicyBundle\Tests\Integration\Kernel\KernelUser;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Clock\ClockInterface;
@@ -109,5 +112,33 @@ final class PasswordHistoryRecorderTest extends UnitTestCase
         (new PasswordHistoryRecorder(new InMemoryPasswordHistoryRepository(), null, null, null, $logger, true, $level))
             ->record(self::SUBJECT_CLASS, 'u-1', 'hash');
         $this->addToAssertionCount(1);
+    }
+
+    public function testUnconfiguredClassThrowsBeforeTouchingTheHistory(): void
+    {
+        $repository = new InMemoryPasswordHistoryRepository();
+        $config     = new PasswordPolicyConfigurationService();
+        $config->setEntityConfiguration('App\Domain\Admin', ['passwords_to_remember' => 10]);
+
+        try {
+            (new PasswordHistoryRecorder($repository, $config))->record(self::SUBJECT_CLASS, 'u-1', 'hash');
+            self::fail('ConfigurationException expected');
+        } catch (ConfigurationException) {
+            self::assertSame([], $repository->findRecent(self::SUBJECT_CLASS, 'u-1', 10));
+        }
+    }
+
+    public function testSubclassUsesTheConfiguredParentKey(): void
+    {
+        $repository = new InMemoryPasswordHistoryRepository();
+        $config     = new PasswordPolicyConfigurationService();
+        $config->setEntityConfiguration(HasPasswordPolicyInterface::class, ['passwords_to_remember' => 10]);
+        $recorder = new PasswordHistoryRecorder($repository, $config);
+
+        foreach (range(1, 5) as $i) {
+            self::assertSame(0, $recorder->record(KernelUser::class, '7', 'hash-' . $i, new DateTimeImmutable('2026-01-0' . $i)));
+        }
+
+        self::assertCount(5, $repository->findRecent(HasPasswordPolicyInterface::class, '7', 10));
     }
 }

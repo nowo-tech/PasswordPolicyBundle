@@ -37,7 +37,9 @@ use function sprintf;
  *
  * This listener listens to Doctrine's onFlush event and automatically creates password
  * history entries when a password is changed, and updates the passwordChangedAt timestamp.
- * On postFlush it dispatches PasswordChangeRecordedEvent (scalar ids) for those changes.
+ * On postFlush it dispatches PasswordChangeRecordedEvent (scalar ids) for those changes. Do not flush from a
+ * postFlush listener that runs before this one: the nested flush starts a new change set and the outer flush's
+ * PasswordChangeRecordedEvent is not dispatched.
  *
  * It is the default history adapter; set history_listener: false on an entity to record the history yourself
  * through PasswordHistoryRecorderInterface.

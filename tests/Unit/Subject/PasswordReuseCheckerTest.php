@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\Subject;
 
 use DateTimeImmutable;
+use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\Model\PasswordPolicySubject;
 use Nowo\PasswordPolicyBundle\Model\PasswordReuseMatch;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
@@ -95,5 +96,14 @@ final class PasswordReuseCheckerTest extends TestCase
         $other = new PasswordPolicySubject(self::SUBJECT_CLASS, 'u-2');
 
         self::assertNull($this->checker()->findReuse('Old-password1', $other));
+    }
+
+    public function testUnconfiguredClassThrowsInsteadOfUsingDefaults(): void
+    {
+        $config = new PasswordPolicyConfigurationService();
+        $config->setEntityConfiguration('App\Domain\Admin', []);
+
+        $this->expectException(ConfigurationException::class);
+        $this->checker($config)->findReuse('Old-password1', $this->subject());
     }
 }
