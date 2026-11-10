@@ -10,6 +10,7 @@ use Error;
 use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Util\NativeHashVerifier;
 use Nowo\PasswordPolicyBundle\Util\PasswordExtensionCandidates;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -106,7 +107,8 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
         // It works with bcrypt, argon2, and any hash generated with password_hash()
         // It's also safe to call on any hash format - it will return false if it doesn't match
         if (function_exists('password_verify')) {
-            $result = password_verify($plainPassword, $hashedPassword);
+            // Also matches Symfony's sha512 pre-hashing of bcrypt passwords over 72 bytes or with a NUL byte.
+            $result = NativeHashVerifier::verify($plainPassword, $hashedPassword);
             if ($result) {
                 return true;
             }

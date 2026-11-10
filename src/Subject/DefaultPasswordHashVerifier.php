@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Subject;
 
 use Exception;
+use Nowo\PasswordPolicyBundle\Util\NativeHashVerifier;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 
 use function password_get_info;
-use function password_verify;
 
 /**
- * Default {@see PasswordHashVerifierInterface}: password_verify() for password_hash() formats (bcrypt, argon2), then
+ * Default {@see PasswordHashVerifierInterface}: password_verify() for password_hash() formats (bcrypt, argon2, including
+ * Symfony's sha512 pre-hashing of bcrypt passwords over 72 bytes or with a NUL byte), then
  * the Symfony password hasher configured for the subject class (security.password_hashers) for other formats.
  * Hashes are never compared directly.
  */
@@ -28,7 +29,7 @@ final readonly class DefaultPasswordHashVerifier implements PasswordHashVerifier
             return false;
         }
 
-        if (password_verify($plainPassword, $passwordHash)) {
+        if (NativeHashVerifier::verify($plainPassword, $passwordHash)) {
             return true;
         }
 
