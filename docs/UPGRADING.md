@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.10.0](#to-1100)
 - [To 1.9.0](#to-190)
 - [To 1.8.0](#to-180)
 - [To 1.7.0](#to-170)
@@ -48,6 +49,27 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.10.0
+
+From **1.9.0**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
+
+No change is required: every new port is wired to a default that keeps the 1.9 behaviour.
+
+- The Doctrine entity listener is also tagged on `postFlush`, where it dispatches the new
+  `PasswordChangeRecordedEvent` (scalar subject class and id) after each recorded change. Subscribers that count every
+  event the bundle dispatches will see it.
+- `PasswordPolicyValidator::__construct()` has two new optional arguments, `$subjectResolver` and `$reuseChecker`
+  (wired by the extension). Without them, `#[PasswordPolicy]` on a non-entity object still throws `ValidationException`.
+- The events `PasswordChangedEvent`, `PasswordExpiredEvent`, `PasswordHistoryCreatedEvent` and
+  `PasswordReuseAttemptedEvent` have new methods `getSubjectClass()` and `getSubjectId()`; a subclass that already
+  declares methods with those names and other signatures must rename them.
+- To adopt the ports (history outside Doctrine, `#[PasswordPolicy]` on commands), see
+  [USAGE — Using it from a DDD / hexagonal application](USAGE.md#using-it-from-a-ddd--hexagonal-application).
 
 ## To 1.9.0
 

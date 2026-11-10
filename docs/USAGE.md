@@ -40,7 +40,7 @@ For performance and predictable behaviour, prefer **literal** route names in `no
 
 ## Password history
 
-The bundle stores hashed passwords in the history entity when the user changes password. The validator prevents reusing any of the last N passwords (configurable via `passwords_to_remember`).
+The bundle stores hashed passwords in the history entity when the user changes password. The validator prevents reusing any of the last N passwords (configurable via `passwords_to_remember`). To keep the history elsewhere or record it from your own use case, see [Using it from a DDD / hexagonal application](#using-it-from-a-ddd--hexagonal-application); for the history entity mapping see [Mapping the history entity](#mapping-the-history-entity).
 
 ## Customization
 
@@ -81,49 +81,117 @@ They may become `final` in a future major version; UPGRADING.md will announce it
 
 ## Using it from a DDD / hexagonal application
 
-The bundle is an **infrastructure** component that works on your user entity: it does not ship entities or tables,
-but it expects the entity to implement `HasPasswordPolicyInterface`, a password-history entity mapped with Doctrine
-ORM, and it records history in a Doctrine `onFlush` listener. Keep that coupling on the persistence side:
+The bundle is an **infrastructure** component. By default it works on your user entity: the entity implements
+`HasPasswordPolicyInterface`, a password-history entity is mapped with Doctrine ORM, and a Doctrine `onFlush` listener
+records the history. Since 1.10.0 a hexagonal host can keep its domain free of those types through ports, each one an
+interface with a default adapter that reproduces the behaviour above (alias the interface to replace it):
 
-- **Implement the interfaces on the Doctrine-mapped class, not on a pure domain model.** If your domain `User` is
-  persistence-free, implement `HasPasswordPolicyInterface` on the ORM entity/mapping class of your infrastructure layer
-  (or accept the interface on the aggregate: it needs `getPasswordHistory(): Collection`, `DateTime` setters and
-  `add/removePasswordHistory()`).
-- **History** is written when Doctrine flushes a change of `password_field`. The user ↔ history relation must be a
-  bidirectional `OneToMany(mappedBy: …)`, the history class needs a no-argument constructor and a `set<MappedBy>()`
-  setter. Saving the user through any other path (DBAL, a non-Doctrine repository) records no history.
-- **Validation** (`#[PasswordPolicy]`) runs against the object that holds the property, which must be the
-  `HasPasswordPolicyInterface` entity. To validate a command/DTO, validate the entity in your adapter instead:
+| Port | Default adapter | What it is for |
+| --- | --- | --- |
+| `History\PasswordHistoryRepositoryInterface` (`findRecent()`, `add()`, `prune()`, scalar subject class + id) | `History\DoctrinePasswordHistoryRepository` (the entity's history association; persists, never flushes) | Where the history lives: your aggregate, a DBAL table, an API… |
+| `History\PasswordHistoryRecorderInterface` (`record($subjectClass, $subjectId, $previousHash, ?$changedAt)`) | `History\PasswordHistoryRecorder` | Records the previous hash from your use case, prunes to `passwords_to_remember`, dispatches `PasswordChangeRecordedEvent` |
+| `Subject\PasswordPolicySubjectResolverInterface` (`resolve(object $validatedObject)`) | `Subject\DefaultPasswordPolicySubjectResolver` | Finds the subject of `#[PasswordPolicy]` on a command/DTO |
+| `Subject\PasswordReuseCheckerInterface` (`findReuse($plain, $subject, …): ?PasswordReuseMatch`) | `Subject\PasswordReuseChecker` | History / current / extension check of a read-only subject; callable from your use case |
+| `Subject\PasswordHashVerifierInterface` (`verify($subjectClass, $hash, $plain)`) | `Subject\DefaultPasswordHashVerifier` (`password_verify()`, then the Symfony hasher of the class) | Hash verification without touching an entity |
+
+Read-only model: `Model\PasswordPolicySubjectInterface` (`getPasswordPolicySubjectClass()`,
+`getPasswordPolicySubjectId()`, `getPasswordHash(): ?string`, `getPasswordChangedAt(): ?DateTimeInterface` — no
+Doctrine `Collection`, no setters) with the immutable `Model\PasswordPolicySubject` (`PasswordPolicySubject::fromEntity()`
+snapshots a `HasPasswordPolicyInterface` entity), `Model\PasswordHistoryEntry` and `Model\PasswordReuseMatch`.
+`HasPasswordPolicyInterface` stays as the Doctrine-adapter variant.
+
+### History without the Doctrine listener
+
+Configure the subject class (it must exist, it does not have to implement `HasPasswordPolicyInterface`) with
+`history_listener: false`, alias the repository port to your adapter and call the recorder from your use case:
+
+```yaml
+nowo_password_policy:
+  entities:
+    App\Domain\User\User:
+      history_listener: false
+      passwords_to_remember: 5
+      reset_password_route_name: app_reset_password
+
+services:
+  Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface: '@App\Infrastructure\Security\DbalPasswordHistoryRepository'
+```
 
 ```php
-// App\Infrastructure\Security\DoctrinePasswordReuseCheck — implements your own port
-public function isReused(UserId $id, string $plainPassword): bool
+// App\Application\User\ChangePasswordHandler
+public function __invoke(ChangePassword $command): void
 {
-    $user = $this->users->find($id->toString());         // the HasPasswordPolicyInterface entity
+    $user         = $this->users->get(new UserId($command->userId));
+    $previousHash = $user->passwordHash();
+    $user->changePassword($this->hasher->hash($command->newPassword), $this->clock->now());
+    $this->users->save($user);
 
-    return null !== $this->policy->getHistoryByPassword($plainPassword, $user)
-        || ($this->policy instanceof CurrentPasswordMatcherInterface
-            && $this->policy->matchesCurrentPassword($plainPassword, $user));
+    $this->passwordHistory->record(User::class, $command->userId, $previousHash, $this->clock->now());
 }
 ```
 
-  where `$this->policy` is `PasswordPolicyServiceInterface`.
-- **Expiry** reads the security token user: it must implement `HasPasswordPolicyInterface`. If your security user is a
-  separate adapter class, implement the interface there (delegating to the entity) or call
-  `PasswordExpiryServiceInterface` yourself.
-- **Events**: subscribe in your infrastructure layer to `PasswordChangedEvent`, `PasswordHistoryCreatedEvent`,
-  `PasswordReuseAttemptedEvent` and `PasswordExpiredEvent`, and translate them into your own domain/application events
-  using the entity id (`$event->getUser()->getId()`); do not pass the bundle events into the domain.
+With `history_listener: false` the bundle no longer stamps `passwordChangedAt` for that class: your aggregate owns it.
+Keep the listener (the default) and you must not call the recorder for the same change, or the history gets the
+previous hash twice.
+
+### `#[PasswordPolicy]` on a command or DTO
+
+When the validated object is not a `HasPasswordPolicyInterface` entity, the validator asks the subject resolver. The
+default resolver accepts an object that is a `PasswordPolicySubjectInterface`, or one that implements
+`PasswordPolicySubjectAwareInterface` (`getPasswordPolicySubject()`), which may return the entity (checked exactly like
+the entity itself) or a read-only subject (checked through the history port):
+
+```php
+final class ChangePassword implements PasswordPolicySubjectAwareInterface
+{
+    public function __construct(
+        public readonly string $userId,
+        #[PasswordPolicy(detectExtensions: true)]
+        public readonly string $newPassword,
+        private readonly ?PasswordPolicySubjectInterface $subject = null, // filled by the controller / adapter
+    ) {
+    }
+
+    public function getPasswordPolicySubject(): ?PasswordPolicySubjectInterface
+    {
+        return $this->subject; // e.g. new PasswordPolicySubject(User::class, $userId, $currentHash, $changedAt)
+    }
+}
+```
+
+Or alias `PasswordPolicySubjectResolverInterface` to a resolver that looks the subject up from the command's id.
+Violations, codes (`PASSWORD_IN_HISTORY`, `PASSWORD_EXTENSION`) and messages are the same as on the entity; the event is
+`PasswordReuseDetectedEvent` (scalar) instead of `PasswordReuseAttemptedEvent`. An object the resolver does not
+support still throws `ValidationException`.
+
+### Events
+
+Translate the bundle events into your own events in the infrastructure layer; do not pass them into the domain.
+`PasswordChangeRecordedEvent` (dispatched after the Doctrine flush committed, or by the recorder) and
+`PasswordReuseDetectedEvent` carry scalar ids only. The entity events (`PasswordChangedEvent`,
+`PasswordHistoryCreatedEvent`, `PasswordReuseAttemptedEvent`, `PasswordExpiredEvent`) now also expose
+`getSubjectClass()` and `getSubjectId()`. See [EVENTS.md](EVENTS.md).
+
+### Mapping the history entity
+
+`PasswordHistoryTrait` carries legacy Doctrine *annotations* that only the ORM 2 annotation driver reads (they are
+kept so ORM 2 annotation mappings do not change). With attributes, XML or ORM 3 the trait maps nothing: map
+`password`, `salt` (nullable) and `createdAt` yourself — for attributes, redeclare the properties in your entity
+(`#[ORM\Column] private ?string $password = null;`, PHP accepts a compatible redeclaration of a trait property) — and
+use your own id column, not the password hash.
 
 Known limitations (planned improvements):
 
-- History recording is Doctrine-ORM only and lives in an `onFlush` listener; there is no repository port yet.
-- `#[PasswordPolicy]` cannot be used on a DTO/command; the validated object must be the entity.
-- Events expose the entity, not a scalar subject id.
-- For hash formats that `password_verify()` does not recognise, the check clones the entity or temporarily calls
-  `setPassword()` on it.
-- `PasswordHistoryTrait` uses docblock annotations, which Doctrine ORM 3 ignores: map the history entity with
-  attributes yourself.
+- **Expiry** still reads the security token user, which must implement `HasPasswordPolicyInterface` (no expiry subject
+  resolver yet). If your security user is a separate adapter class, implement the interface there (delegating to the
+  entity) or call `PasswordExpiryServiceInterface` yourself.
+- The `PasswordPolicyServiceInterface` / `CurrentPasswordMatcherInterface` / `PasswordHistoryServiceInterface` /
+  `PasswordExpiryServiceInterface` signatures still take the entity; for formats `password_verify()` does not
+  recognise, the **entity** check still clones the entity or temporarily calls `setPassword()` on it (the read-only
+  subject path uses `PasswordHashVerifierInterface` instead).
+- Configuration is keyed by class name (`nowo_password_policy.entities.<Class>`), and the history recorded by the
+  default listener needs the bidirectional `OneToMany(mappedBy: …)` association, a no-argument history constructor and a
+  `set<MappedBy>()` setter.
 
 ## Forms in Twig (REQ-TWIG-005)
 

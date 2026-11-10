@@ -47,9 +47,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Target 1.10.0 — DDD / hexagonal ports: history repository + recorder, `#[PasswordPolicy]` on commands/DTOs, read-only
+subject, scalar events. Defaults unchanged. See [UPGRADING](UPGRADING.md#to-1100).
+
+### Added
+
+- `History\PasswordHistoryRepositoryInterface` port (`findRecent()`, `add()`, `prune()` by subject class + string id)
+  with the default `DoctrinePasswordHistoryRepository` (the entity's history association, the data the `onFlush`
+  listener writes), and `History\PasswordHistoryRecorderInterface` / `PasswordHistoryRecorder` for hosts that record
+  the history from their own use case.
+- Per-entity option `history_listener` (default `true`): `false` skips the Doctrine `onFlush` listener for that class,
+  which then does not have to implement `HasPasswordPolicyInterface`.
+- Read-only subject: `Model\PasswordPolicySubjectInterface` (no Doctrine `Collection`, no `DateTime` setters) and the
+  immutable `PasswordPolicySubject` (`fromEntity()`), plus `PasswordHistoryEntry` and `PasswordReuseMatch`.
+  `HasPasswordPolicyInterface` is unchanged.
+- `#[PasswordPolicy]` on a command/DTO: when the validated object is not the entity, the validator asks
+  `Subject\PasswordPolicySubjectResolverInterface` (default: the object itself, or `PasswordPolicySubjectAwareInterface`);
+  a resolved entity is checked as before, a read-only subject through `Subject\PasswordReuseCheckerInterface` and
+  `Subject\PasswordHashVerifierInterface` (no entity clone or `setPassword()`).
+- Scalar events: `PasswordChangeRecordedEvent` (dispatched by the Doctrine listener on `postFlush`, after the flush
+  committed, and by the recorder) and `PasswordReuseDetectedEvent` (read-only subject validations). The existing
+  events gain `getSubjectClass()` / `getSubjectId()`.
+
+### Fixed
+
+- Extension detection threw a `TypeError` when a stripped base password was all digits (e.g. `12345!`): PHP turned the
+  candidate into an integer array key. Candidates are now always strings.
+
+### Changed
+
+- `PasswordHistoryTrait`: docblock explains that its Doctrine annotations are only read by the ORM 2 annotation driver
+  (kept for BC) and how to map the history entity with attributes / XML / ORM 3. No mapping change.
+
 ### Docs
 
-- USAGE: new section "Using it from a DDD / hexagonal application" (where the bundle sits in a hexagonal host, the ports, events and DTOs to build an anti-corruption layer on, and the known limitations).
+- USAGE: new section "Using it from a DDD / hexagonal application" (where the bundle sits in a hexagonal host, the ports, events and DTOs to build an anti-corruption layer on, and the known limitations); updated for the 1.10.0 ports. CONFIGURATION: `history_listener`. EVENTS: the scalar events and accessors.
 
 ## [1.9.0] - 2026-10-29
 

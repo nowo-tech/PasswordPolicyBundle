@@ -10,6 +10,9 @@ The Password Policy Bundle dispatches custom Symfony events that allow you to ex
   - [PasswordHistoryCreatedEvent](#passwordhistorycreatedevent)
   - [PasswordChangedEvent](#passwordchangedevent)
   - [PasswordReuseAttemptedEvent](#passwordreuseattemptedevent)
+  - [Scalar subject accessors](#scalar-subject-accessors)
+  - [PasswordChangeRecordedEvent](#passwordchangerecordedevent)
+  - [PasswordReuseDetectedEvent](#passwordreusedetectedevent)
 - [Listening to Events](#listening-to-events)
   - [Method 1: Using Attributes (Symfony 6.1+)](#method-1-using-attributes-symfony-61)
   - [Method 2: Using services.yaml](#method-2-using-servicesyaml)
@@ -198,6 +201,34 @@ class PasswordReuseSecurityListener
     }
 }
 ```
+
+### Scalar subject accessors
+
+Since 1.10.0 the four events above also expose `getSubjectClass()` (the user class without a Doctrine proxy prefix)
+and `getSubjectId()` (the id as a string, `''` when it is neither scalar nor `Stringable`), so a subscriber can
+translate them without touching the entity.
+
+### PasswordChangeRecordedEvent
+
+**Dispatched when**: a password change was recorded in the history — by the Doctrine listener on `postFlush` (after
+the flush transaction committed; inside an outer transaction of yours, before that one commits) and by
+`PasswordHistoryRecorderInterface::record()` when it returns.
+
+**Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent` (scalar values only)
+
+**Available Methods**: `getSubjectClass()`, `getSubjectId()`, `getChangedAt(): DateTimeImmutable`,
+`getRemovedEntriesCount()`.
+
+### PasswordReuseDetectedEvent
+
+**Dispatched when**: the `PasswordPolicy` validator rejects a password of a read-only subject
+(`PasswordPolicySubjectInterface`, e.g. `#[PasswordPolicy]` on a command). Entity validations keep dispatching
+`PasswordReuseAttemptedEvent`.
+
+**Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordReuseDetectedEvent` (scalar values only)
+
+**Available Methods**: `getSubjectClass()`, `getSubjectId()`, `getMatchType()` (`exact`, `current` or `extension`),
+`getUsedAt(): ?DateTimeImmutable`.
 
 ## Listening to Events
 
