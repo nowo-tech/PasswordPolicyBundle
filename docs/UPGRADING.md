@@ -59,14 +59,6 @@ From **1.9.0**:
 composer update nowo-tech/password-policy-bundle
 ```
 
-## To 1.10.0
-
-From **1.9.0**:
-
-```bash
-composer update nowo-tech/password-policy-bundle
-```
-
 No change is required: every new port is wired to a default that keeps the 1.9 behaviour.
 
 - The Doctrine entity listener is also tagged on `postFlush`, where it dispatches the new
