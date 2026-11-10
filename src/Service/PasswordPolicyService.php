@@ -10,16 +10,15 @@ use Error;
 use Exception;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
+use Nowo\PasswordPolicyBundle\Util\PasswordExtensionCandidates;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 use function array_slice;
-use function ctype_digit;
 use function function_exists;
 use function max;
 use function password_get_info;
-use function strlen;
 use function usort;
 
 /**
@@ -30,18 +29,6 @@ use function usort;
  */
 final class PasswordPolicyService implements PasswordPolicyServiceInterface, CurrentPasswordMatcherInterface
 {
-    /**
-     * Single-character extensions checked when extension detection is enabled.
-     *
-     * @var list<string>
-     */
-    private const EXTENSION_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '!', '@', '#', '$', '%'];
-
-    /**
-     * Maximum length of a numeric prefix/suffix candidate (matches 0–999 semantics).
-     */
-    private const MAX_NUMERIC_EXTENSION_LENGTH = 3;
-
     /**
      * Optional closure to determine if an entity can be cloned. Signature: (object): bool.
      * If null, defaults to method_exists($entity, '__clone').
@@ -215,7 +202,7 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
         HasPasswordPolicyInterface $hasPasswordPolicy,
         int $minLength = 4
     ): ?PasswordHistoryInterface {
-        $candidates = $this->collectExtensionBaseCandidates($password, $minLength);
+        $candidates = PasswordExtensionCandidates::collect($password, $minLength);
         if ($candidates === []) {
             return null;
         }
@@ -265,72 +252,5 @@ final class PasswordPolicyService implements PasswordPolicyServiceInterface, Cur
         });
 
         return array_slice($entries, 0, max(0, $limit));
-    }
-
-    /**
-     * Builds deduplicated base-password candidates by stripping allowed extensions.
-     *
-     * Preserves previous semantics (single special/digit chars and numeric prefixes/suffixes 0–999)
-     * without re-verifying the same base password or scanning 0–999 when no digits are present.
-     *
-     * @return list<string>
-     */
-    private function collectExtensionBaseCandidates(string $password, int $minLength): array
-    {
-        /** @var array<string, true> $candidates */
-        $candidates = [];
-        $length     = strlen($password);
-
-        if ($length <= $minLength) {
-            return [];
-        }
-
-        foreach (self::EXTENSION_CHARS as $char) {
-            if (str_ends_with($password, $char)) {
-                $this->addExtensionBaseCandidate($candidates, substr($password, 0, -1), $minLength);
-            }
-            if (str_starts_with($password, $char)) {
-                $this->addExtensionBaseCandidate($candidates, substr($password, 1), $minLength);
-            }
-        }
-
-        $this->addNumericExtensionCandidates($candidates, $password, $minLength, suffix: true);
-        $this->addNumericExtensionCandidates($candidates, $password, $minLength, suffix: false);
-
-        return array_keys($candidates);
-    }
-
-    /**
-     * @param array<string, true> $candidates
-     */
-    private function addExtensionBaseCandidate(array &$candidates, string $basePassword, int $minLength): void
-    {
-        if (strlen($basePassword) >= $minLength) {
-            $candidates[$basePassword] = true;
-        }
-    }
-
-    /**
-     * Adds bases obtained by removing numeric prefixes or suffixes up to three digits (0–999).
-     *
-     * @param array<string, true> $candidates
-     */
-    private function addNumericExtensionCandidates(
-        array &$candidates,
-        string $password,
-        int $minLength,
-        bool $suffix
-    ): void {
-        $length = strlen($password);
-
-        for ($size = 1; $size <= self::MAX_NUMERIC_EXTENSION_LENGTH && $size < $length; ++$size) {
-            $part = $suffix ? substr($password, -$size) : substr($password, 0, $size);
-            if (!ctype_digit($part)) {
-                continue;
-            }
-
-            $basePassword = $suffix ? substr($password, 0, -$size) : substr($password, $size);
-            $this->addExtensionBaseCandidate($candidates, $basePassword, $minLength);
-        }
     }
 }

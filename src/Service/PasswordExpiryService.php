@@ -101,7 +101,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             $now       = $this->now();
             foreach ($this->entities as $entityClass => $config) {
                 $passwordLastChange = $user->getPasswordChangedAt();
-                if ($passwordLastChange === null && $this->expireWhenNeverChanged && $user instanceof $entityClass) {
+                if (!$passwordLastChange instanceof DateTime && $this->expireWhenNeverChanged && $user instanceof $entityClass) {
                     // expire_when_never_changed: an unknown change date is treated as expired (fail closed).
                     $isExpired = true;
                     break;
