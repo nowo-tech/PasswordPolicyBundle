@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.10.0] - 2026-11-10](#1100---2026-11-10)
 - [[1.9.0] - 2026-10-29](#190---2026-10-29)
 - [[1.8.0] - 2026-10-28](#180---2026-10-28)
 - [[1.7.0] - 2026-10-21](#170---2026-10-21)
@@ -46,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [[0.0.1] - 2025-12-15](#001---2025-12-15)
 
 ## [Unreleased]
+
+## [1.10.0] - 2026-11-10
 
 Target 1.10.0 — DDD / hexagonal ports: history repository + recorder, `#[PasswordPolicy]` on commands/DTOs, read-only
 subject, scalar events. Defaults unchanged. See [UPGRADING](UPGRADING.md#to-1100).
@@ -95,6 +98,8 @@ subject, scalar events. Defaults unchanged. See [UPGRADING](UPGRADING.md#to-1100
 ### Docs
 
 - USAGE: new section "Using it from a DDD / hexagonal application" (where the bundle sits in a hexagonal host, the ports, events and DTOs to build an anti-corruption layer on, and the known limitations); updated for the 1.10.0 ports. CONFIGURATION: `history_listener`. EVENTS: the scalar events and accessors.
+
+[1.10.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.10.0
 
 ## [1.9.0] - 2026-10-29
 
