@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.11.1] - 2026-11-12](#1111---2026-11-12)
 - [[1.11.0] - 2026-11-11](#1110---2026-11-11)
 - [[1.10.0] - 2026-11-10](#1100---2026-11-10)
 - [[1.9.0] - 2026-10-29](#190---2026-10-29)
@@ -49,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-11-12
+
 Target: **1.11.1** (patch).
 
 ### Fixed
@@ -75,6 +78,8 @@ Target: **1.11.1** (patch).
   and checks the Messenger and nested console boundaries and flat memory.
 - `symfony/messenger` added to `require-dev` (tests and static analysis of the optional Messenger boundary).
 - `docs/FRANKENPHP-WORKER-AUDIT.md` refreshed to v1.11.1 (W-06, worker tests, host Doctrine rule).
+
+[1.11.1]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.11.1
 
 ## [1.11.0] - 2026-11-11
 
