@@ -10,6 +10,7 @@ This document describes how to configure the Password Policy Bundle.
   - [Expiry Listener Configuration](#expiry-listener-configuration)
   - [Logging Configuration](#logging-configuration)
   - [Cache Configuration](#cache-configuration)
+  - [Personal data (GDPR) configuration](#personal-data-gdpr-configuration)
 - [How It Works](#how-it-works)
   - [Password History](#password-history)
   - [Password Expiry](#password-expiry)
@@ -113,6 +114,22 @@ Each entity that implements `HasPasswordPolicyInterface` must be configured unde
 | `expire_when_never_changed` | `bool` | `false` | Treat a null `passwordChangedAt` as an expired password (fail closed). New entities get `passwordChangedAt` on creation since 1.9.0; back-fill existing rows before enabling it. Default becomes `true` in 2.0. |
 | `enable_cache` | `bool` | `false` | Enable caching for password expiry checks. When enabled, expiry status is cached per user to improve performance. Cache is automatically invalidated when password changes. Requires Symfony Cache component. |
 | `cache_ttl` | `int` | `3600` | Cache time-to-live in seconds. Default is 3600 (1 hour). Only used when `enable_cache` is `true`. The cache key includes user ID, class, and password change timestamp, so it's automatically invalidated when password changes. |
+
+### Personal data (GDPR) configuration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `personal_data.enabled` | `bool` | `true` | With nowo-tech/user-kit-bundle installed, register the UserKit `password_history` eraser (priority 100) and export provider (priority 60). Set `false` when your application already erases and exports the password history. The erasure / export ports are always available. |
+| `personal_data.subject_resolver` | `string\|null` | `null` | Service id implementing `PasswordPolicyPersonalDataSubjectResolverInterface`: the password policy subjects of a UserKit user. Default: the bundle subject resolver. |
+
+```yaml
+nowo_password_policy:
+    personal_data:
+        enabled: true
+        subject_resolver: null
+```
+
+See [USAGE.md — GDPR erasure and export](USAGE.md#gdpr-erasure-and-export).
 
 ## How It Works
 

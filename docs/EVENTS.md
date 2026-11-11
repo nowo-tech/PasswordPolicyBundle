@@ -13,6 +13,7 @@ The Password Policy Bundle dispatches custom Symfony events that allow you to ex
   - [Scalar subject accessors](#scalar-subject-accessors)
   - [PasswordChangeRecordedEvent](#passwordchangerecordedevent)
   - [PasswordReuseDetectedEvent](#passwordreusedetectedevent)
+  - [PasswordPolicyPersonalDataErasedEvent](#passwordpolicypersonaldataerasedevent)
 - [Listening to Events](#listening-to-events)
   - [Method 1: Using Attributes (Symfony 6.1+)](#method-1-using-attributes-symfony-61)
   - [Method 2: Using services.yaml](#method-2-using-servicesyaml)
@@ -229,6 +230,17 @@ the flush transaction committed; inside an outer transaction of yours, before th
 
 **Available Methods**: `getSubjectClass()`, `getSubjectId()`, `getMatchType()` (`exact`, `current` or `extension`),
 `getUsedAt(): ?DateTimeImmutable`.
+
+### PasswordPolicyPersonalDataErasedEvent
+
+**Dispatched when**: `PasswordPolicyPersonalDataEraserInterface::erase()` committed the transaction it opened itself.
+Not dispatched when the erasure joined the caller's transaction (UserKit erasure, your own `beginTransaction()`), nor
+without a Doctrine connection: the returned `PasswordPolicyErasureResult` is the outcome then.
+
+**Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordPolicyPersonalDataErasedEvent` (scalar values only)
+
+**Available Methods**: `getSubjectClass()`, `getSubjectId()`, `getCounts(): array<string, int>` (`password_history`,
+`expiry_flash_throttle`).
 
 ## Listening to Events
 

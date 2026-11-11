@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\PersistentCollection;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\PasswordPolicyBundle\DependencyInjection\Configuration;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
@@ -15,7 +16,10 @@ use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryEntry;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryServiceInterface;
+use Nowo\PasswordPolicyBundle\Util\SubjectId;
 
+use function array_chunk;
+use function array_column;
 use function array_map;
 use function array_slice;
 use function class_exists;
@@ -30,9 +34,15 @@ use function usort;
 /**
  * Default {@see PasswordHistoryRepositoryInterface} adapter: the history association of a HasPasswordPolicyInterface
  * Doctrine entity (the rows the onFlush listener writes). It persists and removes, it never flushes.
+ *
+ * The subject is looked up with EntityManager::find() and kept only when its id, as a string, equals $subjectId
+ * byte for byte (a case- or accent-insensitive collation can return a look-alike).
  */
-final readonly class DoctrinePasswordHistoryRepository implements PasswordHistoryRepositoryInterface
+final readonly class DoctrinePasswordHistoryRepository implements ErasablePasswordHistoryRepositoryInterface
 {
+    /** Rows per DELETE statement in {@see self::removeAll()}. */
+    private const DELETE_BATCH_SIZE = 500;
+
     /**
      * @param array<string, string> $historyFields password_history_field per configured class
      */
@@ -111,6 +121,75 @@ final readonly class DoctrinePasswordHistoryRepository implements PasswordHistor
         return count($stale);
     }
 
+    /**
+     * Deletes the subject's history rows with DQL (by primary key, in batches, owner re-checked), never flushes, and
+     * takes the deleted entries out of the loaded collection and the unit of work so a later flush does not touch them.
+     */
+    public function removeAll(string $subjectClass, string $subjectId): int
+    {
+        $entity = $this->find($subjectClass, $subjectId);
+        if (!$entity instanceof HasPasswordPolicyInterface) {
+            return 0;
+        }
+
+        $entityManager = $this->entityManager($subjectClass);
+        $field         = $this->historyField($subjectClass);
+        $metadata      = $entityManager->getClassMetadata($entity::class);
+        if (!isset($metadata->associationMappings[$field])) {
+            throw new RuntimeException(sprintf('%s has no "%s" association (password_history_field).', $subjectClass, $field));
+        }
+
+        $historyClass = $metadata->associationMappings[$field]['targetEntity'];
+        $mappedBy     = (string) $metadata->associationMappings[$field]['mappedBy'];
+        if ($mappedBy === '') {
+            throw new RuntimeException(sprintf('%s::$%s must be a OneToMany association (mappedBy) to erase its history.', $subjectClass, $field));
+        }
+
+        $historyMetadata = $entityManager->getClassMetadata($historyClass);
+        $idField         = $historyMetadata->getSingleIdentifierFieldName();
+        $collection      = $entity->getPasswordHistory();
+
+        $rows = [];
+        foreach ($collection->toArray() as $history) {
+            // Exact owner: the entry must point to this very entity (identity map), not to a look-alike id.
+            if ($historyMetadata->getFieldValue($history, $mappedBy) !== $entity) {
+                continue;
+            }
+
+            $id = $historyMetadata->getFieldValue($history, $idField);
+            if ($id !== null) {
+                $rows[] = [$id, $history];
+            }
+        }
+
+        $deleted = 0;
+        $dql     = sprintf('DELETE FROM %s h WHERE h.%s IN (:ids) AND h.%s = :owner', $historyClass, $idField, $mappedBy);
+        foreach (array_chunk($rows, self::DELETE_BATCH_SIZE) as $chunk) {
+            $result = $entityManager->createQuery($dql)
+                ->setParameter('ids', array_column($chunk, 0))
+                ->setParameter('owner', $entity)
+                ->execute();
+            $deleted += (int) $result;
+        }
+
+        foreach ($rows as [, $history]) {
+            // The rows are gone: drop them from the loaded collection without scheduling an orphan removal.
+            if ($collection instanceof PersistentCollection) {
+                $collection->unwrap()->removeElement($history);
+            } else {
+                $collection->removeElement($history);
+            }
+            // @igor-ignore - Unit-of-work I/O on the host's entity manager (reset by Doctrine), not service state.
+            $entityManager->detach($history);
+        }
+
+        if ($collection instanceof PersistentCollection) {
+            $collection->takeSnapshot();
+        }
+
+        return $deleted;
+    }
+
     private function find(string $subjectClass, string $subjectId): ?object
     {
         // A subject without id (e.g. being registered) has no history; '' is not a valid id for every id type.
@@ -118,7 +197,14 @@ final readonly class DoctrinePasswordHistoryRepository implements PasswordHistor
             return null;
         }
 
-        return $this->entityManager($subjectClass)->find($this->className($subjectClass), $subjectId);
+        $entity = $this->entityManager($subjectClass)->find($this->className($subjectClass), $subjectId);
+
+        // A case- or accent-insensitive collation also returns look-alikes (UserA for usera): keep exact matches only.
+        if ($entity instanceof HasPasswordPolicyInterface && SubjectId::of($entity->getId()) !== $subjectId) {
+            return null;
+        }
+
+        return $entity;
     }
 
     private function entityManager(string $subjectClass): EntityManagerInterface

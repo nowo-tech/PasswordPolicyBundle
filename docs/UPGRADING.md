@@ -51,6 +51,22 @@
 
 ## Unreleased
 
+New minor: nothing to change. With nowo-tech/user-kit-bundle installed, the `password_history` eraser and export
+provider register automatically (UserKit erasure now deletes the password history and the export gains a
+`password_history` section with change dates only). Set `nowo_password_policy.personal_data.enabled: false` if your
+application already erases these rows.
+
+**Export section key clash.** The export section key is `password_history`. UserKit's `PersonalDataExporter` throws a
+`LogicException` ("Duplicate personal data export section") when two providers use the same key, so if your
+application already registers its own `password_history` export provider (Beacon does), the whole GDPR export fails
+after the update. In the same upgrade, either remove your own provider (and your own `password_history` eraser, which
+then has nothing left to delete) or set `nowo_password_policy.personal_data.enabled: false`.
+
+**Custom history adapters.** A custom `PasswordHistoryRepositoryInterface` adapter should also implement
+`ErasablePasswordHistoryRepositoryInterface` (`removeAll()`). Otherwise the eraser port erases nothing from it and logs
+an `error`, and the UserKit `password_history` eraser is not registered (the reason is in the container compilation
+log), so UserKit does not report the history as erased.
+
 ## To 1.10.0
 
 From **1.9.0**:

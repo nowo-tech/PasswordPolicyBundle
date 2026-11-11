@@ -31,4 +31,16 @@ final class CacheExpiryFlashThrottleStorageTest extends UnitTestCase
         $this->assertSame(100, $storage->getLastShownAt('user:1'));
         $this->assertSame(200, $storage->getLastShownAt('user:2'));
     }
+
+    public function testForgetRemovesOnlyThatSubject(): void
+    {
+        $storage = new CacheExpiryFlashThrottleStorage(new ArrayAdapter(), 3600);
+        $storage->markShown('user:1', 100);
+        $storage->markShown('user:2', 200);
+
+        $this->assertTrue($storage->forget('user:1'));
+        $this->assertFalse($storage->forget('user:1'));
+        $this->assertNull($storage->getLastShownAt('user:1'));
+        $this->assertSame(200, $storage->getLastShownAt('user:2'));
+    }
 }

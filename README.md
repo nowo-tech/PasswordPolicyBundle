@@ -57,6 +57,7 @@ This bundle is **FrankenPHP worker mode friendly**.
 - ✅ **Performance Cache** - Optional caching for password expiry checks with automatic invalidation
 - ✅ **Multiple Entities Support** - Configure different password policies for different user types with validation
 - ✅ **Clock-based time** — optional `Psr\Clock\ClockInterface` for expiry, history, and validator (testable; REQ-DI-001)
+- ✅ **GDPR erasure and export** — personal-data ports for the password history (change dates only, never hashes) with an automatic UserKit bridge; see [USAGE](docs/USAGE.md#gdpr-erasure-and-export)
 - ✅ **Flexible Configuration** - Works out of the box with sensible defaults
 - ✅ **Modern Symfony Support** - Compatible with Symfony 6, 7, and 8
 - ✅ **Complete Documentation** - Comprehensive PHPDoc comments in English

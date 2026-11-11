@@ -13,6 +13,12 @@ use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder;
 use Nowo\PasswordPolicyBundle\Model\ExpiryFlashThrottleStorageType;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataEraser;
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataEraserInterface;
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataExporterInterface;
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataSubjectResolverInterface;
+use Nowo\PasswordPolicyBundle\PersonalData\UserKit\PasswordHistoryUserKitEraser;
+use Nowo\PasswordPolicyBundle\PersonalData\UserKit\PasswordHistoryUserKitExportProvider;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\CacheExpiryFlashThrottleStorage;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\SessionExpiryFlashThrottleStorage;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
@@ -22,6 +28,7 @@ use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
 use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
 use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
+use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface as UserKitPersonalDataEraserInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -33,6 +40,7 @@ use Symfony\Component\DependencyInjection\Reference;
 
 use function array_map;
 use function in_array;
+use function interface_exists;
 use function is_string;
 use function sprintf;
 use function str_contains;
@@ -67,7 +75,8 @@ final class PasswordPolicyExtension extends Extension
         $configuration = new Configuration();
         $config        = $this->processConfiguration($configuration, $configs);
 
-        $this->addExpiryListener($containerBuilder, $config);
+        $flashThrottleStorage = $this->registerFlashThrottleStorage($containerBuilder, $config);
+        $this->addExpiryListener($containerBuilder, $config, $flashThrottleStorage);
         $this->configureValidator($containerBuilder, $config);
 
         // Register configuration service and populate it with entity configurations
@@ -146,6 +155,7 @@ final class PasswordPolicyExtension extends Extension
         }
 
         $this->configurePorts($containerBuilder, $config);
+        $this->configurePersonalData($containerBuilder, $config, $flashThrottleStorage);
 
         if ($containerBuilder->hasDefinition(PasswordPolicyService::class)) {
             $containerBuilder->getDefinition(PasswordPolicyService::class)->setArgument(
@@ -162,7 +172,7 @@ final class PasswordPolicyExtension extends Extension
      *
      * @return Definition The service definition for the password expiry listener
      */
-    private function addExpiryListener(ContainerBuilder $containerBuilder, array $config): Definition
+    private function addExpiryListener(ContainerBuilder $containerBuilder, array $config, ?Reference $flashThrottleStorage = null): Definition
     {
         // Get or create the service definition (it should already exist from services.yml)
         if (!$containerBuilder->hasDefinition(PasswordExpiryListener::class)) {
@@ -189,7 +199,7 @@ final class PasswordPolicyExtension extends Extension
               new Reference('translator'), // $translator
               $config['expiry_listener']['error_msg']['type'], // $errorMessageType
               $config['expiry_listener']['error_msg']['text'], // $errorMessage
-              $this->registerFlashThrottleStorage($containerBuilder, $config), // $flashThrottleStorage
+              $flashThrottleStorage ?? $this->registerFlashThrottleStorage($containerBuilder, $config), // $flashThrottleStorage
               $config['expiry_listener']['redirect_on_expiry'] ?? false, // $redirectOnExpiry
               $config['expiry_listener']['flash_strategy'] ?? 'always', // $flashStrategy
               $config['expiry_listener']['flash_interval_minutes'] ?? 30, // $flashIntervalMinutes
@@ -352,6 +362,40 @@ final class PasswordPolicyExtension extends Extension
                 ->setArgument('$enableLogging', $config['enable_logging'] ?? true)
                 ->setArgument('$logLevel', $config['log_level'] ?? 'info');
         }
+    }
+
+    /**
+     * GDPR ports (always) and, with UserKit installed and personal_data.enabled, the UserKit `password_history`
+     * eraser and export provider.
+     *
+     * @param array<string, mixed> $config The configuration array
+     */
+    private function configurePersonalData(ContainerBuilder $containerBuilder, array $config, Reference $flashThrottleStorage): void
+    {
+        if ($containerBuilder->hasDefinition(PasswordPolicyPersonalDataEraser::class)) {
+            $containerBuilder->getDefinition(PasswordPolicyPersonalDataEraser::class)
+                ->setArgument('$flashThrottleStorage', $flashThrottleStorage)
+                ->setArgument('$eventDispatcher', $this->optionalReference('event_dispatcher'))
+                ->setArgument('$logger', $this->optionalReference('logger'));
+        }
+
+        $personalData = $config['personal_data'] ?? [];
+        $resolver     = $personalData['subject_resolver'] ?? null;
+        if (is_string($resolver) && $resolver !== '') {
+            $containerBuilder->setAlias(PasswordPolicyPersonalDataSubjectResolverInterface::class, $resolver);
+        }
+
+        if (!($personalData['enabled'] ?? true) || $config['entities'] === [] || !interface_exists(UserKitPersonalDataEraserInterface::class)) {
+            return;
+        }
+
+        $arguments = ['$subjects' => new Reference(PasswordPolicyPersonalDataSubjectResolverInterface::class)];
+        $containerBuilder->register(PasswordHistoryUserKitEraser::class, PasswordHistoryUserKitEraser::class)
+            ->setArguments(['$eraser' => new Reference(PasswordPolicyPersonalDataEraserInterface::class)] + $arguments)
+            ->addTag('nowo_user_kit.personal_data.eraser', ['priority' => PasswordHistoryUserKitEraser::PRIORITY]);
+        $containerBuilder->register(PasswordHistoryUserKitExportProvider::class, PasswordHistoryUserKitExportProvider::class)
+            ->setArguments(['$exporter' => new Reference(PasswordPolicyPersonalDataExporterInterface::class)] + $arguments)
+            ->addTag('nowo_user_kit.personal_data.export_provider', ['priority' => PasswordHistoryUserKitExportProvider::PRIORITY]);
     }
 
     /**
