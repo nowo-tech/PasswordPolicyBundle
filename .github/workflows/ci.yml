@@ -81,7 +81,8 @@ jobs:
               composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
               ;;
             *)
-              composer update symfony/* --with-all-dependencies --no-interaction --prefer-dist --no-progress
+              # Full update: UserKit pulls doctrine/doctrine-bundle, whose Symfony 8 releases need doctrine/dbal 4.
+              composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
               ;;
           esac
       - name: Composer audit (Critical/High)

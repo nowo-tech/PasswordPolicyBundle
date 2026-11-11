@@ -45,7 +45,7 @@
         "symfony/validator": "^6.4 || ^7.0 || ^8.0"
     },
     "require-dev": {
-        "doctrine/dbal": "^3.8",
+        "doctrine/dbal": "^3.8 || ^4.0",
         "friendsofphp/php-cs-fixer": "^3.0",
         "igor-php/igor-php": "^0.10.0",
         "mockery/mockery": "^1.6",
