@@ -46,7 +46,7 @@ final class PasswordPolicyPersonalDataEraserTest extends UnitTestCase
         self::assertSame(0, $eraser->erase($this->subject())->total());
         $logs = $logger->cleanLogs();
         self::assertCount(1, $logs);
-        self::assertSame('warning', $logs[0][0]);
+        self::assertSame('error', $logs[0][0]);
         self::assertSame(KernelUser::class, $logs[0][2]['entity_class']);
     }
 

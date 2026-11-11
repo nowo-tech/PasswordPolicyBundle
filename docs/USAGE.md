@@ -254,7 +254,10 @@ than 255 bytes and an id longer than 128 bytes are rejected with `InvalidArgumen
   the subject id byte for byte (`usera` never erases `UserA`, `jose` never erases `josé`, even under a case- or
   accent-insensitive MySQL collation). It never flushes your entity manager and removes the deleted entries from a
   loaded collection, so a later flush of yours does not touch them. A custom history adapter that does not implement
-  `ErasablePasswordHistoryRepositoryInterface` is skipped with a warning: implement `removeAll()` on it.
+  `ErasablePasswordHistoryRepositoryInterface` cannot be erased: the port erases nothing from it and logs an `error`,
+  and the UserKit eraser is **not registered** (a compiler pass removes it and writes the reason to the container
+  compilation log), so UserKit never reports `password_history` as erased when it was not. Implement `removeAll()` on
+  your adapter.
 - Forgets the subject's expiry flash throttle entry when the throttle storage is the cache one. The session storage
   is not touched: its entries end with the user's sessions.
 - Idempotent: a second call returns zero counts. Unknown subjects return zero counts.
@@ -289,6 +292,14 @@ application already erases and exports the password history.
 
 Because the eraser runs inside UserKit's transaction, `PasswordPolicyPersonalDataErasedEvent` is not dispatched there;
 listen to UserKit's own events instead.
+
+When the password history lives on a **different connection** than the UserKit user's entity manager, the port does
+not join UserKit's transaction: it commits its own, so if a later eraser fails and UserKit rolls back, the password
+history stays erased while the rest of the account is restored (a partial erasure; running the erasure again is safe,
+the port is idempotent).
+
+UserKit refuses two export sections with the same key (`LogicException`): if your application already registers a
+`password_history` export provider, remove it or set `personal_data.enabled: false`.
 
 ## Forms in Twig (REQ-TWIG-005)
 

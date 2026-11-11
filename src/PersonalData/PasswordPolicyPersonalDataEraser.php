@@ -22,7 +22,8 @@ use function class_exists;
  *
  * 1. Password history: {@see ErasablePasswordHistoryRepositoryInterface::removeAll()} of the history port (the default
  *    Doctrine adapter deletes the rows of the subject's history association with DQL, no flush). An adapter that does
- *    not implement it is skipped with a warning: your own store erases its rows.
+ *    not implement it is skipped and logged at error level (the UserKit eraser is not registered for it): your own
+ *    store erases its rows.
  * 2. Expiry flash throttle: the subject's entry of a {@see ForgettableExpiryFlashThrottleStorageInterface} (the cache
  *    storage). Session entries end with the user's sessions.
  *
@@ -68,7 +69,7 @@ final readonly class PasswordPolicyPersonalDataEraser implements PasswordPolicyP
             return $this->historyRepository->removeAll($subject->subjectClass, $subject->subjectId);
         }
 
-        $this->logger?->warning('Password history not erased: the history adapter does not implement ErasablePasswordHistoryRepositoryInterface.', [
+        $this->logger?->error('Password history not erased: the history adapter does not implement ErasablePasswordHistoryRepositoryInterface.', [
             'bundle'        => 'PasswordPolicyBundle',
             'entity_class'  => $subject->subjectClass,
             'adapter_class' => $this->historyRepository::class,
