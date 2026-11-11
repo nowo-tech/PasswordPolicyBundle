@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.11.0] - 2026-11-11](#1110---2026-11-11)
 - [[1.10.0] - 2026-11-10](#1100---2026-11-10)
 - [[1.9.0] - 2026-10-29](#190---2026-10-29)
 - [[1.8.0] - 2026-10-28](#180---2026-10-28)
@@ -48,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-11
+
 ### Behaviour change
 
 - With nowo-tech/user-kit-bundle installed, a plain update makes UserKit's account erasure **delete the user's password
@@ -73,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration: `personal_data.enabled` (default `true`) and `personal_data.subject_resolver`
   (`PasswordPolicyPersonalDataSubjectResolverInterface` SPI).
 - Tests on SQLite, MySQL and PostgreSQL (`DATABASE_URL`), with a worker-mode run of 1,000 alternating subjects.
+
+[1.11.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.11.0
 
 ## [1.10.0] - 2026-11-10
 

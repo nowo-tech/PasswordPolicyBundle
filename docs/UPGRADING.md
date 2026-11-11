@@ -3,8 +3,8 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.11.0](#to-1110)
 - [To 1.10.0](#to-1100)
-- [To 1.10.0](#to-1100-1)
 - [To 1.9.0](#to-190)
 - [To 1.8.0](#to-180)
 - [To 1.7.0](#to-170)
@@ -50,6 +50,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.11.0
+
+From **1.10.0**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 New minor: nothing to change. With nowo-tech/user-kit-bundle installed, the `password_history` eraser and export
 provider register automatically (UserKit erasure now deletes the password history and the export gains a
