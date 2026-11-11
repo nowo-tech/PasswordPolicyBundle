@@ -52,9 +52,9 @@ final class UserKitBridgeTest extends UnitTestCase
         $b    = PasswordPolicyPersonalDataSubject::fromSubjectId('App\User', 'b');
 
         $subjects = Mockery::mock(PasswordPolicyPersonalDataSubjectResolverInterface::class);
-        $subjects->shouldReceive('subjectsFor')->with($user, null)->andReturn([$a]);
+        $subjects->shouldReceive('subjectsFor')->with($user)->andReturn([$a]);
         $subjects->shouldReceive('subjectsFor')->with($user, 'original@example.test')->andReturn([$a, $b, PasswordPolicyPersonalDataSubject::fromSubjectId('App\User', 'a')]);
-        $subjects->shouldReceive('subjectsFor')->with(Mockery::type(stdClass::class), null)->andReturn([]);
+        $subjects->shouldReceive('subjectsFor')->with(Mockery::type(stdClass::class))->andReturn([]);
 
         $port = Mockery::mock(PasswordPolicyPersonalDataEraserInterface::class);
         $port->shouldReceive('erase')->with($a)->once()->andReturn(new PasswordPolicyErasureResult(1));

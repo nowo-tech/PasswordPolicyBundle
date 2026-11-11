@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use function str_repeat;
+use function strlen;
 
 final class PasswordPolicyPersonalDataSubjectTest extends TestCase
 {
@@ -61,7 +62,7 @@ final class PasswordPolicyPersonalDataSubjectTest extends TestCase
     {
         $subject = PasswordPolicyPersonalDataSubject::fromSubjectId(str_repeat('a', 255), str_repeat('b', 128));
 
-        self::assertSame(128, \strlen($subject->subjectId));
+        self::assertSame(128, strlen($subject->subjectId));
     }
 
     public function testErasureResult(): void

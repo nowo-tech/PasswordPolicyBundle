@@ -48,6 +48,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GDPR personal-data ports (`Nowo\PasswordPolicyBundle\PersonalData`): `PasswordPolicyPersonalDataEraserInterface`
+  (deletes the subject's password history rows and its cache expiry flash throttle entry; idempotent, byte-exact
+  subject matching, joins the caller's transaction, never flushes) and `PasswordPolicyPersonalDataExporterInterface`
+  (change dates only, never hashes), the `PasswordPolicyPersonalDataSubject` value object, `PasswordPolicyErasureResult`
+  and `PasswordPolicyPersonalDataErasedEvent` (dispatched after the port's own commit only).
+- `ErasablePasswordHistoryRepositoryInterface` (`removeAll()`), implemented by the default Doctrine history adapter
+  (DQL delete by primary key in batches of 500, owner and id re-checked in PHP).
+- `ForgettableExpiryFlashThrottleStorageInterface`, implemented by the cache throttle storage.
+- UserKit bridge: with nowo-tech/user-kit-bundle installed, the `password_history` eraser (priority 100, before the
+  host identity eraser) and export provider (priority 60) register automatically.
+- Configuration: `personal_data.enabled` (default `true`) and `personal_data.subject_resolver`
+  (`PasswordPolicyPersonalDataSubjectResolverInterface` SPI).
+- Tests on SQLite, MySQL and PostgreSQL (`DATABASE_URL`), with a worker-mode run of 1,000 alternating subjects.
+
 ## [1.10.0] - 2026-11-10
 
 Target 1.10.0 — DDD / hexagonal ports: history repository + recorder, `#[PasswordPolicy]` on commands/DTOs, read-only

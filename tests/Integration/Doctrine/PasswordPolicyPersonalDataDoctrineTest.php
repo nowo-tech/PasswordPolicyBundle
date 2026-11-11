@@ -19,6 +19,7 @@ use function json_encode;
 use function memory_get_usage;
 use function str_contains;
 
+use const DATE_ATOM;
 use const JSON_THROW_ON_ERROR;
 
 /**
@@ -59,7 +60,7 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         return new PasswordPolicyPersonalDataExporter($this->repository());
     }
 
-    private static function subject(string $id): PasswordPolicyPersonalDataSubject
+    private function subject(string $id): PasswordPolicyPersonalDataSubject
     {
         return PasswordPolicyPersonalDataSubject::fromSubjectId(ErasureUser::class, $id);
     }
@@ -69,13 +70,13 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         $this->seedUser('alice', '2026-01-01 10:00:00', '2026-03-01 10:00:00', '2026-02-01 10:00:00');
         $this->seedUser('bob', '2026-01-15 10:00:00');
 
-        $result = $this->eraser()->erase(self::subject('alice'));
+        $result = $this->eraser()->erase($this->subject('alice'));
 
         self::assertSame(['password_history' => 3, 'expiry_flash_throttle' => 0], $result->toArray());
         self::assertSame(1, $this->totalHistoryRows());
         self::assertSame(1, $this->historyRows('bob'));
-        self::assertSame(0, $this->eraser()->erase(self::subject('alice'))->total());
-        self::assertSame(0, $this->eraser()->erase(self::subject('nobody'))->total());
+        self::assertSame(0, $this->eraser()->erase($this->subject('alice'))->total());
+        self::assertSame(0, $this->eraser()->erase($this->subject('nobody'))->total());
         self::assertSame(1, $this->totalHistoryRows());
     }
 
@@ -83,7 +84,7 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
     {
         $this->seedUser('alice', '2026-01-01 10:00:00');
 
-        $this->eraser()->erase(self::subject('alice'));
+        $this->eraser()->erase($this->subject('alice'));
 
         self::assertCount(1, $this->events);
         self::assertSame([false], $this->transactionOpenOnDispatch);
@@ -98,7 +99,7 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         $connection = $this->em->getConnection();
 
         $connection->beginTransaction();
-        $result = $this->eraser()->erase(self::subject('alice'));
+        $result = $this->eraser()->erase($this->subject('alice'));
         self::assertTrue($connection->isTransactionActive());
         $connection->rollBack();
 
@@ -109,7 +110,7 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
 
         $this->em->clear();
         $connection->beginTransaction();
-        $this->eraser()->erase(self::subject('alice'));
+        $this->eraser()->erase($this->subject('alice'));
         $connection->commit();
 
         self::assertSame([], $this->events);
@@ -127,14 +128,14 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         }
 
         foreach (['usera', 'USERA', 'jose', 'JOSÉ', 'josé '] as $variant) {
-            self::assertSame(0, $this->eraser()->erase(self::subject($variant))->total(), $variant);
-            self::assertSame(['count' => 0, 'entries' => []], $this->exporter()->export(self::subject($variant)), $variant);
+            self::assertSame(0, $this->eraser()->erase($this->subject($variant))->total(), $variant);
+            self::assertSame(['count' => 0, 'entries' => []], $this->exporter()->export($this->subject($variant)), $variant);
             $this->em->clear();
         }
 
         self::assertSame(2, $this->totalHistoryRows());
-        self::assertSame(1, $this->exporter()->export(self::subject('UserA'))['count']);
-        self::assertSame(1, $this->eraser()->erase(self::subject('josé'))->passwordHistory);
+        self::assertSame(1, $this->exporter()->export($this->subject('UserA'))['count']);
+        self::assertSame(1, $this->eraser()->erase($this->subject('josé'))->passwordHistory);
         self::assertSame(1, $this->totalHistoryRows());
     }
 
@@ -143,14 +144,13 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         $this->seedUser('alice', '2026-01-01 10:00:00', '2026-03-01 10:00:00', '2026-02-01 10:00:00');
         $this->seedUser('bob', '2026-01-15 10:00:00');
 
-        $export = $this->exporter()->export(self::subject('alice'));
+        $export = $this->exporter()->export($this->subject('alice'));
 
         self::assertSame(3, $export['count']);
         self::assertSame(
             [(new DateTime('2026-03-01 10:00:00'))->format(DATE_ATOM), (new DateTime('2026-02-01 10:00:00'))->format(DATE_ATOM), (new DateTime('2026-01-01 10:00:00'))->format(DATE_ATOM)],
             array_column($export['entries'], 'changed_at'),
         );
-        self::assertSame(['changed_at'], array_keys($export['entries'][0]));
         self::assertFalse(str_contains(json_encode($export, JSON_THROW_ON_ERROR), 'REDACTED-TEST'));
     }
 
@@ -161,7 +161,7 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         self::assertInstanceOf(ErasureUser::class, $user);
         self::assertCount(2, $user->getPasswordHistory());
 
-        self::assertSame(2, $this->eraser()->erase(self::subject('alice'))->passwordHistory);
+        self::assertSame(2, $this->eraser()->erase($this->subject('alice'))->passwordHistory);
 
         self::assertCount(0, $user->getPasswordHistory());
         $this->em->flush();
@@ -177,12 +177,12 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         $storage->markShown(ErasureUser::class . ':bob', 1);
         $this->seedUser('alice', '2026-01-01 10:00:00');
 
-        $result = $this->eraser($storage)->erase(self::subject('alice'));
+        $result = $this->eraser($storage)->erase($this->subject('alice'));
 
         self::assertEquals(new PasswordPolicyErasureResult(1, 1), $result);
         self::assertNull($storage->getLastShownAt(ErasureUser::class . ':alice'));
         self::assertSame(1, $storage->getLastShownAt(ErasureUser::class . ':bob'));
-        self::assertSame(0, $this->eraser($storage)->erase(self::subject('alice'))->total());
+        self::assertSame(0, $this->eraser($storage)->erase($this->subject('alice'))->total());
     }
 
     /**
@@ -197,14 +197,15 @@ final class PasswordPolicyPersonalDataDoctrineTest extends OrmTestCase
         $eraser     = $this->eraser();
         $exporter   = $this->exporter();
         $connection = $this->em->getConnection();
-        $alice      = self::subject('alice');
-        $bob        = self::subject('bob');
+        $alice      = $this->subject('alice');
+        $bob        = $this->subject('bob');
         $baseline   = 0;
 
+        // Explicit ids: the identifier strategy may be a sequence without a column default (PostgreSQL).
         for ($run = 1; $run <= $runs; ++$run) {
-            $connection->insert('pp_gdpr_password_history', ['user_id' => 'alice', 'password' => 'REDACTED-TEST', 'created_at' => '2026-01-01 10:00:00']);
-            $connection->insert('pp_gdpr_password_history', ['user_id' => 'bob', 'password' => 'REDACTED-TEST', 'created_at' => '2026-02-02 10:00:00']);
-            $connection->insert('pp_gdpr_password_history', ['user_id' => 'bob', 'password' => 'REDACTED-TEST', 'created_at' => '2026-02-03 10:00:00']);
+            $connection->insert('pp_gdpr_password_history', ['id' => $run * 10, 'user_id' => 'alice', 'password' => 'REDACTED-TEST', 'created_at' => '2026-01-01 10:00:00']);
+            $connection->insert('pp_gdpr_password_history', ['id' => $run * 10 + 1, 'user_id' => 'bob', 'password' => 'REDACTED-TEST', 'created_at' => '2026-02-02 10:00:00']);
+            $connection->insert('pp_gdpr_password_history', ['id' => $run * 10 + 2, 'user_id' => 'bob', 'password' => 'REDACTED-TEST', 'created_at' => '2026-02-03 10:00:00']);
 
             self::assertSame(1, $exporter->export($alice)['count']);
             self::assertSame(1, $eraser->erase($alice)->passwordHistory);

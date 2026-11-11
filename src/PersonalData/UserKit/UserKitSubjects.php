@@ -14,7 +14,7 @@ use function array_values;
 final class UserKitSubjects
 {
     /**
-     * The subjects without duplicates (byte-exact class + id), in order.
+     * The subjects without duplicates (byte-exact class + id), first occurrence kept, in order.
      *
      * @param list<PasswordPolicyPersonalDataSubject> $subjects
      *
@@ -24,7 +24,7 @@ final class UserKitSubjects
     {
         $distinct = [];
         foreach ($subjects as $subject) {
-            $distinct[$subject->subjectClass . "\0" . $subject->subjectId] = $subject;
+            $distinct[$subject->subjectClass . "\0" . $subject->subjectId] ??= $subject;
         }
 
         return array_values($distinct);

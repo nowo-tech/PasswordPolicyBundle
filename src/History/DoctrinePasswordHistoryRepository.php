@@ -24,7 +24,6 @@ use function array_map;
 use function array_slice;
 use function class_exists;
 use function count;
-use function is_object;
 use function is_a;
 use function max;
 use function method_exists;
@@ -153,7 +152,7 @@ final readonly class DoctrinePasswordHistoryRepository implements ErasablePasswo
         $rows = [];
         foreach ($collection->toArray() as $history) {
             // Exact owner: the entry must point to this very entity (identity map), not to a look-alike id.
-            if (!is_object($history) || $historyMetadata->getFieldValue($history, $mappedBy) !== $entity) {
+            if ($historyMetadata->getFieldValue($history, $mappedBy) !== $entity) {
                 continue;
             }
 

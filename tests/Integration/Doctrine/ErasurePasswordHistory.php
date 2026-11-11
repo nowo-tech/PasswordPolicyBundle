@@ -15,7 +15,7 @@ class ErasurePasswordHistory implements PasswordHistoryInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private ?int $id = null; // @phpstan-ignore property.unusedType (assigned by Doctrine)
 
     #[ORM\ManyToOne(targetEntity: ErasureUser::class, inversedBy: 'passwordHistory')]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: false)]
@@ -24,12 +24,10 @@ class ErasurePasswordHistory implements PasswordHistoryInterface
     #[ORM\Column(length: 255)]
     private string $password = '';
 
-    #[ORM\Column(type: 'datetime')]
-    private DateTimeInterface $createdAt;
-
-    public function __construct(DateTimeInterface $createdAt)
-    {
-        $this->createdAt = $createdAt;
+    public function __construct(
+        #[ORM\Column(name: 'created_at', type: 'datetime')]
+        private DateTimeInterface $createdAt
+    ) {
     }
 
     public function getId(): ?int

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\PersonalData;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
@@ -32,7 +33,7 @@ use const PHP_INT_MAX;
 
 final class PasswordPolicyPersonalDataEraserTest extends UnitTestCase
 {
-    private static function subject(string $class = KernelUser::class, string $id = '7'): PasswordPolicyPersonalDataSubject
+    private function subject(string $class = KernelUser::class, string $id = '7'): PasswordPolicyPersonalDataSubject
     {
         return PasswordPolicyPersonalDataSubject::fromSubjectId($class, $id);
     }
@@ -42,7 +43,7 @@ final class PasswordPolicyPersonalDataEraserTest extends UnitTestCase
         $logger = new BufferingLogger();
         $eraser = new PasswordPolicyPersonalDataEraser(Mockery::mock(PasswordHistoryRepositoryInterface::class), null, null, null, $logger);
 
-        self::assertSame(0, $eraser->erase(self::subject())->total());
+        self::assertSame(0, $eraser->erase($this->subject())->total());
         $logs = $logger->cleanLogs();
         self::assertCount(1, $logs);
         self::assertSame('warning', $logs[0][0]);
@@ -61,7 +62,7 @@ final class PasswordPolicyPersonalDataEraserTest extends UnitTestCase
             ++$events;
         });
 
-        $result = (new PasswordPolicyPersonalDataEraser($repository, $registry, null, $dispatcher))->erase(self::subject('App\Unknown', 'u-1'));
+        $result = (new PasswordPolicyPersonalDataEraser($repository, $registry, null, $dispatcher))->erase($this->subject('App\Unknown', 'u-1'));
 
         self::assertSame(2, $result->passwordHistory);
         self::assertSame(0, $events);
@@ -96,7 +97,7 @@ final class PasswordPolicyPersonalDataEraserTest extends UnitTestCase
         $storage = new CacheExpiryFlashThrottleStorage(new ArrayAdapter(), 60);
         $storage->markShown('Proxies\__CG__\\' . KernelUser::class . ':7', 1);
 
-        $result = (new PasswordPolicyPersonalDataEraser($repository, $registry, $storage, $dispatcher))->erase(self::subject());
+        $result = (new PasswordPolicyPersonalDataEraser($repository, $registry, $storage, $dispatcher))->erase($this->subject());
 
         self::assertSame(['begin', 'delete', 'commit', 'event'], $order);
         self::assertSame(['password_history' => 1, 'expiry_flash_throttle' => 1], $result->toArray());
@@ -108,18 +109,18 @@ final class PasswordPolicyPersonalDataEraserTest extends UnitTestCase
         $repository->shouldReceive('removeAll')->andReturn(0);
         $eraser = new PasswordPolicyPersonalDataEraser($repository, null, new SessionExpiryFlashThrottleStorage(new RequestStack()));
 
-        self::assertSame(0, $eraser->erase(self::subject())->expiryFlashThrottle);
+        self::assertSame(0, $eraser->erase($this->subject())->expiryFlashThrottle);
     }
 
     public function testExporterNeverExportsHashes(): void
     {
         $repository = Mockery::mock(PasswordHistoryRepositoryInterface::class);
         $repository->shouldReceive('findRecent')->with(KernelUser::class, '7', PHP_INT_MAX)->andReturn([
-            new PasswordHistoryEntry('hash-REDACTED-TEST', new \DateTimeImmutable('2026-01-02T03:04:05+00:00')),
+            new PasswordHistoryEntry('hash-REDACTED-TEST', new DateTimeImmutable('2026-01-02T03:04:05+00:00')),
             new PasswordHistoryEntry('hash-REDACTED-TEST'),
         ]);
 
-        $export = (new PasswordPolicyPersonalDataExporter($repository))->export(self::subject());
+        $export = (new PasswordPolicyPersonalDataExporter($repository))->export($this->subject());
 
         self::assertSame(['count' => 2, 'entries' => [['changed_at' => '2026-01-02T03:04:05+00:00'], ['changed_at' => null]]], $export);
         self::assertFalse(str_contains(json_encode($export, JSON_THROW_ON_ERROR), 'REDACTED'));

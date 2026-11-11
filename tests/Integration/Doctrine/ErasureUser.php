@@ -22,7 +22,7 @@ class ErasureUser implements HasPasswordPolicyInterface
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?DateTime $passwordChangedAt = null;
 
-    /** @var Collection<int, ErasurePasswordHistory> */
+    /** @var Collection<int, PasswordHistoryInterface> */
     #[ORM\OneToMany(targetEntity: ErasurePasswordHistory::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $passwordHistory;
 
@@ -54,7 +54,7 @@ class ErasureUser implements HasPasswordPolicyInterface
     }
 
     /**
-     * @return Collection<int, ErasurePasswordHistory>
+     * @return Collection<int, PasswordHistoryInterface>
      */
     public function getPasswordHistory(): Collection
     {

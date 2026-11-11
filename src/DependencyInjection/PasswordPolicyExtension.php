@@ -28,6 +28,7 @@ use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
 use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
 use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
+use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface as UserKitPersonalDataEraserInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -36,7 +37,6 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\DependencyInjection\Reference;
-use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface as UserKitPersonalDataEraserInterface;
 
 use function array_map;
 use function in_array;
@@ -172,7 +172,7 @@ final class PasswordPolicyExtension extends Extension
      *
      * @return Definition The service definition for the password expiry listener
      */
-    private function addExpiryListener(ContainerBuilder $containerBuilder, array $config, Reference $flashThrottleStorage): Definition
+    private function addExpiryListener(ContainerBuilder $containerBuilder, array $config, ?Reference $flashThrottleStorage = null): Definition
     {
         // Get or create the service definition (it should already exist from services.yml)
         if (!$containerBuilder->hasDefinition(PasswordExpiryListener::class)) {
@@ -199,7 +199,7 @@ final class PasswordPolicyExtension extends Extension
               new Reference('translator'), // $translator
               $config['expiry_listener']['error_msg']['type'], // $errorMessageType
               $config['expiry_listener']['error_msg']['text'], // $errorMessage
-              $flashThrottleStorage, // $flashThrottleStorage
+              $flashThrottleStorage ?? $this->registerFlashThrottleStorage($containerBuilder, $config), // $flashThrottleStorage
               $config['expiry_listener']['redirect_on_expiry'] ?? false, // $redirectOnExpiry
               $config['expiry_listener']['flash_strategy'] ?? 'always', // $flashStrategy
               $config['expiry_listener']['flash_interval_minutes'] ?? 30, // $flashIntervalMinutes

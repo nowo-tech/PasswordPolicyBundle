@@ -51,6 +51,12 @@
 
 ## Unreleased
 
+New minor: nothing to change. With nowo-tech/user-kit-bundle installed, the `password_history` eraser and export
+provider register automatically (UserKit erasure now deletes the password history and the export gains a
+`password_history` section with change dates only). Set `nowo_password_policy.personal_data.enabled: false` if your
+application already erases these rows. A custom `PasswordHistoryRepositoryInterface` adapter should also implement
+`ErasablePasswordHistoryRepositoryInterface` so the eraser deletes its rows (otherwise it is skipped with a warning).
+
 ## To 1.10.0
 
 From **1.9.0**:

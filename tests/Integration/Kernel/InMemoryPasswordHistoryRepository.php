@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\Tests\Integration\Kernel;
 
 use DateTimeImmutable;
-use Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface;
+use Nowo\PasswordPolicyBundle\History\ErasablePasswordHistoryRepositoryInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryEntry;
 
 use function array_slice;
@@ -16,7 +16,7 @@ use function usort;
 /**
  * Host adapter without Doctrine: the history lives in memory, keyed by subject class and id.
  */
-final class InMemoryPasswordHistoryRepository implements PasswordHistoryRepositoryInterface
+final class InMemoryPasswordHistoryRepository implements ErasablePasswordHistoryRepositoryInterface
 {
     /** @var array<string, list<PasswordHistoryEntry>> */
     private array $entries = [];
@@ -37,6 +37,14 @@ final class InMemoryPasswordHistoryRepository implements PasswordHistoryReposito
         $this->entries[$subjectClass . '#' . $subjectId] = array_slice($sorted, 0, max(0, $keep));
 
         return count($sorted) - count($this->entries[$subjectClass . '#' . $subjectId]);
+    }
+
+    public function removeAll(string $subjectClass, string $subjectId): int
+    {
+        $removed = count($this->entries[$subjectClass . '#' . $subjectId] ?? []);
+        unset($this->entries[$subjectClass . '#' . $subjectId]);
+
+        return $removed;
     }
 
     /**

@@ -13,14 +13,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\ORMSetup;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
-use Mockery;
 use Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository;
 use Nowo\PasswordPolicyBundle\Service\PasswordHistoryService;
 use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 
 use function getenv;
 use function is_string;
-use function method_exists;
 
 use const PHP_VERSION_ID;
 
@@ -39,7 +37,7 @@ abstract class OrmTestCase extends UnitTestCase
         parent::setUp();
 
         $config = ORMSetup::createAttributeMetadataConfiguration([__DIR__], true);
-        if (PHP_VERSION_ID >= 80400 && method_exists($config, 'enableNativeLazyObjects')) {
+        if (PHP_VERSION_ID >= 80400) {
             $config->enableNativeLazyObjects(true);
         }
 
@@ -54,9 +52,8 @@ abstract class OrmTestCase extends UnitTestCase
         $schema->dropSchema($metadata);
         $schema->createSchema($metadata);
 
-        $registry = Mockery::mock(ManagerRegistry::class);
-        $registry->shouldReceive('getManagerForClass')->andReturn($this->em);
-        $this->registry = $registry;
+        // Not a Mockery mock: mocks record every call, which would skew the worker-mode memory check.
+        $this->registry = new SingleManagerRegistry($this->em);
     }
 
     protected function tearDown(): void

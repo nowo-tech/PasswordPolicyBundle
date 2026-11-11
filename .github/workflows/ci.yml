@@ -144,6 +144,56 @@ jobs:
           
           echo "✅ Code coverage is ${COVERAGE_PERCENT}% (meets minimum threshold of ${MIN_COVERAGE}%)"
 
+  database:
+    name: Doctrine integration - ${{ matrix.db }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - db: mysql
+            url: mysql://root@127.0.0.1:3306/pp_test?serverVersion=8.4
+          - db: postgres
+            url: postgresql://postgres@127.0.0.1:5432/pp_test?serverVersion=17
+
+    # Passwordless services: no credential in the workflow.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: pp_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping -h127.0.0.1" --health-interval=5s --health-timeout=5s --health-retries=20
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: pp_test
+        ports: ['5432:5432']
+        options: --health-cmd="pg_isready -U postgres" --health-interval=5s --health-timeout=5s --health-retries=20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, pdo_pgsql
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Doctrine integration tests (GDPR ports, exact matching)
+        env:
+          DATABASE_URL: ${{ matrix.url }}
+        run: vendor/bin/phpunit --no-coverage tests/Integration/Doctrine
+
   code-style:
     name: Code Style
     runs-on: ubuntu-latest

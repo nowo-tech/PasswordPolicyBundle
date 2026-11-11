@@ -11,6 +11,7 @@ This document describes typical usage of the Password Policy Bundle. For full co
 - [Translation overrides](#translation-overrides)
 - [Extension points (non-final classes)](#extension-points-non-final-classes)
 - [Using it from a DDD / hexagonal application](#using-it-from-a-ddd--hexagonal-application)
+- [GDPR erasure and export](#gdpr-erasure-and-export)
 - [Forms in Twig (REQ-TWIG-005)](#forms-in-twig-req-twig-005)
 
 ## Basic usage
@@ -217,6 +218,77 @@ Known limitations (planned improvements):
 - Configuration is keyed by class name (`nowo_password_policy.entities.<Class>`), and the history recorded by the
   default listener needs the bidirectional `OneToMany(mappedBy: …)` association, a no-argument history constructor and a
   `set<MappedBy>()` setter.
+
+## GDPR erasure and export
+
+The bundle keeps personal data about a user in two places: the **password history** rows (hashes and change dates)
+and, with `expiry_listener.flash_throttle_storage: cache` (or a custom storage implementing
+`ForgettableExpiryFlashThrottleStorageInterface`), one **expiry flash throttle** entry per user in the shared cache.
+Two public ports (namespace `Nowo\PasswordPolicyBundle\PersonalData`) erase and export them for one person, so the
+host does not query the history table itself. They are plain PHP: no Doctrine, Symfony or HTTP types in their
+signatures.
+
+```php
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataEraserInterface;
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataExporterInterface;
+use Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataSubject;
+
+$subject = PasswordPolicyPersonalDataSubject::fromEntity($user);               // HasPasswordPolicyInterface entity
+// or ::fromSubjectId(User::class, '42'), or ::fromPolicySubject($readOnlySubject)
+
+$data   = $exporter->export($subject); // ['count' => 2, 'entries' => [['changed_at' => '2026-03-01T10:00:00+00:00'], ...]]
+$result = $eraser->erase($subject);    // PasswordPolicyErasureResult
+$result->toArray();                    // ['password_history' => 2, 'expiry_flash_throttle' => 1]
+$result->total();                      // 3
+```
+
+**Subject.** `PasswordPolicyPersonalDataSubject` holds the subject class and the subject id exactly as the history
+port keys them. Values are kept byte for byte (no trimming, no case folding); empty values, NUL bytes, a class longer
+than 255 bytes and an id longer than 128 bytes are rejected with `InvalidArgumentException`.
+
+**Erasure** (`PasswordPolicyPersonalDataEraserInterface::erase()`):
+
+- Deletes every password history row of the subject through the history port's
+  `ErasablePasswordHistoryRepositoryInterface::removeAll()`. The default Doctrine adapter deletes the rows of the
+  subject's `OneToMany` history association with DQL, by primary key in batches of 500, after re-checking the owner and
+  the subject id byte for byte (`usera` never erases `UserA`, `jose` never erases `josé`, even under a case- or
+  accent-insensitive MySQL collation). It never flushes your entity manager and removes the deleted entries from a
+  loaded collection, so a later flush of yours does not touch them. A custom history adapter that does not implement
+  `ErasablePasswordHistoryRepositoryInterface` is skipped with a warning: implement `removeAll()` on it.
+- Forgets the subject's expiry flash throttle entry when the throttle storage is the cache one. The session storage
+  is not touched: its entries end with the user's sessions.
+- Idempotent: a second call returns zero counts. Unknown subjects return zero counts.
+- Does not touch the user entity itself (password, `passwordChangedAt`): erasing the account is the host's job.
+
+**Transactions and the event.** When no transaction is open on the subject's Doctrine connection, `erase()` opens one
+and dispatches `PasswordPolicyPersonalDataErasedEvent` (subject class, subject id, counts; scalars only) **after its
+commit**. Inside your own transaction it joins it and does **not** dispatch the event (your transaction may still roll
+back): the returned result is the outcome. Without Doctrine (your own history adapter) the port cannot tell whether
+you have a transaction open, so it does not dispatch the event either. The cache throttle entry is forgotten
+immediately, whatever your transaction does.
+
+**Export** (`PasswordPolicyPersonalDataExporterInterface::export()`): `{count, entries}` with one `changed_at` (ATOM
+date string, `null` when the entry has no date) per history entry, newest first. Password hashes are **never**
+exported.
+
+### UserKit bridge
+
+With [nowo-tech/user-kit-bundle](https://github.com/nowo-tech/UserKitBundle) installed (and at least one entity under
+`nowo_password_policy.entities`), the bundle registers, with no configuration:
+
+| UserKit service | Key | Tag priority | What it does |
+|---|---|---|---|
+| `PasswordHistoryUserKitEraser` | `password_history` | 100 | Runs the eraser port once per distinct subject of the user, inside UserKit's transaction, **before** the host identity eraser (it needs the user row to find the history) |
+| `PasswordHistoryUserKitExportProvider` | `password_history` | 60 | Export section `{count, entries: [{changed_at}]}` over every subject of the user |
+
+The subjects of a user come from `PasswordPolicyPersonalDataSubjectResolverInterface`. The default asks the bundle's
+subject resolver (`HasPasswordPolicyInterface` entity, `PasswordPolicySubjectInterface` or
+`PasswordPolicySubjectAwareInterface`). When the UserKit user is not the password policy subject, set
+`nowo_password_policy.personal_data.subject_resolver` to your own service. Set `personal_data.enabled: false` when your
+application already erases and exports the password history.
+
+Because the eraser runs inside UserKit's transaction, `PasswordPolicyPersonalDataErasedEvent` is not dispatched there;
+listen to UserKit's own events instead.
 
 ## Forms in Twig (REQ-TWIG-005)
 
