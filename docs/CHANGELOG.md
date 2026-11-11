@@ -49,6 +49,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Target: **1.11.1** (patch).
+
+### Fixed
+
+- Worker state (REQ-RUNTIME-002): when a Doctrine flush failed after `onFlush`, `PasswordEntityListener` kept that
+  flush's users (entity objects with their password hashes) and old hashes in the shared listener until the next flush
+  or `kernel.reset`, because `postFlush` never ran. They were never announced or reused (the next flush clears them
+  first), but they stayed in memory across units of work. The new `PasswordPolicyWorkerBoundaryListener` (registered
+  by the bundle) clears every already-built password listener at the main `kernel.request`, `kernel.terminate`,
+  Messenger `WorkerMessageReceivedEvent` / `WorkerMessageHandledEvent` / `WorkerMessageFailedEvent`, and
+  `console.terminate` of the outermost command only, outside any Messenger message or HTTP request (a depth counter
+  plus in-flight message and request flags keep a command run in-process from another command, a message handler or
+  a controller from clearing the outer unit mid-flush). The listeners stay `ResetInterface` / `kernel.reset`; the boundary
+  only reaches already-built listeners (`IGNORE_ON_UNINITIALIZED_REFERENCE`). Precondition: only where the services
+  resetter does not run between units: a host that removes, replaces or bypasses `services_resetter` (or drives
+  `http_kernel` directly), Messenger consumers started with `--no-reset`, and long-running console commands. With the
+  stock kernel (`FRANKENPHP_RESET_KERNEL=false` included) `kernel.reset` already cleared them before each request.
+  Affected: the old-hash keys since 1.4.4, the user objects since 1.10.0, up to 1.11.0.
+
+### Changed
+
+- Worker test beyond the GDPR port: `PasswordPolicyKernelWorkerBoundaryTest` boots one kernel and sends 1,000
+  requests through `http_kernel` (no services resetter) with a failed flush of two users in alternation before each,
+  and checks the Messenger and nested console boundaries and flat memory.
+- `symfony/messenger` added to `require-dev` (tests and static analysis of the optional Messenger boundary).
+- `docs/FRANKENPHP-WORKER-AUDIT.md` refreshed to v1.11.1 (W-06, worker tests, host Doctrine rule).
+
 ## [1.11.0] - 2026-11-11
 
 ### Behaviour change

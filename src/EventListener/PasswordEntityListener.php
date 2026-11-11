@@ -48,7 +48,8 @@ class PasswordEntityListener implements ResetInterface
 {
     /**
      * Entity/old-password pairs already handled in the current flush, to avoid duplicate history entries.
-     * Cleared at the start of every flush so nothing survives into the next request of a long-running worker.
+     * Cleared at the start of every flush and at every request / message / console boundary
+     * ({@see PasswordPolicyWorkerBoundaryListener}), so nothing survives into the next unit of a long-running worker.
      *
      * @var array<string, true>
      */
@@ -56,7 +57,8 @@ class PasswordEntityListener implements ResetInterface
 
     /**
      * Changes recorded in the current flush, dispatched as PasswordChangeRecordedEvent on postFlush (after commit).
-     * Cleared at the start of every flush, so the changes of a failed flush are never announced.
+     * Cleared at the start of every flush, so the changes of a failed flush are never announced, and at every boundary
+     * ({@see PasswordPolicyWorkerBoundaryListener}), so a failed flush's users are not kept until the next flush.
      *
      * @var list<array{HasPasswordPolicyInterface, DateTimeInterface, int}>
      */

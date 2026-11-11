@@ -3,11 +3,13 @@
 | Field | Value |
 |-------|-------|
 | Package | `nowo-tech/password-policy-bundle` (`symfony-bundle`) |
-| Audited revision | `v1.4.4` (base `v1.4.3` / `dc885f9` + remediations) |
-| Audit date | 2026-09-23 (remediation closed 2026-09-24) |
+| Audited revision | `v1.11.1` (first audit `v1.4.4`; refreshed for REQ-RUNTIME-002) |
+| Audit date | 2026-09-23 (remediation closed 2026-09-24), refreshed 2026-11-12 |
 | Method | Manual review of every file under `src/` (Doctrine entity listener, kernel request listener, expiry / policy / history / configuration services, flash throttle storages, validator, route matcher, trait, DI extension, `Resources/config/services.yml`) |
 | **Verdict** | ✅ **Viable under scenario B** (after remediation) — no bundle service keeps per-request state across requests, the Carbon global locale is no longer touched, and the expiry listener ignores requests that did not pass a firewall. Residual framework responsibility: a stale token on `security: false` firewalls (see W-04) |
 | Remediation (2026-09-23/24) | W-01, W-02, W-03, W-04 resolved; W-05 accepted. Shipped in **1.4.4**. Regression tests simulate consecutive requests/flushes on the same service instances without `reset()` |
+| Remediation (2026-11-12) | W-06 resolved in **1.11.1**: per-flush state cleared at the request, Messenger and console boundaries (`PasswordPolicyWorkerBoundaryListener`) |
+| Worker tests | [Worker tests](#worker-tests-req-runtime-002): `PasswordPolicyKernelWorkerBoundaryTest` (1,000 requests through `http_kernel`, 2 users) and `PasswordPolicyPersonalDataDoctrineTest::testWorkerModeAlternatingSubjectsDoNotLeakState` (1,000 runs, 2 subjects) |
 
 ## Table of contents
 
@@ -20,6 +22,9 @@
   - [W-03 — `Carbon::setLocale()` changes a process-wide default on every validation (Medium)](#w-03--carbonsetlocale-changes-a-process-wide-default-on-every-validation-medium)
   - [W-04 — Expiry decisions read `security.token_storage` at call time (Medium)](#w-04--expiry-decisions-read-securitytoken_storage-at-call-time-medium)
   - [W-05 — Reset route pattern resolution scans all routes on each redirect (Low)](#w-05--reset-route-pattern-resolution-scans-all-routes-on-each-redirect-low)
+  - [W-06 — A failed flush keeps its users in the listener until the next flush (Low)](#w-06--a-failed-flush-keeps-its-users-in-the-listener-until-the-next-flush-low)
+- [Worker tests (REQ-RUNTIME-002)](#worker-tests-req-runtime-002)
+- [Host Doctrine entity managers](#host-doctrine-entity-managers)
 - [Usage recommendations in worker mode](#usage-recommendations-in-worker-mode)
 - [Re-audit triggers](#re-audit-triggers)
 
@@ -32,13 +37,18 @@ FrankenPHP worker mode boots the Symfony kernel once per worker and serves many 
 
 A bundle that is safe under **B** is safe under **A** and under classic mode / PHP-FPM.
 
+Precondition, precisely: with the stock Symfony kernel, `FRANKENPHP_RESET_KERNEL=false` only stops the kernel from being
+cloned; `Kernel::handle()` still calls `services_resetter->reset()` before every request after the first (scenario A).
+Scenario B happens when a host removes, replaces or bypasses `services_resetter` (or drives `http_kernel` directly),
+in Messenger consumers started with `--no-reset`, and in long-running console commands.
+
 ## Summary
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Mutable state in shared services | ✅ (resolved) | `PasswordEntityListener::$processedPasswords` is cleared at the start of every `onFlush`, keyed by entity + old hash, stores only `true`; other services only hold compile-time config |
+| Mutable state in shared services | ✅ (resolved) | `PasswordEntityListener::$processedPasswords` / `$pendingChanges` are cleared at the start of every `onFlush`, after `postFlush`, and at every request / message / console boundary (W-06); other services only hold compile-time config |
 | Static properties / `static` locals | ✅ | None in `src/`; `RouteNameMatcher::matches()` is a pure static function |
-| `ResetInterface` / `kernel.reset` coverage | ✅ | `PasswordEntityListener` implements `ResetInterface` and is tagged `kernel.reset` (safety net; it also clears itself per flush) |
+| `ResetInterface` / `kernel.reset` coverage | ✅ | `PasswordEntityListener` implements `ResetInterface` and is tagged `kernel.reset` (safety net; it also clears itself per flush and the boundary listener clears it per unit of work); `testResetClearsProcessedPasswords` |
 | Request / user / locale captured in services | ✅ (resolved) | Nothing captured in constructors; `PasswordExpiryListener` only trusts the token storage when the main request matched a firewall (`_firewall_context`) |
 | Superglobals, `$_ENV`, `putenv`, `ini_set`, `setlocale`, timezone | ✅ | None used |
 | Doctrine / EntityManager | ✅ (resolved) | `onFlush` listener no longer stores entities; the bundle never clears the application's EntityManager (identity-map clearing between requests remains the application's responsibility under scenario B) |
@@ -55,7 +65,8 @@ Worker demo: `demo/symfony8/docker/frankenphp/Caddyfile` declares a `worker` blo
 
 | Service | Shared | Mutable state | Scenario A | Scenario B |
 |---------|--------|---------------|------------|------------|
-| `nowo_password_policy.entity_listener.<entity>` (`EventListener\PasswordEntityListener`, `doctrine.event_listener` `onFlush`, `kernel.reset`) | yes, one per configured entity | `array<string, true> $processedPasswords`, cleared at the start of every flush | ✅ | ✅ |
+| `nowo_password_policy.entity_listener.<entity>` (`EventListener\PasswordEntityListener`, `doctrine.event_listener` `onFlush` / `postFlush`, `kernel.reset`) | yes, one per configured entity | `$processedPasswords` and `$pendingChanges` (the users of the current flush until `postFlush`), cleared at the start of every flush and by `PasswordPolicyWorkerBoundaryListener` | ✅ | ✅ |
+| `EventListener\PasswordPolicyWorkerBoundaryListener` (`kernel.event_subscriber`, 1.11.1) | yes | `int $consoleDepth`, `bool $messageInFlight`, `bool $requestInFlight` (nesting counter and unit-of-work flags, no request data; deliberately not `kernel.reset`) | ✅ | ✅ |
 | `EventListener\PasswordExpiryListener` (`kernel.request`) | yes | none written after construction (public constructor properties are not reassigned); per-request guard stored in request attributes; skips requests without `_firewall_context` | ✅ | ✅ |
 | `Service\PasswordExpiryService` (alias `PasswordExpiryServiceInterface`) | yes | `?array $entities` filled by `addEntity()` DI method calls at container build, then read-only; `$cacheEnabled` set in constructor | ✅ | ✅ (reads the token at call time; callers outside the listener inherit W-04 residual) |
 | `Service\PasswordPolicyService` | yes | none (`readonly` closure; hasher reference) | ✅ | ✅ |
@@ -106,7 +117,49 @@ The auto-registered `ExpiryFlash\*` classes under the `Service\` resource are al
 - **Recommendation:** prefer `reset_password_route_name` without a pattern on large applications.
 - **Status:** Accepted — CPU cost only, no cross-request state; memoizing the result would add per-worker state for little gain.
 
+### W-06 — A failed flush keeps its users in the listener until the next flush (Low)
+
+- **Where:** `src/EventListener/PasswordEntityListener.php` (`$pendingChanges` since 1.10.0, `$processedPasswords` keys since 1.4.4).
+- **Worker impact:** `onFlush` records the changed users (entity objects with their password hashes) and the old hashes;
+  `postFlush` empties the pending list. When the flush fails after `onFlush`, `postFlush` never runs, so the entities
+  and old hashes stayed in the shared listener until the next flush (which clears them first) or `kernel.reset`. They
+  were never dispatched or reused for another user, but in scenario B they outlived the request, message or command
+  that loaded them (memory retention of another user's data).
+- **Status:** Resolved in 1.11.1 — `src/EventListener/PasswordPolicyWorkerBoundaryListener.php` (registered by the
+  bundle) clears every already-built password listener at the main `kernel.request` (priority 4096; sub-requests keep
+  the main unit), `kernel.terminate`, Messenger `WorkerMessageReceivedEvent` (4096) and `WorkerMessageHandledEvent` /
+  `WorkerMessageFailedEvent` (-4096), and `console.terminate` (-4096) of the outermost command only: a depth counter
+  (`console.command` / `console.terminate`), an in-flight message flag (unset on handled / failed /
+  `WorkerStoppedEvent`) and an in-flight request flag (main `kernel.request` to `kernel.terminate`) keep a command
+  run in-process from another command, a message handler or a controller from clearing the outer unit mid-flush. The listeners arrive as a lazy
+  iterator of `IGNORE_ON_UNINITIALIZED_REFERENCE` references, so a boundary never builds one. Tests:
+  `PasswordPolicyKernelWorkerBoundaryTest`.
+
 No other findings. Good patterns: the per-request duplicate-flash guard lives in request attributes (`src/EventListener/PasswordExpiryListener.php:113`, `:217-226`); the expiry cache key includes the user class, id and `passwordChangedAt` timestamp (`src/Service/PasswordExpiryService.php:153-168`), so cached results cannot be served to another user; `CacheExpiryFlashThrottleStorage` is the documented choice for multi-worker deployments.
+
+## Worker tests (REQ-RUNTIME-002)
+
+Both run in `make test` / CI:
+
+- `tests/Integration/PasswordPolicyKernelWorkerBoundaryTest.php`: one `PasswordPolicyTestKernel`, requests through
+  the `http_kernel` service and `terminate()` (the services resetter never runs). **1,000 requests**; before each, a
+  failed flush of user A or user B (alternating) is left in the listener; after each, the listener holds no user and
+  no old hash; memory stays within **2 MiB** of the value after request 20. Further cases: a sub-request keeps the
+  main unit, Messenger received / handled / failed / stopped, a command nested in a message, in another command or
+  in an HTTP request does not clear the outer unit, the outermost command does, and a boundary never builds a listener.
+- `tests/Integration/Doctrine/PasswordPolicyPersonalDataDoctrineTest.php::testWorkerModeAlternatingSubjectsDoNotLeakState`:
+  GDPR export / erase ports on real Doctrine, the same service instances for 1,000 runs (100 on MySQL / PostgreSQL)
+  alternating two subjects; exact per-subject counts and memory within 2 MiB.
+
+Igor (`composer igor`) and the PHPStan FrankenPHP worker ruleset (`phpstan.neon.dist`) pass.
+
+## Host Doctrine entity managers
+
+The bundle writes through the host's entity manager (its listener joins the host's flush; the GDPR ports join the
+caller's transaction and never flush) and never clears it. A host that disables or bypasses the services resetter
+must clear its own entity managers at every boundary (main request start or end, Messenger message, console command);
+otherwise the identity map serves stale rows (for example an old `passwordChangedAt`) across requests
+(REQ-RUNTIME-002 rule 7).
 
 ## Usage recommendations in worker mode
 
@@ -116,4 +169,4 @@ No other findings. Good patterns: the per-request duplicate-flash guard lives in
 
 ## Re-audit triggers
 
-Re-run this audit when a change adds or modifies: properties of `PasswordEntityListener` or `PasswordExpiryService`, any in-memory cache of expiry state, new Doctrine listeners (`postFlush`, `onClear`), new calls to global setters in third-party libraries (Carbon, Intl), or reads of the user outside `TokenStorage`.
+Re-run this audit when a change adds or modifies: properties of `PasswordEntityListener`, `PasswordPolicyWorkerBoundaryListener` or `PasswordExpiryService`, any in-memory cache of expiry state, new Doctrine listeners (`postFlush`, `onClear`), new calls to global setters in third-party libraries (Carbon, Intl), or reads of the user outside `TokenStorage`.
