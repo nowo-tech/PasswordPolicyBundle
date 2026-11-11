@@ -66,7 +66,7 @@ Worker demo: `demo/symfony8/docker/frankenphp/Caddyfile` declares a `worker` blo
 | Service | Shared | Mutable state | Scenario A | Scenario B |
 |---------|--------|---------------|------------|------------|
 | `nowo_password_policy.entity_listener.<entity>` (`EventListener\PasswordEntityListener`, `doctrine.event_listener` `onFlush` / `postFlush`, `kernel.reset`) | yes, one per configured entity | `$processedPasswords` and `$pendingChanges` (the users of the current flush until `postFlush`), cleared at the start of every flush and by `PasswordPolicyWorkerBoundaryListener` | ✅ | ✅ |
-| `EventListener\PasswordPolicyWorkerBoundaryListener` (`kernel.event_subscriber`, 1.11.1) | yes | `int $consoleDepth`, `bool $messageInFlight` (nesting counter and unit-of-work flag, no request data; deliberately not `kernel.reset`) | ✅ | ✅ |
+| `EventListener\PasswordPolicyWorkerBoundaryListener` (`kernel.event_subscriber`, 1.11.1) | yes | `int $consoleDepth`, `bool $messageInFlight`, `bool $requestInFlight` (nesting counter and unit-of-work flags, no request data; deliberately not `kernel.reset`) | ✅ | ✅ |
 | `EventListener\PasswordExpiryListener` (`kernel.request`) | yes | none written after construction (public constructor properties are not reassigned); per-request guard stored in request attributes; skips requests without `_firewall_context` | ✅ | ✅ |
 | `Service\PasswordExpiryService` (alias `PasswordExpiryServiceInterface`) | yes | `?array $entities` filled by `addEntity()` DI method calls at container build, then read-only; `$cacheEnabled` set in constructor | ✅ | ✅ (reads the token at call time; callers outside the listener inherit W-04 residual) |
 | `Service\PasswordPolicyService` | yes | none (`readonly` closure; hasher reference) | ✅ | ✅ |
@@ -129,8 +129,9 @@ The auto-registered `ExpiryFlash\*` classes under the `Service\` resource are al
   bundle) clears every already-built password listener at the main `kernel.request` (priority 4096; sub-requests keep
   the main unit), `kernel.terminate`, Messenger `WorkerMessageReceivedEvent` (4096) and `WorkerMessageHandledEvent` /
   `WorkerMessageFailedEvent` (-4096), and `console.terminate` (-4096) of the outermost command only: a depth counter
-  (`console.command` / `console.terminate`) and an in-flight message flag (unset on handled / failed /
-  `WorkerStoppedEvent`) keep a nested in-process command from clearing the outer unit. The listeners arrive as a lazy
+  (`console.command` / `console.terminate`), an in-flight message flag (unset on handled / failed /
+  `WorkerStoppedEvent`) and an in-flight request flag (main `kernel.request` to `kernel.terminate`) keep a command
+  run in-process from another command, a message handler or a controller from clearing the outer unit mid-flush. The listeners arrive as a lazy
   iterator of `IGNORE_ON_UNINITIALIZED_REFERENCE` references, so a boundary never builds one. Tests:
   `PasswordPolicyKernelWorkerBoundaryTest`.
 
@@ -144,8 +145,8 @@ Both run in `make test` / CI:
   the `http_kernel` service and `terminate()` (the services resetter never runs). **1,000 requests**; before each, a
   failed flush of user A or user B (alternating) is left in the listener; after each, the listener holds no user and
   no old hash; memory stays within **2 MiB** of the value after request 20. Further cases: a sub-request keeps the
-  main unit, Messenger received / handled / failed / stopped, a command nested in a message or in another command
-  does not clear the outer unit, the outermost command does, and a boundary never builds a listener.
+  main unit, Messenger received / handled / failed / stopped, a command nested in a message, in another command or
+  in an HTTP request does not clear the outer unit, the outermost command does, and a boundary never builds a listener.
 - `tests/Integration/Doctrine/PasswordPolicyPersonalDataDoctrineTest.php::testWorkerModeAlternatingSubjectsDoNotLeakState`:
   GDPR export / erase ports on real Doctrine, the same service instances for 1,000 runs (100 on MySQL / PostgreSQL)
   alternating two subjects; exact per-subject counts and memory within 2 MiB.

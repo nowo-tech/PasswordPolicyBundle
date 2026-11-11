@@ -24,8 +24,11 @@ use Symfony\Component\ErrorHandler\BufferingLogger;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\TerminableInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
@@ -170,6 +173,26 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         // An unbalanced terminate never drives the depth below zero.
         $dispatcher->dispatch(new ConsoleTerminateEvent($command, $input, $output, Command::SUCCESS), ConsoleEvents::TERMINATE);
         $this->failedFlushOf(new KernelUser('REDACTED-TEST-next'));
+        $this->runNestedCommand($dispatcher);
+        self::assertSame([], $this->pendingChanges());
+    }
+
+    public function testCommandRunInsideARequestKeepsTheRequestUnit(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $request    = Request::create('/reset-password');
+
+        $dispatcher->dispatch(new RequestEvent($this->kernel, $request, HttpKernelInterface::MAIN_REQUEST), KernelEvents::REQUEST);
+        // A controller runs a command in-process while a flush of this request is pending.
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-in-request'));
+        $this->runNestedCommand($dispatcher);
+        self::assertCount(1, $this->pendingChanges(), 'A command inside a request keeps the request unit.');
+
+        $dispatcher->dispatch(new TerminateEvent($this->kernel, $request, new Response()), KernelEvents::TERMINATE);
+        self::assertSame([], $this->pendingChanges(), 'The request unit ends clean.');
+
+        // Outside any request, the outermost command clears again.
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-after-request'));
         $this->runNestedCommand($dispatcher);
         self::assertSame([], $this->pendingChanges());
     }

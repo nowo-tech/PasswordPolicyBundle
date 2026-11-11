@@ -59,8 +59,9 @@ Target: **1.11.1** (patch).
   first), but they stayed in memory across units of work. The new `PasswordPolicyWorkerBoundaryListener` (registered
   by the bundle) clears every already-built password listener at the main `kernel.request`, `kernel.terminate`,
   Messenger `WorkerMessageReceivedEvent` / `WorkerMessageHandledEvent` / `WorkerMessageFailedEvent`, and
-  `console.terminate` of the outermost command only (a depth counter plus an in-flight message flag keep a nested
-  in-process command from clearing the outer unit). The listeners stay `ResetInterface` / `kernel.reset`; the boundary
+  `console.terminate` of the outermost command only, outside any Messenger message or HTTP request (a depth counter
+  plus in-flight message and request flags keep a command run in-process from another command, a message handler or
+  a controller from clearing the outer unit mid-flush). The listeners stay `ResetInterface` / `kernel.reset`; the boundary
   only reaches already-built listeners (`IGNORE_ON_UNINITIALIZED_REFERENCE`). Precondition: only where the services
   resetter does not run between units: a host that removes, replaces or bypasses `services_resetter` (or drives
   `http_kernel` directly), Messenger consumers started with `--no-reset`, and long-running console commands. With the
