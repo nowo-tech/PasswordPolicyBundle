@@ -10,10 +10,12 @@ RUN apk add --no-cache \
     linux-headers \
     bash \
     libzip-dev \
+    postgresql-dev \
     zip
 
 # Install PHP extensions
-RUN docker-php-ext-install -j$(nproc) zip
+# pdo_mysql / pdo_pgsql: the database integration tests (DATABASE_URL); pdo_sqlite ships with the image.
+RUN docker-php-ext-install -j$(nproc) zip pdo_mysql pdo_pgsql
 
 # Install pcov for code coverage
 RUN pecl install pcov && docker-php-ext-enable pcov

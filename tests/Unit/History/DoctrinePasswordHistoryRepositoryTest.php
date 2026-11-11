@@ -195,4 +195,42 @@ final class DoctrinePasswordHistoryRepositoryTest extends UnitTestCase
         $this->expectExceptionMessage('no "passwordHistory" association');
         (new DoctrinePasswordHistoryRepository($registry, new PasswordHistoryService()))->add(KernelUser::class, '7', 'old-hash', new DateTimeImmutable());
     }
+
+    public function testLookAlikeIdIsNotTheSubject(): void
+    {
+        // A case- or accent-insensitive collation (or a numeric cast) returns the entity for a different id string.
+        $this->em->shouldReceive('find')->with(KernelUser::class, '07')->andReturn($this->user);
+        $this->user->addPasswordHistory($this->history('h-1', '2026-01-01'));
+
+        self::assertSame([], $this->repository()->findRecent(KernelUser::class, '07', 3));
+        self::assertSame(0, $this->repository()->prune(KernelUser::class, '07', 0));
+        self::assertSame(0, $this->repository()->removeAll(KernelUser::class, '07'));
+        self::assertCount(1, $this->repository()->findRecent(KernelUser::class, '7', 3));
+    }
+
+    public function testRemoveAllOfAnUnknownSubject(): void
+    {
+        $this->em->shouldReceive('find')->with(KernelUser::class, '8')->andReturn(null);
+
+        self::assertSame(0, $this->repository()->removeAll(KernelUser::class, '8'));
+        self::assertSame(0, $this->repository()->removeAll(KernelUser::class, ''));
+    }
+
+    public function testRemoveAllRequiresTheHistoryAssociation(): void
+    {
+        $this->em->shouldReceive('getClassMetadata')->andReturn(new ClassMetadata(KernelUser::class));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('password_history_field');
+        $this->repository()->removeAll(KernelUser::class, '7');
+    }
+
+    public function testRemoveAllRequiresAOneToManyAssociation(): void
+    {
+        $this->mapHistory(PasswordHistoryMock::class, '');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('must be a OneToMany association');
+        $this->repository()->removeAll(KernelUser::class, '7');
+    }
 }

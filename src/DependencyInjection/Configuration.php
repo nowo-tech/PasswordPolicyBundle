@@ -196,6 +196,20 @@ final class Configuration implements ConfigurationInterface
               ->defaultValue(3600)
               ->info('Cache time-to-live in seconds. Default is 3600 (1 hour). Only used when enable_cache is true.')
             ->end()
+            ->arrayNode('personal_data')
+              ->info('GDPR erasure and export. With nowo-tech/user-kit-bundle installed, the `password_history` eraser and export section register automatically.')
+              ->addDefaultsIfNotSet()
+              ->children()
+                ->booleanNode('enabled')
+                  ->defaultTrue()
+                  ->info('Register the UserKit eraser and export provider when UserKit is installed. Set false when your application already erases and exports the password history.')
+                ->end()
+                ->scalarNode('subject_resolver')
+                  ->defaultNull()
+                  ->info('Optional service id implementing PasswordPolicyPersonalDataSubjectResolverInterface (the password policy subjects of a UserKit user). Default: the bundle subject resolver.')
+                ->end()
+              ->end()
+            ->end()
           ->end();
         // @formatter:on
 

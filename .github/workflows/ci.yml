@@ -74,7 +74,16 @@ jobs:
         run: |
           echo "📦 Installing dependencies for Symfony ${{ matrix.symfony }}..."
           composer require symfony/framework-bundle:^${{ matrix.symfony }} symfony/validator:^${{ matrix.symfony }} --no-interaction --no-update
-          composer update symfony/* --with-all-dependencies --no-interaction --prefer-dist --no-progress
+          # UserKit (dev only, GDPR bridge tests) needs Symfony >= 7.4: older cells run without it (adapter tests skip).
+          case "${{ matrix.symfony }}" in
+            6.4|7.0)
+              composer remove --dev nowo-tech/user-kit-bundle --no-interaction --no-update
+              composer update --with-all-dependencies --no-interaction --prefer-dist --no-progress
+              ;;
+            *)
+              composer update symfony/* --with-all-dependencies --no-interaction --prefer-dist --no-progress
+              ;;
+          esac
       - name: Composer audit (Critical/High)
         run: composer audit --locked
 

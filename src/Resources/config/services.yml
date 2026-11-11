@@ -57,3 +57,23 @@ services:
 
   Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface:
     alias: Nowo\PasswordPolicyBundle\Subject\PasswordReuseChecker
+
+  # GDPR personal-data ports (erasure / export); the UserKit adapters are registered by the extension.
+  Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataEraser:
+    arguments:
+      $managerRegistry: '@?doctrine'
+
+  Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataEraserInterface:
+    alias: Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataEraser
+    public: true
+
+  Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataExporter: ~
+
+  Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataExporterInterface:
+    alias: Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataExporter
+    public: true
+
+  Nowo\PasswordPolicyBundle\PersonalData\DefaultPasswordPolicyPersonalDataSubjectResolver: ~
+
+  Nowo\PasswordPolicyBundle\PersonalData\PasswordPolicyPersonalDataSubjectResolverInterface:
+    alias: Nowo\PasswordPolicyBundle\PersonalData\DefaultPasswordPolicyPersonalDataSubjectResolver

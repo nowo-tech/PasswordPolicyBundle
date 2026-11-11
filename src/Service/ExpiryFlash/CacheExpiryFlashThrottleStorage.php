@@ -14,7 +14,7 @@ use function is_int;
  * Recommended for FrankenPHP worker mode and Kubernetes multi-pod deployments where session
  * storage is not shared between workers or pods.
  */
-final readonly class CacheExpiryFlashThrottleStorage implements ExpiryFlashThrottleStorageInterface
+final readonly class CacheExpiryFlashThrottleStorage implements ForgettableExpiryFlashThrottleStorageInterface
 {
     private const CACHE_KEY_PREFIX = 'nowo_password_policy.expiry_flash.';
 
@@ -42,6 +42,17 @@ final readonly class CacheExpiryFlashThrottleStorage implements ExpiryFlashThrot
         $item->set($timestamp);
         $item->expiresAfter($this->cacheTtlSeconds);
         $this->cache->save($item);
+    }
+
+    public function forget(string $subjectKey): bool
+    {
+        $key = $this->buildCacheKey($subjectKey);
+        if (!$this->cache->hasItem($key)) {
+            return false;
+        }
+
+        // @igor-ignore - Cache pool I/O (shared storage), no state is kept in this service.
+        return $this->cache->deleteItem($key);
     }
 
     private function buildCacheKey(string $subjectKey): string
