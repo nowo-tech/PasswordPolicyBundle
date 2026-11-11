@@ -28,6 +28,9 @@ use function sprintf;
  */
 final class UserKitEraserErasableHistoryPass implements CompilerPassInterface
 {
+    /** {@see PasswordHistoryUserKitEraser::KEY}, as a literal: reading the constant would autoload a class whose UserKit interface may be missing. */
+    private const ERASER_KEY = 'password_history';
+
     public function process(ContainerBuilder $container): void
     {
         if (!$container->hasDefinition(PasswordHistoryUserKitEraser::class) || !$container->has(PasswordHistoryRepositoryInterface::class)) {
@@ -51,7 +54,7 @@ final class UserKitEraserErasableHistoryPass implements CompilerPassInterface
         $container->removeDefinition(PasswordHistoryUserKitEraser::class);
         $container->log($this, sprintf(
             'UserKit eraser "%s" not registered: the password history adapter %s does not implement %s, so UserKit erasure would report the history as erased while it is not. Implement removeAll() on your adapter.',
-            PasswordHistoryUserKitEraser::KEY,
+            self::ERASER_KEY,
             $class,
             ErasablePasswordHistoryRepositoryInterface::class,
         ));
