@@ -7,6 +7,7 @@ namespace Nowo\PasswordPolicyBundle\DependencyInjection;
 use Exception;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
+use Nowo\PasswordPolicyBundle\EventListener\PasswordPolicyWorkerBoundaryListener;
 use Nowo\PasswordPolicyBundle\Exceptions\ConfigurationException;
 use Nowo\PasswordPolicyBundle\History\DoctrinePasswordHistoryRepository;
 use Nowo\PasswordPolicyBundle\History\PasswordHistoryRecorder;
@@ -31,6 +32,7 @@ use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
 use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface as UserKitPersonalDataEraserInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
@@ -96,6 +98,7 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$router', $this->optionalReference('router'));
         $definition->setArgument('$expireWhenNeverChanged', (bool) ($config['expire_when_never_changed'] ?? false));
 
+        $entityListeners = [];
         foreach ($config['entities'] as $entityClass => $settings) {
             if (!class_exists($entityClass)) {
                 throw new ConfigurationException(sprintf('Entity class %s not found', $entityClass));
@@ -135,7 +138,8 @@ final class PasswordPolicyExtension extends Extension
             }
 
             if ($settings['history_listener'] ?? true) {
-                $this->addEntityListener($containerBuilder, $entityClass, $settings, $config);
+                $listenerId        = $this->addEntityListener($containerBuilder, $entityClass, $settings, $config);
+                $entityListeners[] = new Reference($listenerId, ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE);
             }
 
             $passwordExpiryConfig = $containerBuilder->register(
@@ -153,6 +157,12 @@ final class PasswordPolicyExtension extends Extension
 
             $definition->addMethodCall('addEntity', [$passwordExpiryConfig]);
         }
+
+        // REQ-RUNTIME-002: clear the listeners' per-flush state at the request / message / console boundaries. A lazy
+        // iterator of IGNORE_ON_UNINITIALIZED references: a boundary never builds a listener.
+        $containerBuilder->register(PasswordPolicyWorkerBoundaryListener::class, PasswordPolicyWorkerBoundaryListener::class)
+            ->setArgument('$flushState', new IteratorArgument($entityListeners))
+            ->addTag('kernel.event_subscriber');
 
         $this->configurePorts($containerBuilder, $config);
         $this->configurePersonalData($containerBuilder, $config, $flashThrottleStorage);
@@ -303,14 +313,14 @@ final class PasswordPolicyExtension extends Extension
      *
      * @throws ConfigurationException If the entity class does not implement HasPasswordPolicyInterface
      *
-     * @return Definition The service definition for the entity listener
+     * @return string The service id of the entity listener
      */
     private function addEntityListener(
         ContainerBuilder $containerBuilder,
         string $entityClass,
         array $settings,
         array $config
-    ): Definition {
+    ): string {
         if (!is_a($entityClass, HasPasswordPolicyInterface::class, true)) {
             throw new ConfigurationException(sprintf("Entity %s doesn't implement %s interface", $entityClass, HasPasswordPolicyInterface::class));
         }
@@ -336,7 +346,7 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$passwordExpiryService', new Reference(PasswordExpiryServiceInterface::class));
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
 
-        return $definition;
+        return 'nowo_password_policy.entity_listener.' . $snakeClass;
     }
 
     /**
