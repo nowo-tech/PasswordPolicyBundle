@@ -50,6 +50,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Target: **1.11.2** (patch).
+
+### Fixed
+
+- Console boundary counter could leak or underflow in long-lived console processes (REQ-RUNTIME-002, audit NM, Low).
+  `PasswordPolicyWorkerBoundaryListener` counted commands with `++` on `console.command` (4096) and `--` on
+  `console.terminate` (-4096). A `console.terminate` listener in between that threw or stopped propagation (or a
+  `console.error` listener that threw, so Symfony skipped `console.terminate`) left the depth above zero for the rest of
+  the process, so the outermost command never cleared the password listeners again; a `console.command` listener above
+  4096 that threw or stopped propagation skipped the `++` while the `--` still ran, so a nested command cleared the
+  outer unit mid-run. The running commands are now a stack pushed and popped at `PHP_INT_MAX` (a terminate pops its
+  own command and every command started after it; an unknown command changes nothing); the outermost decision is taken
+  there and the clear still runs at -4096. HTTP and Messenger clears were already unconditional. New `reset()` (not
+  tagged `kernel.reset`) forgets the bookkeeping.
+
+### Tests
+
+- Real console `Application` runs in the kept-alive test kernel: a throwing terminate listener of a nested command, an
+  unknown nested command and a nested `console.command` stopped above 4096 never clear the outer unit early and never
+  keep the outermost command from clearing.
+
 ## [1.11.1] - 2026-11-12
 
 Target: **1.11.1** (patch).

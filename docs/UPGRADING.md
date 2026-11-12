@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.11.2](#to-1112)
 - [To 1.11.1](#to-1111)
 - [To 1.11.0](#to-1110)
 - [To 1.10.0](#to-1100)
@@ -51,6 +52,18 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.11.2
+
+From **1.11.1**: patch, no configuration change.
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
+
+- `PasswordPolicyWorkerBoundaryListener` (`@internal`) tracks running commands as a stack at `PHP_INT_MAX` instead of a
+  depth counter: the outermost command clears the password listeners even when another console listener throws or
+  stops propagation. Its console methods now take the console event.
 
 ## To 1.11.1
 

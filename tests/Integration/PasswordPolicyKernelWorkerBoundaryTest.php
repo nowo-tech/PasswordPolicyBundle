@@ -13,12 +13,15 @@ use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 use RuntimeException;
 use stdClass;
+use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\NullOutput;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\ErrorHandler\BufferingLogger;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -36,7 +39,9 @@ use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 use Symfony\Component\Messenger\Event\WorkerStoppedEvent;
 use Symfony\Component\Messenger\Worker;
+use Throwable;
 
+use function assert;
 use function gc_collect_cycles;
 use function memory_get_usage;
 use function str_replace;
@@ -197,6 +202,112 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         self::assertSame([], $this->pendingChanges());
     }
 
+    /**
+     * Audit NM (a): a `console.terminate` listener that throws in a nested command no longer leaves the console
+     * bookkeeping unbalanced: the outer command still ends clean, and so does the next one.
+     */
+    public function testThrowingTerminateListenerOfANestedCommandKeepsTheOuterBoundary(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $throwing   = static function (ConsoleTerminateEvent $event): void {
+            if ($event->getCommand()?->getName() === 'app:nested') {
+                throw new RuntimeException('terminate listener failed');
+            }
+        };
+        $dispatcher->addListener(ConsoleEvents::TERMINATE, $throwing, 0);
+
+        try {
+            $pendingAfterNested = null;
+            $this->runApplication(function (Application $application, OutputInterface $output) use (&$pendingAfterNested): void {
+                $this->failedFlushOf(new KernelUser('REDACTED-TEST-outer'));
+                try {
+                    $application->doRun(new ArrayInput(['command' => 'app:nested']), $output);
+                } catch (RuntimeException) {
+                    // The nested command's terminate listener failed; the outer command goes on.
+                }
+                $pendingAfterNested = $this->pendingChanges();
+            });
+
+            self::assertCount(1, (array) $pendingAfterNested, 'The nested command does not clear the outer unit.');
+            self::assertSame([], $this->pendingChanges(), 'The outer command still ends clean.');
+
+            $this->failedFlushOf(new KernelUser('REDACTED-TEST-next'));
+            $this->runApplication(static function (): void {
+            });
+            self::assertSame([], $this->pendingChanges(), 'The next outermost command ends clean too.');
+        } finally {
+            $dispatcher->removeListener(ConsoleEvents::TERMINATE, $throwing);
+        }
+    }
+
+    /**
+     * Audit NM (c): an unknown nested command (only `console.error`, no command / terminate) never ends the outer unit.
+     */
+    public function testUnknownNestedCommandKeepsTheOuterUnit(): void
+    {
+        $pendingAfterNested = null;
+        $this->runApplication(function (Application $application, OutputInterface $output) use (&$pendingAfterNested): void {
+            $this->failedFlushOf(new KernelUser('REDACTED-TEST-outer'));
+            try {
+                $application->doRun(new ArrayInput(['command' => 'app:does-not-exist']), $output);
+            } catch (Throwable) {
+                // Command not found.
+            }
+            $pendingAfterNested = $this->pendingChanges();
+        });
+
+        // The console error listener logged the unknown command: drop the buffered line, not the bundle's state.
+        $logger = $this->container->get('logger');
+        self::assertInstanceOf(BufferingLogger::class, $logger);
+        $logger->cleanLogs();
+
+        self::assertCount(1, (array) $pendingAfterNested, 'An unknown nested command keeps the outer unit.');
+        self::assertSame([], $this->pendingChanges(), 'The outer command ends clean.');
+    }
+
+    /**
+     * Audit NM (d): a `console.command` listener above 4096 that stops propagation in a nested command no longer makes
+     * that command's terminate end the outer unit mid-run.
+     */
+    public function testStoppedNestedCommandEventKeepsTheOuterUnit(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $stopping   = static function (ConsoleCommandEvent $event): void {
+            if ($event->getCommand()?->getName() === 'app:nested') {
+                $event->stopPropagation();
+            }
+        };
+        $dispatcher->addListener(ConsoleEvents::COMMAND, $stopping, 10000);
+
+        try {
+            $pendingAfterNested = null;
+            $this->runApplication(function (Application $application, OutputInterface $output) use (&$pendingAfterNested): void {
+                $this->failedFlushOf(new KernelUser('REDACTED-TEST-outer'));
+                $application->doRun(new ArrayInput(['command' => 'app:nested']), $output);
+                $pendingAfterNested = $this->pendingChanges();
+            });
+
+            self::assertCount(1, (array) $pendingAfterNested, 'The nested command does not clear the outer unit mid-run.');
+            self::assertSame([], $this->pendingChanges(), 'The outer command ends clean.');
+        } finally {
+            $dispatcher->removeListener(ConsoleEvents::COMMAND, $stopping);
+        }
+    }
+
+    public function testResetForgetsTheConsoleBookkeeping(): void
+    {
+        $boundary                   = $this->boundary();
+        [$command, $input, $output] = $this->command();
+
+        $boundary->onConsoleCommand(new ConsoleCommandEvent($command, $input, $output));
+        $boundary->onKernelRequest(new RequestEvent($this->kernel, Request::create('/'), HttpKernelInterface::MAIN_REQUEST));
+        $boundary->reset();
+
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-after-reset'));
+        $this->runNestedCommand($this->dispatcher());
+        self::assertSame([], $this->pendingChanges(), 'After reset() the next command is the outermost unit again.');
+    }
+
     public function testBoundaryNeverBuildsAListener(): void
     {
         $kernel = new PasswordPolicyTestKernel();
@@ -248,6 +359,52 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         [$command, $input, $output] = $this->command();
         $dispatcher->dispatch(new ConsoleCommandEvent($command, $input, $output), ConsoleEvents::COMMAND);
         $dispatcher->dispatch(new ConsoleTerminateEvent($command, $input, $output, Command::SUCCESS), ConsoleEvents::TERMINATE);
+    }
+
+    /**
+     * Runs `app:outer` (its body is $body) through a real console Application wired to the kernel's dispatcher;
+     * `app:nested` does nothing.
+     *
+     * @param callable(Application, OutputInterface): void $body
+     */
+    private function runApplication(callable $body): void
+    {
+        $application = new Application('test');
+        $application->setAutoExit(false);
+        $application->setCatchExceptions(false);
+        $application->setDispatcher($this->dispatcher());
+        $application->add(new class($body) extends Command {
+            /** @var callable(Application, OutputInterface): void */
+            private $body;
+
+            public function __construct(callable $body)
+            {
+                $this->body = $body;
+                parent::__construct('app:outer');
+            }
+
+            protected function execute(InputInterface $input, OutputInterface $output): int
+            {
+                $application = $this->getApplication();
+                assert($application instanceof Application);
+                ($this->body)($application, $output);
+
+                return Command::SUCCESS;
+            }
+        });
+        $application->add(new class extends Command {
+            public function __construct()
+            {
+                parent::__construct('app:nested');
+            }
+
+            protected function execute(InputInterface $input, OutputInterface $output): int
+            {
+                return Command::SUCCESS;
+            }
+        });
+
+        $application->run(new ArrayInput(['command' => 'app:outer']), new NullOutput());
     }
 
     /**

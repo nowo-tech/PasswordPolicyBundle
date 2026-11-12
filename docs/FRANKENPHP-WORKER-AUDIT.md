@@ -3,12 +3,13 @@
 | Field | Value |
 |-------|-------|
 | Package | `nowo-tech/password-policy-bundle` (`symfony-bundle`) |
-| Audited revision | `v1.11.1` (first audit `v1.4.4`; refreshed for REQ-RUNTIME-002) |
+| Audited revision | `v1.11.2` (first audit `v1.4.4`; refreshed for REQ-RUNTIME-002) |
 | Audit date | 2026-09-23 (remediation closed 2026-09-24), refreshed 2026-11-12 |
 | Method | Manual review of every file under `src/` (Doctrine entity listener, kernel request listener, expiry / policy / history / configuration services, flash throttle storages, validator, route matcher, trait, DI extension, `Resources/config/services.yml`) |
 | **Verdict** | ✅ **Viable under scenario B** (after remediation) — no bundle service keeps per-request state across requests, the Carbon global locale is no longer touched, and the expiry listener ignores requests that did not pass a firewall. Residual framework responsibility: a stale token on `security: false` firewalls (see W-04) |
 | Remediation (2026-09-23/24) | W-01, W-02, W-03, W-04 resolved; W-05 accepted. Shipped in **1.4.4**. Regression tests simulate consecutive requests/flushes on the same service instances without `reset()` |
 | Remediation (2026-11-12) | W-06 resolved in **1.11.1**: per-flush state cleared at the request, Messenger and console boundaries (`PasswordPolicyWorkerBoundaryListener`) |
+| Remediation (2026-11-12, audit NM) | **1.11.2**: console bookkeeping is a running-command stack at `PHP_INT_MAX` (no leak when another console listener throws or stops propagation; unknown command never decrements) |
 | Worker tests | [Worker tests](#worker-tests-req-runtime-002): `PasswordPolicyKernelWorkerBoundaryTest` (1,000 requests through `http_kernel`, 2 users) and `PasswordPolicyPersonalDataDoctrineTest::testWorkerModeAlternatingSubjectsDoNotLeakState` (1,000 runs, 2 subjects) |
 
 ## Table of contents
@@ -66,7 +67,7 @@ Worker demo: `demo/symfony8/docker/frankenphp/Caddyfile` declares a `worker` blo
 | Service | Shared | Mutable state | Scenario A | Scenario B |
 |---------|--------|---------------|------------|------------|
 | `nowo_password_policy.entity_listener.<entity>` (`EventListener\PasswordEntityListener`, `doctrine.event_listener` `onFlush` / `postFlush`, `kernel.reset`) | yes, one per configured entity | `$processedPasswords` and `$pendingChanges` (the users of the current flush until `postFlush`), cleared at the start of every flush and by `PasswordPolicyWorkerBoundaryListener` | ✅ | ✅ |
-| `EventListener\PasswordPolicyWorkerBoundaryListener` (`kernel.event_subscriber`, 1.11.1) | yes | `int $consoleDepth`, `bool $messageInFlight`, `bool $requestInFlight` (nesting counter and unit-of-work flags, no request data; deliberately not `kernel.reset`) | ✅ | ✅ |
+| `EventListener\PasswordPolicyWorkerBoundaryListener` (`kernel.event_subscriber`, 1.11.1) | yes | `list<Command> $runningCommands`, `?Command $terminatingOutermost`, `bool $messageInFlight`, `bool $requestInFlight` (running-command stack bounded by the nesting depth, pushed / popped at `PHP_INT_MAX` since 1.11.2, and unit-of-work flags, no request data; `reset()` exists but is deliberately not tagged `kernel.reset`) | ✅ | ✅ |
 | `EventListener\PasswordExpiryListener` (`kernel.request`) | yes | none written after construction (public constructor properties are not reassigned); per-request guard stored in request attributes; skips requests without `_firewall_context` | ✅ | ✅ |
 | `Service\PasswordExpiryService` (alias `PasswordExpiryServiceInterface`) | yes | `?array $entities` filled by `addEntity()` DI method calls at container build, then read-only; `$cacheEnabled` set in constructor | ✅ | ✅ (reads the token at call time; callers outside the listener inherit W-04 residual) |
 | `Service\PasswordPolicyService` | yes | none (`readonly` closure; hasher reference) | ✅ | ✅ |
@@ -134,6 +135,12 @@ The auto-registered `ExpiryFlash\*` classes under the `Service\` resource are al
   run in-process from another command, a message handler or a controller from clearing the outer unit mid-flush. The listeners arrive as a lazy
   iterator of `IGNORE_ON_UNINITIALIZED_REFERENCE` references, so a boundary never builds one. Tests:
   `PasswordPolicyKernelWorkerBoundaryTest`.
+- **Audit NM (1.11.2, Low):** the depth counter (`++` at `console.command` 4096, `--` at `console.terminate` -4096)
+  leaked when a listener in between threw or stopped propagation (or a throwing `console.error` listener made Symfony
+  skip `console.terminate`), so the outermost command of a long-lived console process stopped clearing; the reverse
+  case let a nested command clear the outer unit mid-run. Now a running-command stack pushed / popped at
+  `PHP_INT_MAX`; a terminate of a command not on the stack changes nothing. Tests run a real console `Application`
+  (throwing terminate listener, unknown nested command, `console.command` stopped above 4096).
 
 No other findings. Good patterns: the per-request duplicate-flash guard lives in request attributes (`src/EventListener/PasswordExpiryListener.php:113`, `:217-226`); the expiry cache key includes the user class, id and `passwordChangedAt` timestamp (`src/Service/PasswordExpiryService.php:153-168`), so cached results cannot be served to another user; `CacheExpiryFlashThrottleStorage` is the documented choice for multi-worker deployments.
 
