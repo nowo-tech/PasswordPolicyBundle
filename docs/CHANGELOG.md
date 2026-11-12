@@ -50,6 +50,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Target: **1.11.2** (patch).
+
+### Fixed
+
+- Console boundary counter could leak or underflow in long-lived console processes (REQ-RUNTIME-002, audit NM, Low).
+  `PasswordPolicyWorkerBoundaryListener` counted commands with `++` on `console.command` (4096) and `--` on
+  `console.terminate` (-4096). A `console.terminate` listener in between that threw or stopped propagation (or a
+  `console.error` listener that threw, so Symfony skipped `console.terminate`) left the depth above zero for the rest of
+  the process, so the outermost command never cleared the password listeners again; a `console.command` listener above
+  4096 that threw or stopped propagation skipped the `++` while the `--` still ran, so a nested command cleared the
+  outer unit mid-run. The units of work are now tracked by the new internal `Worker\UnitOfWorkFrames`, fed at
+  `PHP_INT_MAX` (audits NM and NL2-v, same design as PageBuilderKitBundle): one frame per console run keyed by the
+  Command AND its input (a command that runs itself in-process is two frames), saving the outer Messenger / main-request
+  state and restoring it when the frame is removed; a terminate removes its own frame and the nested frames above it, a
+  terminate without a frame never removes another run's frame; `console.error` marks the frame as failing and a frame
+  still failing (its error listener threw, so Symfony skipped `console.terminate`) is dropped at the next main request,
+  message, command or worker stop; the in-flight main request is a depth (`kernel.request` → `kernel.finish_request`),
+  so a nested main request does not end the outer one early, and the top-level `kernel.terminate` forgets a depth
+  left behind when a throwing `kernel.exception` listener skipped `kernel.finish_request` (audit NR-c F2). Every handler drops such frames before writing its own flag (audit NL2-v2). The clears keep their priorities. HTTP and Messenger
+  clears were already unconditional. `WorkerMessageSkipEvent` (only dispatched by `messenger:failed:retry`) also ends
+  the message in flight. New `reset()` (not tagged `kernel.reset`) forgets the bookkeeping.
+
+### Tests
+
+- Real console `Application` runs in the kept-alive test kernel: a throwing terminate listener of a nested command, an
+  unknown nested command, a nested `console.command` stopped above 4096, a self-recursive command whose error listener
+  throws, an error listener at `PHP_INT_MIN` that throws, a throwing `WorkerMessageReceivedEvent` listener inside a
+  command and a nested main request never clear the outer unit early and never keep the outermost command from
+  clearing. Unit tests for `UnitOfWorkFrames`.
+
 ## [1.11.1] - 2026-11-12
 
 Target: **1.11.1** (patch).
