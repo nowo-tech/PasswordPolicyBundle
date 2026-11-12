@@ -4,6 +4,7 @@
 
 - [Unreleased](#unreleased)
 - [To 1.11.2](#to-1112)
+- [To 1.11.2](#to-1112-1)
 - [To 1.11.1](#to-1111)
 - [To 1.11.0](#to-1110)
 - [To 1.10.0](#to-1100)
@@ -52,6 +53,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.11.2
+
+From **1.11.1**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 ## To 1.11.2
 

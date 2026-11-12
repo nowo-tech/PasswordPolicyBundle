@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.11.2] - 2026-11-12](#1112---2026-11-12)
 - [[1.11.1] - 2026-11-12](#1111---2026-11-12)
 - [[1.11.0] - 2026-11-11](#1110---2026-11-11)
 - [[1.10.0] - 2026-11-10](#1100---2026-11-10)
@@ -50,6 +51,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-11-12
+
 Target: **1.11.2** (patch).
 
 ### Fixed
@@ -79,6 +82,8 @@ Target: **1.11.2** (patch).
   throws, an error listener at `PHP_INT_MIN` that throws, a throwing `WorkerMessageReceivedEvent` listener inside a
   command and a nested main request never clear the outer unit early and never keep the outermost command from
   clearing. Unit tests for `UnitOfWorkFrames`.
+
+[1.11.2]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.11.2
 
 ## [1.11.1] - 2026-11-12
 
