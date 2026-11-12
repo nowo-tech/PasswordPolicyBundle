@@ -61,9 +61,10 @@ From **1.11.1**: patch, no configuration change.
 composer update nowo-tech/password-policy-bundle
 ```
 
-- `PasswordPolicyWorkerBoundaryListener` (`@internal`) tracks running commands as a stack at `PHP_INT_MAX` instead of a
-  depth counter: the outermost command clears the password listeners even when another console listener throws or
-  stops propagation. Its console methods now take the console event.
+- `PasswordPolicyWorkerBoundaryListener` (`@internal`) tracks the units of work with `Worker\UnitOfWorkFrames`
+  (console frames, main-request depth, message flag) at `PHP_INT_MAX` instead of a depth counter: the outermost command
+  clears the password listeners even when another console listener throws or stops propagation. It now also listens to
+  `kernel.finish_request`, `console.error` and `WorkerMessageSkipEvent`; its console methods take the console event.
 
 ## To 1.11.1
 

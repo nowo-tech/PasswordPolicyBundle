@@ -15,6 +15,7 @@ use RuntimeException;
 use stdClass;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\CommandLoader\FactoryCommandLoader;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
@@ -28,6 +29,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -41,12 +43,15 @@ use Symfony\Component\Messenger\Event\WorkerStoppedEvent;
 use Symfony\Component\Messenger\Worker;
 use Throwable;
 
+use function array_map;
 use function assert;
 use function gc_collect_cycles;
 use function memory_get_usage;
 use function str_replace;
 use function strtolower;
 use function sys_get_temp_dir;
+
+use const PHP_INT_MIN;
 
 /**
  * REQ-RUNTIME-002 worker test: one kernel kept alive, the services resetter never called. A flush that fails leaves its
@@ -193,6 +198,7 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         $this->runNestedCommand($dispatcher);
         self::assertCount(1, $this->pendingChanges(), 'A command inside a request keeps the request unit.');
 
+        $dispatcher->dispatch(new FinishRequestEvent($this->kernel, $request, HttpKernelInterface::MAIN_REQUEST), KernelEvents::FINISH_REQUEST);
         $dispatcher->dispatch(new TerminateEvent($this->kernel, $request, new Response()), KernelEvents::TERMINATE);
         self::assertSame([], $this->pendingChanges(), 'The request unit ends clean.');
 
@@ -300,12 +306,138 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         [$command, $input, $output] = $this->command();
 
         $boundary->onConsoleCommand(new ConsoleCommandEvent($command, $input, $output));
-        $boundary->onKernelRequest(new RequestEvent($this->kernel, Request::create('/'), HttpKernelInterface::MAIN_REQUEST));
+        $boundary->onKernelRequestStarted(new RequestEvent($this->kernel, Request::create('/'), HttpKernelInterface::MAIN_REQUEST));
+        $boundary->onMessageReceivedStarted();
         $boundary->reset();
 
         $this->failedFlushOf(new KernelUser('REDACTED-TEST-after-reset'));
         $this->runNestedCommand($this->dispatcher());
         self::assertSame([], $this->pendingChanges(), 'After reset() the next command is the outermost unit again.');
+    }
+
+    /**
+     * Audit NL2-v: a command that runs itself in-process (same Command object, new input) whose inner run fails and
+     * whose error listener throws: the inner terminate never comes; the outer run still ends the unit and the next
+     * outermost command clears too.
+     */
+    public function testSelfRecursiveCommandWithAThrowingErrorListener(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $throwing   = static function (): never {
+            throw new RuntimeException('error listener failed');
+        };
+        $depth       = 0;
+        $pending     = null;
+        $application = $this->application([]);
+        $recursive   = (new Command('app:rec'))->setCode(function () use ($application, &$depth, &$pending, $dispatcher, $throwing): int {
+            if (++$depth > 1) {
+                throw new RuntimeException('inner run failed');
+            }
+            $this->failedFlushOf(new KernelUser('REDACTED-TEST-outer'));
+            $dispatcher->addListener(ConsoleEvents::ERROR, $throwing);
+            try {
+                $application->run(new ArrayInput(['command' => 'app:rec']), new NullOutput());
+            } catch (Throwable) {
+                // The inner run failed and its error listener threw.
+            } finally {
+                $dispatcher->removeListener(ConsoleEvents::ERROR, $throwing);
+            }
+            $pending = $this->pendingChanges();
+
+            return Command::SUCCESS;
+        });
+        $application->setCommandLoader(new FactoryCommandLoader(['app:rec' => static fn (): Command => $recursive]));
+
+        self::assertSame(Command::SUCCESS, $application->run(new ArrayInput(['command' => 'app:rec']), new NullOutput()));
+        $this->cleanLogs();
+        self::assertCount(1, (array) $pending, 'The failed inner run does not clear the outer unit.');
+        self::assertSame([], $this->pendingChanges(), 'The outer run ends clean.');
+
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-next'));
+        $this->runNestedCommand($dispatcher);
+        self::assertSame([], $this->pendingChanges(), 'The next outermost command clears.');
+    }
+
+    /**
+     * Audit NL2-v: an error listener at PHP_INT_MIN throws, so the outermost failing command never terminates; the
+     * still-failing frame is dropped at the next command, which is the outermost unit again and clears at its end.
+     */
+    public function testErrorListenerAtIntMinThrowingNeverKeepsTheProcessInsideACommand(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $throwing   = static function (): never {
+            throw new RuntimeException('error listener failed');
+        };
+        $failing = (new Command('app:fail'))->setCode(static function (): never {
+            throw new RuntimeException('command failed');
+        });
+        $dispatcher->addListener(ConsoleEvents::ERROR, $throwing, PHP_INT_MIN);
+
+        try {
+            $this->application(['app:fail' => $failing])->run(new ArrayInput(['command' => 'app:fail']), new NullOutput());
+            self::fail('The error listener throws.');
+        } catch (RuntimeException) {
+        } finally {
+            $dispatcher->removeListener(ConsoleEvents::ERROR, $throwing);
+        }
+        $this->cleanLogs();
+
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-next'));
+        $this->runNestedCommand($dispatcher);
+        self::assertSame([], $this->pendingChanges(), 'The next command is the outermost unit and clears.');
+    }
+
+    /**
+     * Audit NL2-v: a WorkerMessageReceivedEvent listener throws inside an in-process consume command, so no handled /
+     * failed / stopped event follows; the command's frame restores the outer "no message" state when it ends.
+     */
+    public function testThrowingMessageReceivedListenerInsideACommandDoesNotLeakTheMessageFlag(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $throwing   = static function (): never {
+            throw new RuntimeException('received listener failed');
+        };
+        $consume = (new Command('app:consume'))->setCode(static function () use ($dispatcher, $throwing): int {
+            $dispatcher->addListener(WorkerMessageReceivedEvent::class, $throwing);
+            try {
+                $dispatcher->dispatch(new WorkerMessageReceivedEvent(new Envelope(new stdClass()), 'async'));
+            } catch (RuntimeException) {
+            } finally {
+                $dispatcher->removeListener(WorkerMessageReceivedEvent::class, $throwing);
+            }
+
+            return Command::SUCCESS;
+        });
+
+        self::assertSame(Command::SUCCESS, $this->application(['app:consume' => $consume])->run(new ArrayInput(['command' => 'app:consume']), new NullOutput()));
+
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-next'));
+        $this->runNestedCommand($dispatcher);
+        self::assertSame([], $this->pendingChanges(), 'No message is in flight after the command: the next command clears.');
+    }
+
+    /**
+     * Audit NL2-v: a main request handled in-process inside another main request does not end the outer one early:
+     * a command run afterwards in the outer request still keeps the request unit.
+     */
+    public function testNestedMainRequestKeepsTheOuterRequestInFlight(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $boundary   = $this->boundary();
+        $outer      = Request::create('/outer');
+        $inner      = Request::create('/inner');
+
+        $boundary->onKernelRequestStarted(new RequestEvent($this->kernel, $outer, HttpKernelInterface::MAIN_REQUEST));
+        $boundary->onKernelRequestStarted(new RequestEvent($this->kernel, $inner, HttpKernelInterface::MAIN_REQUEST));
+        $boundary->onKernelFinishRequest(new FinishRequestEvent($this->kernel, $inner, HttpKernelInterface::MAIN_REQUEST));
+
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-in-outer-request'));
+        $this->runNestedCommand($dispatcher);
+        self::assertCount(1, $this->pendingChanges(), 'A command inside the outer request keeps the request unit.');
+
+        $boundary->onKernelFinishRequest(new FinishRequestEvent($this->kernel, $outer, HttpKernelInterface::MAIN_REQUEST));
+        $this->runNestedCommand($dispatcher);
+        self::assertSame([], $this->pendingChanges(), 'Outside any request the outermost command clears.');
     }
 
     public function testBoundaryNeverBuildsAListener(): void
@@ -359,6 +491,32 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         [$command, $input, $output] = $this->command();
         $dispatcher->dispatch(new ConsoleCommandEvent($command, $input, $output), ConsoleEvents::COMMAND);
         $dispatcher->dispatch(new ConsoleTerminateEvent($command, $input, $output, Command::SUCCESS), ConsoleEvents::TERMINATE);
+    }
+
+    /**
+     * A console Application wired to the kernel's dispatcher with the given commands.
+     *
+     * @param array<string, Command> $commands
+     */
+    private function application(array $commands): Application
+    {
+        $application = new Application('test');
+        $application->setAutoExit(false);
+        $application->setCatchExceptions(false);
+        $application->setDispatcher($this->dispatcher());
+        $application->setCommandLoader(new FactoryCommandLoader(array_map(static fn (Command $command): callable => static fn (): Command => $command, $commands)));
+
+        return $application;
+    }
+
+    /**
+     * Drops the console error lines the test kernel's buffering logger collected.
+     */
+    private function cleanLogs(): void
+    {
+        $logger = $this->container->get('logger');
+        self::assertInstanceOf(BufferingLogger::class, $logger);
+        $logger->cleanLogs();
     }
 
     /**

@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\EventListener;
 
-use Symfony\Component\Console\Command\Command;
+use Nowo\PasswordPolicyBundle\Worker\UnitOfWorkFrames;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
+use Symfony\Component\Messenger\Event\WorkerMessageSkipEvent;
 use Symfony\Component\Messenger\Event\WorkerStoppedEvent;
 use Symfony\Contracts\Service\ResetInterface;
 
-use function array_slice;
 use function class_exists;
-use function count;
 
 use const PHP_INT_MAX;
 
@@ -33,17 +34,15 @@ use const PHP_INT_MAX;
  *
  * - main `kernel.request` (sub-requests share the main request's unit of work) and `kernel.terminate`;
  * - Messenger `WorkerMessageReceivedEvent`, `WorkerMessageHandledEvent` / `WorkerMessageFailedEvent`;
- * - `console.terminate`, only when it ends the OUTERMOST command and no Messenger message or HTTP request is in flight:
+ * - `console.terminate`, only when it ends the OUTERMOST command and no Messenger message or main request is in flight:
  *   a command run in-process from another command, from a message handler or from a controller must not clear the
- *   outer unit (a flush in progress would lose its `PasswordChangeRecordedEvent`). The message flag is set on message
- *   received and unset on handled / failed / worker stopped; the request flag is set on the main `kernel.request` and
- *   unset on `kernel.terminate`.
+ *   outer unit (a flush in progress would lose its `PasswordChangeRecordedEvent`).
  *
- * Console bookkeeping (1.11.2, audit NM): the running commands are a stack pushed on `console.command` and popped on
- * `console.terminate`, both at `PHP_INT_MAX`, so another listener that throws or stops propagation cannot skip it. A
- * terminate pops its own command and every command started after it (a nested run whose terminate was skipped); a
- * terminate of a command that is not on the stack changes nothing (never a blind decrement). Whether the command was
- * the outermost unit is decided there; the clear itself still runs at the late priority (-4096).
+ * Which unit is outermost is tracked by {@see UnitOfWorkFrames} (1.11.2, audits NM / NL2-v), fed at priority
+ * `PHP_INT_MAX` so another listener that throws or stops propagation cannot unbalance it: one frame per console run
+ * (Command + input), saving and restoring the outer message / request state, failing runs healed at the next unit;
+ * a main-request depth (`kernel.request` → `kernel.finish_request`); a Messenger in-flight flag. The clears keep their
+ * priorities (4096 at the start, -4096 at the end).
  *
  * The listeners stay tagged `kernel.reset`; this subscriber keeps them correct where the services resetter does not
  * run: a host that removes or bypasses `services_resetter` (or drives `http_kernel` directly), Messenger consumers
@@ -54,32 +53,21 @@ use const PHP_INT_MAX;
  *
  * @internal registered by the bundle; the constructor is not a public API
  */
-final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInterface, ResetInterface
+final readonly class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInterface, ResetInterface
 {
-    /**
-     * Console commands currently running in this process, outermost first (nested in-process runs count). Bounded by
-     * the nesting depth; deliberately not tagged `kernel.reset` (a reset between messages of a `messenger:consume`
-     * command would lose the outer command).
-     *
-     * @var list<Command>
-     */
-    private array $runningCommands = [];
+    /** Messenger skip event (class name; only dispatched by `messenger:failed:retry`, symfony/messenger 7.2+). */
+    public const MESSENGER_WORKER_MESSAGE_SKIPPED = WorkerMessageSkipEvent::class;
 
-    /** The outermost command whose `console.terminate` is under way: cleared at the late priority. */
-    private ?Command $terminatingOutermost = null;
-
-    /** A Messenger message is being handled (between received and handled / failed). */
-    private bool $messageInFlight = false;
-
-    /** A main HTTP request is being handled (between the main `kernel.request` and `kernel.terminate`). */
-    private bool $requestInFlight = false;
+    /** Units of work running in this process (deliberately not tagged `kernel.reset`). */
+    private UnitOfWorkFrames $frames;
 
     /**
      * @param iterable<ResetInterface> $flushState the per-entity {@see PasswordEntityListener} services
      */
     public function __construct(
-        private readonly iterable $flushState,
+        private iterable $flushState,
     ) {
+        $this->frames = new UnitOfWorkFrames();
     }
 
     /**
@@ -88,25 +76,38 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
     public static function getSubscribedEvents(): array
     {
         $events = [
-            KernelEvents::REQUEST   => ['onKernelRequest', 4096],
-            KernelEvents::TERMINATE => ['onKernelTerminate', -4096],
+            KernelEvents::REQUEST        => [['onKernelRequestStarted', PHP_INT_MAX], ['onKernelRequest', 4096]],
+            KernelEvents::FINISH_REQUEST => ['onKernelFinishRequest', PHP_INT_MAX],
+            KernelEvents::TERMINATE      => ['onKernelTerminate', -4096],
         ];
 
         if (class_exists(WorkerMessageReceivedEvent::class)) {
-            $events[WorkerMessageReceivedEvent::class] = ['onMessageReceived', 4096];
-            $events[WorkerMessageHandledEvent::class]  = ['onMessageFinished', -4096];
-            $events[WorkerMessageFailedEvent::class]   = ['onMessageFinished', -4096];
+            $events[WorkerMessageReceivedEvent::class]      = [['onMessageReceivedStarted', PHP_INT_MAX], ['onMessageReceived', 4096]];
+            $events[WorkerMessageHandledEvent::class]       = [['onMessageFinishedStarted', PHP_INT_MAX], ['onMessageFinished', -4096]];
+            $events[WorkerMessageFailedEvent::class]        = [['onMessageFinishedStarted', PHP_INT_MAX], ['onMessageFinished', -4096]];
+            $events[self::MESSENGER_WORKER_MESSAGE_SKIPPED] = ['onMessageFinishedStarted', PHP_INT_MAX];
             // A listener may skip a received message (no handled / failed event follows).
-            $events[WorkerStoppedEvent::class] = ['onWorkerStopped', -4096];
+            $events[WorkerStoppedEvent::class] = ['onWorkerStopped', PHP_INT_MAX];
         }
 
         if (class_exists(ConsoleEvents::class)) {
             // Bookkeeping first (PHP_INT_MAX), the clear late: a listener in between cannot skip the bookkeeping.
             $events[ConsoleEvents::COMMAND]   = ['onConsoleCommand', PHP_INT_MAX];
-            $events[ConsoleEvents::TERMINATE] = [['onConsoleTerminateStart', PHP_INT_MAX], ['onConsoleTerminate', -4096]];
+            $events[ConsoleEvents::ERROR]     = ['onConsoleError', PHP_INT_MAX];
+            $events[ConsoleEvents::TERMINATE] = [['onConsoleTerminateStarted', PHP_INT_MAX], ['onConsoleTerminate', -4096]];
         }
 
         return $events;
+    }
+
+    /**
+     * Main request starts (bookkeeping).
+     */
+    public function onKernelRequestStarted(RequestEvent $event): void
+    {
+        if ($event->isMainRequest()) {
+            $this->frames->requestStarted();
+        }
     }
 
     /**
@@ -118,9 +119,17 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
             return;
         }
 
-        // @igor-ignore - Unit-of-work flag, set and unset at the HTTP boundaries.
-        $this->requestInFlight = true;
         $this->clear();
+    }
+
+    /**
+     * Main request finished (bookkeeping).
+     */
+    public function onKernelFinishRequest(FinishRequestEvent $event): void
+    {
+        if ($event->isMainRequest()) {
+            $this->frames->requestFinished();
+        }
     }
 
     /**
@@ -128,9 +137,15 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
      */
     public function onKernelTerminate(): void
     {
-        // @igor-ignore - Unit-of-work flag, set and unset at the HTTP boundaries.
-        $this->requestInFlight = false;
         $this->clear();
+    }
+
+    /**
+     * A Messenger message is received (bookkeeping).
+     */
+    public function onMessageReceivedStarted(): void
+    {
+        $this->frames->messageReceived();
     }
 
     /**
@@ -138,9 +153,15 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
      */
     public function onMessageReceived(): void
     {
-        // @igor-ignore - Unit-of-work flag, set and unset at the Messenger boundaries.
-        $this->messageInFlight = true;
         $this->clear();
+    }
+
+    /**
+     * A Messenger message is handled, failed or skipped (bookkeeping).
+     */
+    public function onMessageFinishedStarted(): void
+    {
+        $this->frames->messageFinished();
     }
 
     /**
@@ -148,8 +169,6 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
      */
     public function onMessageFinished(): void
     {
-        // @igor-ignore - Unit-of-work flag, set and unset at the Messenger boundaries.
-        $this->messageInFlight = false;
         $this->clear();
     }
 
@@ -158,73 +177,41 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
      */
     public function onWorkerStopped(): void
     {
-        // @igor-ignore - Unit-of-work flag, set and unset at the Messenger boundaries.
-        $this->messageInFlight = false;
+        $this->frames->workerStopped();
     }
 
     /**
-     * A command starts (nested in-process runs count): pushed on the running-command stack.
+     * A console run starts (bookkeeping).
      */
     public function onConsoleCommand(ConsoleCommandEvent $event): void
     {
-        $command = $event->getCommand();
-        if (!$command instanceof Command) {
-            return;
-        }
-
-        // @igor-ignore - Nesting stack of the running commands (no request data).
-        $this->runningCommands[] = $command;
+        $this->frames->commandStarted($event);
     }
 
     /**
-     * A command ends: pops it and every command started after it; remembers whether it was the outermost unit
-     * (outside a Messenger message and an HTTP request). A command that is not on the stack changes nothing.
+     * A console run failed (bookkeeping: its frame is marked failing until its own terminate).
      */
-    public function onConsoleTerminateStart(ConsoleTerminateEvent $event): void
+    public function onConsoleError(ConsoleErrorEvent $event): void
     {
-        $command = $event->getCommand();
-        $index   = null;
-        for ($i = count($this->runningCommands) - 1; $i >= 0; --$i) {
-            if ($this->runningCommands[$i] === $command) {
-                $index = $i;
-
-                break;
-            }
-        }
-
-        if ($index === null) {
-            return;
-        }
-
-        // @igor-ignore - Nesting stack of the running commands (no request data).
-        $this->runningCommands = array_slice($this->runningCommands, 0, $index);
-        // @igor-ignore - Outermost command whose terminate is under way (cleared at the late priority).
-        $this->terminatingOutermost = $index === 0 && !$this->messageInFlight && !$this->requestInFlight ? $command : null;
+        $this->frames->commandFailed($event);
     }
 
     /**
-     * Clears only when the outermost command ends outside a Messenger message and outside an HTTP request.
+     * A console run ends (bookkeeping: its frame is removed, the outermost verdict kept for the late clear).
+     */
+    public function onConsoleTerminateStarted(ConsoleTerminateEvent $event): void
+    {
+        $this->frames->commandTerminated($event);
+    }
+
+    /**
+     * Clears only when the outermost command ends outside a Messenger message and outside a main request.
      */
     public function onConsoleTerminate(ConsoleTerminateEvent $event): void
     {
-        if (!$this->terminatingOutermost instanceof Command || $this->terminatingOutermost !== $event->getCommand()) {
-            return;
+        if ($this->frames->isOutermost($event)) {
+            $this->clear();
         }
-
-        // @igor-ignore - Outermost command whose terminate is under way (cleared at the late priority).
-        $this->terminatingOutermost = null;
-        $this->clear();
-    }
-
-    /**
-     * Forgets the console and unit-of-work bookkeeping. Not tagged `kernel.reset` and not relied on in worker mode.
-     */
-    public function reset(): void
-    {
-        $this->runningCommands      = [];
-        $this->terminatingOutermost = null;
-        $this->messageInFlight      = false;
-        $this->requestInFlight      = false;
     }
 
     /**
@@ -235,5 +222,13 @@ final class PasswordPolicyWorkerBoundaryListener implements EventSubscriberInter
         foreach ($this->flushState as $state) {
             $state->reset();
         }
+    }
+
+    /**
+     * Forgets the unit-of-work bookkeeping. Not tagged `kernel.reset` and not relied on in worker mode.
+     */
+    public function reset(): void
+    {
+        $this->frames->reset();
     }
 }
