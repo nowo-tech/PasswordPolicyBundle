@@ -483,6 +483,47 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         self::assertSame([], $this->pendingChanges(), 'No message is stuck in flight: the next command clears.');
     }
 
+    /**
+     * Audit NR-c F2: a kernel.exception listener throws, so kernel.finish_request never comes (with and without the
+     * front controller's kernel.terminate afterwards); the main request is not left "in flight": after the next
+     * top-level kernel.terminate the outermost command clears again.
+     */
+    public function testThrowingExceptionListenerNeverLeavesARequestInFlight(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $httpKernel = $this->container->get('http_kernel');
+        self::assertInstanceOf(HttpKernelInterface::class, $httpKernel);
+        self::assertInstanceOf(TerminableInterface::class, $httpKernel);
+        $throwing = static function (): never {
+            throw new RuntimeException('exception listener failed');
+        };
+
+        foreach ([true, false] as $terminateAfterFailure) {
+            $dispatcher->addListener(KernelEvents::EXCEPTION, $throwing, 512);
+            $request = Request::create('/missing-throwing-listener');
+            try {
+                $httpKernel->handle($request);
+                self::fail('the exception listener throws');
+            } catch (RuntimeException $e) {
+                self::assertSame('exception listener failed', $e->getMessage());
+            } finally {
+                $dispatcher->removeListener(KernelEvents::EXCEPTION, $throwing);
+            }
+            if ($terminateAfterFailure) {
+                $httpKernel->terminate($request, new Response('', 500));
+            } else {
+                $next     = Request::create('/missing-next');
+                $response = $httpKernel->handle($next);
+                $httpKernel->terminate($next, $response);
+            }
+            $this->cleanLogs();
+
+            $this->failedFlushOf(new KernelUser('REDACTED-TEST-after-exception'));
+            $this->runNestedCommand($dispatcher);
+            self::assertSame([], $this->pendingChanges(), 'no request is left in flight: the outermost command clears');
+        }
+    }
+
     public function testBoundaryNeverBuildsAListener(): void
     {
         $kernel = new PasswordPolicyTestKernel();

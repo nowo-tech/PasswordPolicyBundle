@@ -78,7 +78,7 @@ final readonly class PasswordPolicyWorkerBoundaryListener implements EventSubscr
         $events = [
             KernelEvents::REQUEST        => [['onKernelRequestStarted', PHP_INT_MAX], ['onKernelRequest', 4096]],
             KernelEvents::FINISH_REQUEST => ['onKernelFinishRequest', PHP_INT_MAX],
-            KernelEvents::TERMINATE      => ['onKernelTerminate', -4096],
+            KernelEvents::TERMINATE      => [['onKernelTerminateStarted', PHP_INT_MAX], ['onKernelTerminate', -4096]],
         ];
 
         if (class_exists(WorkerMessageReceivedEvent::class)) {
@@ -130,6 +130,15 @@ final readonly class PasswordPolicyWorkerBoundaryListener implements EventSubscr
         if ($event->isMainRequest()) {
             $this->frames->requestFinished();
         }
+    }
+
+    /**
+     * Top-level kernel.terminate (bookkeeping): forgets a main-request depth left behind when kernel.finish_request
+     * never came (a kernel.exception listener that threw; audit NR-c F2).
+     */
+    public function onKernelTerminateStarted(): void
+    {
+        $this->frames->requestTerminated();
     }
 
     /**
