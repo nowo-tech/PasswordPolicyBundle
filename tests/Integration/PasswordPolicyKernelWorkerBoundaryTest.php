@@ -44,7 +44,6 @@ use Symfony\Component\Messenger\Worker;
 use Throwable;
 
 use function array_map;
-use function assert;
 use function gc_collect_cycles;
 use function memory_get_usage;
 use function str_replace;
@@ -571,40 +570,17 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
      */
     private function runApplication(callable $body): void
     {
-        $application = new Application('test');
-        $application->setAutoExit(false);
-        $application->setCatchExceptions(false);
-        $application->setDispatcher($this->dispatcher());
-        $application->add(new class($body) extends Command {
-            /** @var callable(Application, OutputInterface): void */
-            private $body;
+        $application = $this->application([]);
+        $outer       = (new Command('app:outer'))->setCode(static function (InputInterface $input, OutputInterface $output) use ($application, $body): int {
+            $body($application, $output);
 
-            public function __construct(callable $body)
-            {
-                $this->body = $body;
-                parent::__construct('app:outer');
-            }
-
-            protected function execute(InputInterface $input, OutputInterface $output): int
-            {
-                $application = $this->getApplication();
-                assert($application instanceof Application);
-                ($this->body)($application, $output);
-
-                return Command::SUCCESS;
-            }
+            return Command::SUCCESS;
         });
-        $application->add(new class extends Command {
-            public function __construct()
-            {
-                parent::__construct('app:nested');
-            }
-
-            protected function execute(InputInterface $input, OutputInterface $output): int
-            {
-                return Command::SUCCESS;
-            }
-        });
+        $inner = (new Command('app:nested'))->setCode(static fn (): int => Command::SUCCESS);
+        $application->setCommandLoader(new FactoryCommandLoader([
+            'app:outer'  => static fn (): Command => $outer,
+            'app:nested' => static fn (): Command => $inner,
+        ]));
 
         $application->run(new ArrayInput(['command' => 'app:outer']), new NullOutput());
     }
