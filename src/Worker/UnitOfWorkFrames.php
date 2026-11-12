@@ -36,6 +36,9 @@ use function max;
  * The verdict of each console event ("did it start / end the outermost unit?") is kept per event object (`WeakMap`),
  * so a late listener reads the value computed when the event started, whatever ran in between.
  *
+ * Ordering rule (audit NL2-v2): every handler first drops the frames left failing (restoring the state they saved),
+ * THEN writes its own flag, so a healed frame never overwrites the handler's own state.
+ *
  * Process-lifetime state bounded by the nesting depth, describing the units still running; not tagged `kernel.reset`.
  *
  * @internal
@@ -65,9 +68,10 @@ final class UnitOfWorkFrames
         ++$this->requestDepth;
     }
 
-    /** Main `kernel.finish_request`. */
+    /** Main `kernel.finish_request`: heals a failed run first, then the main request ends. */
     public function requestFinished(): void
     {
+        $this->dropFailedFrames();
         // @igor-ignore - Main-request nesting depth, restored by the console frames (no request data).
         $this->requestDepth = max(0, $this->requestDepth - 1);
     }
@@ -80,9 +84,10 @@ final class UnitOfWorkFrames
         $this->messageInFlight = true;
     }
 
-    /** Messenger message handled, failed or skipped. */
+    /** Messenger message handled, failed or skipped: heals a failed run first, then no message is in flight. */
     public function messageFinished(): void
     {
+        $this->dropFailedFrames();
         // @igor-ignore - Unit-of-work flag, set and unset at the Messenger boundaries.
         $this->messageInFlight = false;
     }
@@ -90,9 +95,10 @@ final class UnitOfWorkFrames
     /** The worker stopped (possibly after a message without handled / failed): no message in flight any more. */
     public function workerStopped(): void
     {
+        // Heal first (it restores the state saved by the dropped frame), then write this handler's own flag.
+        $this->dropFailedFrames();
         // @igor-ignore - Unit-of-work flag, set and unset at the Messenger boundaries.
         $this->messageInFlight = false;
-        $this->dropFailedFrames();
     }
 
     /**

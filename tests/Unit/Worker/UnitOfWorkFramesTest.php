@@ -128,6 +128,43 @@ final class UnitOfWorkFramesTest extends TestCase
         self::assertTrue($frames->isIdle());
     }
 
+    /**
+     * Audit NL2-v2: a message handler runs a command that fails and whose console.error listener throws (no
+     * terminate); the message fails, the worker stops: the healed frame never leaves the message flag stuck.
+     */
+    public function testFailedCommandInsideAMessageNeverLeavesTheMessageInFlight(): void
+    {
+        foreach ([true, false] as $messageFailedEventDispatched) {
+            $frames = new UnitOfWorkFrames();
+            $frames->messageReceived();
+            $command = $this->start($frames, new Command('app:in-handler'));
+            $frames->commandFailed(new ConsoleErrorEvent($command[0]->getInput(), $command[0]->getOutput(), new RuntimeException('failed'), $command[0]->getCommand()));
+
+            if ($messageFailedEventDispatched) {
+                $frames->messageFinished();
+                self::assertFalse($frames->isMessageInFlight(), 'The failed message is no longer in flight.');
+            }
+            $frames->workerStopped();
+
+            self::assertTrue($frames->isIdle(), 'Nothing runs after the worker stopped.');
+            $frames->requestStarted();
+            self::assertSame(0, $frames->runningCommands());
+            $frames->requestFinished();
+            self::assertTrue($frames->isIdle());
+        }
+    }
+
+    public function testFailedCommandInsideARequestIsHealedWhenTheRequestFinishes(): void
+    {
+        $frames = new UnitOfWorkFrames();
+        $frames->requestStarted();
+        $command = $this->start($frames, new Command('app:in-controller'));
+        $frames->commandFailed(new ConsoleErrorEvent($command[0]->getInput(), $command[0]->getOutput(), new RuntimeException('failed'), $command[0]->getCommand()));
+        $frames->requestFinished();
+
+        self::assertTrue($frames->isIdle());
+    }
+
     public function testNestedMainRequestsKeepTheOuterOneInFlight(): void
     {
         $frames = new UnitOfWorkFrames();

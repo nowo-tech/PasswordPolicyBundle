@@ -67,7 +67,7 @@ Target: **1.11.2** (patch).
   terminate without a frame never removes another run's frame; `console.error` marks the frame as failing and a frame
   still failing (its error listener threw, so Symfony skipped `console.terminate`) is dropped at the next main request,
   message, command or worker stop; the in-flight main request is a depth (`kernel.request` → `kernel.finish_request`),
-  so a nested main request does not end the outer one early. The clears keep their priorities. HTTP and Messenger
+  so a nested main request does not end the outer one early. Every handler drops such frames before writing its own flag (audit NL2-v2). The clears keep their priorities. HTTP and Messenger
   clears were already unconditional. `WorkerMessageSkipEvent` (only dispatched by `messenger:failed:retry`) also ends
   the message in flight. New `reset()` (not tagged `kernel.reset`) forgets the bookkeeping.
 

@@ -440,6 +440,50 @@ final class PasswordPolicyKernelWorkerBoundaryTest extends TestCase
         self::assertSame([], $this->pendingChanges(), 'Outside any request the outermost command clears.');
     }
 
+    /**
+     * Audit NL2-v2: a message handler runs a command that fails and whose console.error listener throws (no
+     * terminate); the message fails and the worker stops: the next main request and the next command still clear.
+     */
+    public function testFailedCommandInsideAMessageNeverLeavesTheMessageInFlight(): void
+    {
+        $dispatcher = $this->dispatcher();
+        $envelope   = new Envelope(new stdClass());
+        $throwing   = static function (): never {
+            throw new RuntimeException('error listener failed');
+        };
+        $failing = (new Command('app:fail'))->setCode(static function (): never {
+            throw new RuntimeException('command failed');
+        });
+
+        $dispatcher->dispatch(new WorkerMessageReceivedEvent($envelope, 'async'));
+        $dispatcher->addListener(ConsoleEvents::ERROR, $throwing);
+        try {
+            $this->application(['app:fail' => $failing])->run(new ArrayInput(['command' => 'app:fail']), new NullOutput());
+            self::fail('The error listener throws.');
+        } catch (RuntimeException) {
+        } finally {
+            $dispatcher->removeListener(ConsoleEvents::ERROR, $throwing);
+        }
+        $dispatcher->dispatch(new WorkerMessageFailedEvent($envelope, 'async', new RuntimeException('handler failed')));
+        $dispatcher->dispatch(new WorkerStoppedEvent($this->createStub(Worker::class)));
+        $this->cleanLogs();
+
+        $httpKernel = $this->container->get('http_kernel');
+        self::assertInstanceOf(HttpKernelInterface::class, $httpKernel);
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-next-request'));
+        $request  = Request::create('/missing-after-worker');
+        $response = $httpKernel->handle($request);
+        if ($httpKernel instanceof TerminableInterface) {
+            $httpKernel->terminate($request, $response);
+        }
+        $this->cleanLogs();
+        self::assertSame([], $this->pendingChanges(), 'The next main request clears.');
+
+        $this->failedFlushOf(new KernelUser('REDACTED-TEST-next-command'));
+        $this->runNestedCommand($dispatcher);
+        self::assertSame([], $this->pendingChanges(), 'No message is stuck in flight: the next command clears.');
+    }
+
     public function testBoundaryNeverBuildsAListener(): void
     {
         $kernel = new PasswordPolicyTestKernel();
