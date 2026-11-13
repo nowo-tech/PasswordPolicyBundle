@@ -1,8 +1,9 @@
-<a href="{{ path('user_show', {'id': user.id}) }}" class="btn">View</a>
-<a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-warning">Edit</a>
-<a href="{{ path('user_change_password', {'id': user.id}) }}" class="btn btn-success">Change Password</a>
-{% set delete_form = delete_forms[user.id] %}
-{{ form_start(delete_form) }}
-    {% for child in delete_form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
-    <button type="submit" class="btn btn-danger">Delete</button>
-{{ form_end(delete_form) }}
+<div class="nowo-ui-row-actions">
+    <a href="{{ path('user_show', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--sm nowo-ui-btn--outline">View</a>
+    <a href="{{ path('user_edit', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--sm nowo-ui-btn--outline">Edit</a>
+    <a href="{{ path('user_change_password', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--sm nowo-ui-btn--primary">Change Password</a>
+    {% set delete_form = delete_forms[user.id] %}
+    {{ form_start(delete_form) }}
+        {{ form_rest(delete_form) }}
+    {{ form_end(delete_form, {render_rest: false}) }}
+</div>

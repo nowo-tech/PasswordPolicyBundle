@@ -2,6 +2,10 @@
 
 {% block title %}Users - Password Policy Demo{% endblock %}
 
+{% block nowo_ui_page_header %}
+    {{ include(nowo_ui_partial('page_header'), {title: 'Users Management'}) }}
+{% endblock %}
+
 {% block body %}
     {% set expiryDays = 90 %}
     {% set now = date('now') %}
@@ -21,39 +25,31 @@
     {% endfor %}
 
     {% if expiredUsers|length > 0 %}
-        <div class="alert alert-danger">
+        <div class="nowo-ui-flash nowo-ui-flash--error" role="alert">
             <span>⚠️ <strong>{{ expiredUsers|length }}</strong> user{{ expiredUsers|length != 1 ? 's have' : ' has' }} expired password{{ expiredUsers|length != 1 ? 's' : '' }}. They need to change it immediately!</span>
         </div>
     {% elseif expiringSoonUsers|length > 0 %}
-        <div class="password-expiry-banner alert-warning">
+        <div class="nowo-ui-flash nowo-ui-flash--warning" role="alert">
             <span>⚠️ <strong>{{ expiringSoonUsers|length }}</strong> user{{ expiringSoonUsers|length != 1 ? 's have' : ' has' }} password{{ expiringSoonUsers|length != 1 ? 's' : '' }} expiring in 5 days or less!</span>
         </div>
     {% endif %}
 
-    <h1>
-        <span>Users Management</span>
-        <a href="{{ path('user_new') }}" class="btn btn-success">+ New User</a>
-    </h1>
+    <p>
+        <a href="{{ path('demo_home') }}" class="nowo-ui-btn nowo-ui-btn--outline">← Back to Home</a>
+        <a href="{{ path('user_new') }}" class="nowo-ui-btn nowo-ui-btn--primary">+ New User</a>
+    </p>
 
-    {% block flash_messages %}
-        {% for message in app.flashes('success') %}
-            <div class="alert alert-success">{{ message }}</div>
-        {% endfor %}
-    {% endblock %}
-
-    <a href="{{ path('demo_home') }}" class="btn btn-secondary">← Back to Home</a>
-
-    <div class="password-expiry-info">
+    <div class="nowo-ui-flash nowo-ui-flash--info" role="note">
         <strong>ℹ️ Password Expiry Information:</strong>
-        <ul style="margin: 10px 0 0 20px; padding: 0;">
+        <ul>
             <li>Passwords expire after <strong>{{ expiryDays }} days</strong> from the last change date.</li>
-            <li>Users with <span class="badge badge-danger">Expired</span> passwords need to change them immediately.</li>
-            <li>Users with <span class="badge badge-warning">Expiring Soon</span> status have less than 5 days remaining.</li>
+            <li>Users with <span class="nowo-ui-badge nowo-ui-badge--danger">Expired</span> passwords need to change them immediately.</li>
+            <li>Users with <span class="nowo-ui-badge nowo-ui-badge--warning">Expiring Soon</span> status have less than 5 days remaining.</li>
             <li>Click on any user to see detailed password expiry information and change their password.</li>
         </ul>
     </div>
 
-    <table>
+    <div class="nowo-ui-table-wrap"><table class="nowo-ui-table nowo-ui-table--striped">
         <thead>
             <tr>
                 <th>ID</th>
@@ -87,28 +83,28 @@
                             {% set expiresAt = passwordChangedAt|date_modify('+' ~ expiryDays ~ ' days') %}
                             {% set daysRemaining = ((expiresAt.timestamp - now.timestamp) / 86400)|round %}
                             {% if daysRemaining <= 0 %}
-                                <br><small style="color: #dc3545; font-weight: bold;">⚠️ Expired {{ (daysRemaining * -1) }} day{{ (daysRemaining * -1) != 1 ? 's' : '' }} ago</small>
+                                <br><small class="nowo-ui-muted">⚠️ Expired {{ (daysRemaining * -1) }} day{{ (daysRemaining * -1) != 1 ? 's' : '' }} ago</small>
                             {% elseif daysRemaining <= 5 %}
-                                <br><small style="color: #856404; font-weight: bold;">⚠️ Expires in {{ daysRemaining }} day{{ daysRemaining != 1 ? 's' : '' }}</small>
+                                <br><small class="nowo-ui-muted">⚠️ Expires in {{ daysRemaining }} day{{ daysRemaining != 1 ? 's' : '' }}</small>
                             {% elseif daysRemaining <= 15 %}
-                                <br><small style="color: #004085;">ℹ️ Expires in {{ daysRemaining }} days</small>
+                                <br><small class="nowo-ui-muted">ℹ️ Expires in {{ daysRemaining }} days</small>
                             {% else %}
-                                <br><small style="color: #28a745;">✓ {{ daysRemaining }} days remaining</small>
+                                <br><small class="nowo-ui-muted">✓ {{ daysRemaining }} days remaining</small>
                             {% endif %}
                         {% endif %}
                     </td>
                     <td>{{ user.passwordHistory|length }} entries</td>
-                    <td>
+                    <td class="nowo-ui-table__actions">
                         {% include 'user/_user_actions.html.twig' with {'user': user} %}
                     </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px;">
+                    <td colspan="6">
                         <em>No users found. <a href="{{ path('user_new') }}">Create the first user</a></em>
                     </td>
                 </tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table></div>
 {% endblock %}

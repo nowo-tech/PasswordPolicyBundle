@@ -5,31 +5,31 @@
 {% block use_case_title %}Excluded Routes{% endblock %}
 
 {% block use_case_content %}
-    <div class="info-box info-box-info">
+    <div class="nowo-ui-flash nowo-ui-flash--info" role="note">
         <h3>Understanding Excluded Routes</h3>
         <p>{{ note }}</p>
     </div>
     
     <h2>Current Configuration</h2>
     
-    <div class="config-box">
+    <div class="nowo-ui-card"><div class="nowo-ui-card__body">
         <h3>Locked Routes (notified_routes)</h3>
         <p>These routes trigger password expiry checks:</p>
-        <ul class="route-list">
+        <ul>
             {% for route in lockedRoutes %}
-                <li><code>{{ route }}</code></li>
+                <li><code class="nowo-ui-code">{{ route }}</code></li>
             {% else %}
                 <li><em>No locked routes configured</em></li>
             {% endfor %}
         </ul>
-    </div>
+    </div></div>
     
-    <div class="info-box info-box-warning">
+    <div class="nowo-ui-flash nowo-ui-flash--warning" role="note">
         <h3>Excluded Routes (excluded_notified_routes)</h3>
         <p>These routes are <strong>excluded</strong> from expiry checks, even if they're in notified_routes:</p>
-        <ul class="route-list">
+        <ul>
             {% for route in excludedRoutes %}
-                <li><code>{{ route }}</code> - <strong>EXCLUDED</strong></li>
+                <li><code class="nowo-ui-code">{{ route }}</code> - <strong>EXCLUDED</strong></li>
             {% else %}
                 <li><em>No excluded routes configured</em></li>
             {% endfor %}
@@ -45,7 +45,7 @@
     </ul>
     
     <h2>Configuration Example</h2>
-    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;"><code>nowo_password_policy:
+    <pre class="nowo-ui-code-block"><code>nowo_password_policy:
     entities:
         App\Entity\User:
             notified_routes:
@@ -56,7 +56,7 @@
                 - logout
                 - user_change_password</code></pre>
     
-    <div class="info-box info-box-success">
+    <div class="nowo-ui-flash nowo-ui-flash--success" role="note">
         <strong>✅ Best Practice:</strong> Always exclude login, logout, and password reset routes to prevent redirect loops.
     </div>
 {% endblock %}

@@ -2,29 +2,16 @@
 
 {% block title %}User Details - Password Policy Demo{% endblock %}
 
-{% block styles %}
-    {{ parent() }}
-    <style>
-        h1 {
-            display: block;
-        }
-        table th {
-            background: #e9ecef;
-        }
-        table th, table td {
-            padding: 8px;
-        }
-    </style>
+{% block nowo_ui_page_header %}
+    {{ include(nowo_ui_partial('page_header'), {title: 'User Details'}) }}
 {% endblock %}
 
 {% block body %}
-    <h1>User Details</h1>
+    <a href="{{ path('user_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">← Back to List</a>
+    <a href="{{ path('user_edit', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--outline">Edit</a>
+    <a href="{{ path('user_change_password', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--primary">Change Password</a>
 
-    <a href="{{ path('user_index') }}" class="btn btn-secondary">← Back to List</a>
-    <a href="{{ path('user_edit', {'id': user.id}) }}" class="btn btn-warning">Edit</a>
-    <a href="{{ path('user_change_password', {'id': user.id}) }}" class="btn btn-success">Change Password</a>
-
-    <div class="info-box">
+    <div class="nowo-ui-card"><div class="nowo-ui-card__body">
         <h3>User Information</h3>
         <p><strong>ID:</strong> {{ user.id }}</p>
         <p><strong>Email:</strong> {{ user.email }}</p>
@@ -43,22 +30,22 @@
             {% if user.passwordChangedAt %}
                 {% set daysSince = (date().timestamp - user.passwordChangedAt.timestamp) / 86400 %}
                 {% if daysSince >= 90 %}
-                    <span class="badge badge-danger">Expired ({{ daysSince|round }} days old)</span>
+                    <span class="nowo-ui-badge nowo-ui-badge--danger">Expired ({{ daysSince|round }} days old)</span>
                 {% elseif daysSince >= 85 %}
-                    <span class="badge badge-warning">Expiring Soon ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
+                    <span class="nowo-ui-badge nowo-ui-badge--warning">Expiring Soon ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
                 {% else %}
-                    <span class="badge badge-success">Active ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
+                    <span class="nowo-ui-badge nowo-ui-badge--success">Active ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
                 {% endif %}
             {% else %}
-                <span class="badge badge-warning">No Password Set</span>
+                <span class="nowo-ui-badge nowo-ui-badge--warning">No Password Set</span>
             {% endif %}
         </p>
-    </div>
+    </div></div>
 
-    <div class="info-box">
+    <div class="nowo-ui-card"><div class="nowo-ui-card__body">
         <h3>Password History ({{ user.passwordHistory|length }} entries)</h3>
         {% if user.passwordHistory|length > 0 %}
-            <table>
+            <div class="nowo-ui-table-wrap"><table class="nowo-ui-table nowo-ui-table--striped">
                 <thead>
                     <tr>
                         <th>Created At</th>
@@ -69,13 +56,13 @@
                     {% for history in user.passwordHistory %}
                         <tr>
                             <td>{{ history.createdAt|date('Y-m-d H:i:s') }}</td>
-                            <td><code>{{ history.password|slice(0, 20) }}...</code></td>
+                            <td><code class="nowo-ui-code">{{ history.password|slice(0, 20) }}...</code></td>
                         </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+            </table></div>
         {% else %}
             <p><em>No password history available.</em></p>
         {% endif %}
-    </div>
+    </div></div>
 {% endblock %}

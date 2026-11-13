@@ -15,6 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -79,7 +80,7 @@ class UserController extends AbstractController
     #[Route('/{id}/edit', name: 'user_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, User $user): Response
     {
-        $form = $this->createForm(UserType::class, $user, ['is_edit' => true]);
+        $form = $this->createForm(UserType::class, $user, ['is_edit' => true, 'submit_label' => 'Update User']);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -131,12 +132,14 @@ class UserController extends AbstractController
     {
         $form = $this->createDeleteForm($user);
         $form->handleRequest($request);
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->remove($user);
-            $this->entityManager->flush();
-
-            $this->addFlash('success', 'User deleted successfully!');
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            throw new UnprocessableEntityHttpException('Invalid CSRF token.');
         }
+
+        $this->entityManager->remove($user);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'User deleted successfully!');
 
         return $this->redirectToRoute('user_index');
     }
@@ -151,8 +154,10 @@ class UserController extends AbstractController
         return $this->container->get('form.factory')->createNamed('delete_' . $user->getId(), CsrfOnlyType::class, null, [
             'action'        => $this->generateUrl('user_delete', ['id' => $user->getId()]),
             'csrf_token_id' => 'delete' . $user->getId(),
+            'submit_label'  => 'Delete',
+            'submit_attr'   => ['class' => 'nowo-ui-btn nowo-ui-btn--sm nowo-ui-btn--danger'],
             'attr'          => [
-                'style'    => 'display: inline;',
+                'class'    => 'nowo-ui-row-actions__form',
                 'onsubmit' => "return confirm('Are you sure you want to delete this user?');",
             ],
         ]);
