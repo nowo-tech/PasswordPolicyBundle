@@ -1,16 +1,16 @@
 {% if user %}
-    <div class="info-box {% if isExpired %}info-box-danger{% else %}info-box-success{% endif %}">
+    <div class="nowo-ui-flash nowo-ui-flash--{% if isExpired %}error{% else %}success{% endif %}" role="note">
         <h3>Current User: {{ user.email }}</h3>
         <p><strong>Password Status:</strong> 
             {% if isExpired %}
-                <span class="badge badge-danger">EXPIRED</span>
+                <span class="nowo-ui-badge nowo-ui-badge--danger">EXPIRED</span>
                 {% if daysSinceExpiry is defined and daysSinceExpiry %}
-                    <span style="margin-left: 10px;">Expired {{ daysSinceExpiry }} day(s) ago</span>
+                    <span>Expired {{ daysSinceExpiry }} day(s) ago</span>
                 {% endif %}
             {% else %}
-                <span class="badge badge-success">ACTIVE</span>
+                <span class="nowo-ui-badge nowo-ui-badge--success">ACTIVE</span>
                 {% if daysRemaining is defined and daysRemaining %}
-                    <span style="margin-left: 10px;">Expires in {{ daysRemaining }} day(s)</span>
+                    <span>Expires in {{ daysRemaining }} day(s)</span>
                 {% endif %}
             {% endif %}
         </p>

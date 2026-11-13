@@ -2,34 +2,22 @@
 
 {% block title %}New User - Password Policy Demo{% endblock %}
 
-{% block styles %}
-    {{ parent() }}
-    <style>
-        h1 {
-            display: block;
-        }
-    </style>
+{% block nowo_ui_page_header %}
+    {{ include(nowo_ui_partial('page_header'), {title: 'Create New User'}) }}
 {% endblock %}
 
 {% block body %}
-    <h1>Create New User</h1>
+    <a href="{{ path('user_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">← Back to List</a>
 
-    <a href="{{ path('user_index') }}" class="btn btn-secondary">← Back to List</a>
-
-    {% block flash_messages %}
-        {% for message in app.flashes('error') %}
-            <div class="alert alert-danger">{{ message }}</div>
-        {% endfor %}
-    {% endblock %}
-
-    {{ form_start(form) }}
-        {# REQ-TWIG-003: child loop (the .form-group wrapper and the help text come from the FormType row_attr / help options) #}
-        {% for child in form %}
-            {% if not child.rendered %}
-                {{ form_row(child) }}
-            {% endif %}
-        {% endfor %}
-
-        <button type="submit" class="btn">Create User</button>
-    {{ form_end(form) }}
+    <section class="nowo-ui-card">
+        <div class="nowo-ui-card__body">
+            {{ form_start(form) }}
+            {% for child in form %}
+                {% if not child.rendered %}
+                    {{ form_row(child) }}
+                {% endif %}
+            {% endfor %}
+        {{ form_end(form) }}
+        </div>
+    </section>
 {% endblock %}
