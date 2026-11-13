@@ -37,9 +37,11 @@ use function sprintf;
  *
  * This listener listens to Doctrine's onFlush event and automatically creates password
  * history entries when a password is changed, and updates the passwordChangedAt timestamp.
- * On postFlush it dispatches PasswordChangeRecordedEvent (scalar ids) for those changes. Do not flush from a
- * postFlush listener that runs before this one: the nested flush starts a new change set and the outer flush's
- * PasswordChangeRecordedEvent is not dispatched.
+ * It dispatches nothing inside the flush (REQ-ARCH-001 rule 7): on postFlush, after the commit, it dispatches for each
+ * change PasswordHistoryCreatedEvent, PasswordChangedEvent (since 1.12.0; before, inside onFlush) and
+ * PasswordChangeRecordedEvent (scalar ids). A failed flush dispatches none of them. Do not flush from a postFlush
+ * listener that runs before this one: the nested flush starts a new change set and the outer flush's events are not
+ * dispatched.
  *
  * It is the default history adapter; set history_listener: false on an entity to record the history yourself
  * through PasswordHistoryRecorderInterface.
@@ -56,11 +58,12 @@ class PasswordEntityListener implements ResetInterface
     private array $processedPasswords = [];
 
     /**
-     * Changes recorded in the current flush, dispatched as PasswordChangeRecordedEvent on postFlush (after commit).
+     * Changes recorded in the current flush, dispatched on postFlush (after commit): PasswordHistoryCreatedEvent,
+     * PasswordChangedEvent and PasswordChangeRecordedEvent.
      * Cleared at the start of every flush, so the changes of a failed flush are never announced, and at every boundary
      * ({@see PasswordPolicyWorkerBoundaryListener}), so a failed flush's users are not kept until the next flush.
      *
-     * @var list<array{HasPasswordPolicyInterface, DateTimeInterface, int}>
+     * @var list<array{HasPasswordPolicyInterface, DateTimeInterface, int, PasswordHistoryInterface}>
      */
     private array $pendingChanges = [];
 
@@ -212,17 +215,9 @@ class PasswordEntityListener implements ResetInterface
             $this->passwordExpiryService->invalidateCache($hasPasswordPolicy);
         }
 
-        // Dispatch events
+        // Events are dispatched on postFlush, after the commit (REQ-ARCH-001 rule 7), never inside this flush.
         if ($this->eventDispatcher instanceof EventDispatcherInterface) {
-            // Dispatch PasswordHistoryCreatedEvent
-            $historyEvent = new PasswordHistoryCreatedEvent($hasPasswordPolicy, $history, count($stalePasswords));
-            $this->eventDispatcher->dispatch($historyEvent);
-
-            // Dispatch PasswordChangedEvent
-            $changedEvent = new PasswordChangedEvent($hasPasswordPolicy, $changedAt);
-            $this->eventDispatcher->dispatch($changedEvent);
-
-            $this->pendingChanges[] = [$hasPasswordPolicy, $changedAt, count($stalePasswords)];
+            $this->pendingChanges[] = [$hasPasswordPolicy, $changedAt, count($stalePasswords), $history];
         }
 
         // Log password change
@@ -239,7 +234,8 @@ class PasswordEntityListener implements ResetInterface
     }
 
     /**
-     * Dispatches PasswordChangeRecordedEvent (scalar ids) for the changes of the flush that just committed.
+     * Dispatches, for each change of the flush that just committed and in order: PasswordHistoryCreatedEvent,
+     * PasswordChangedEvent, then PasswordChangeRecordedEvent (scalar ids).
      */
     public function postFlush(): void
     {
@@ -250,7 +246,9 @@ class PasswordEntityListener implements ResetInterface
             return;
         }
 
-        foreach ($pendingChanges as [$user, $changedAt, $removedEntriesCount]) {
+        foreach ($pendingChanges as [$user, $changedAt, $removedEntriesCount, $history]) {
+            $this->eventDispatcher->dispatch(new PasswordHistoryCreatedEvent($user, $history, $removedEntriesCount));
+            $this->eventDispatcher->dispatch(new PasswordChangedEvent($user, $changedAt));
             $this->eventDispatcher->dispatch(new PasswordChangeRecordedEvent(
                 SubjectId::classOf($user),
                 SubjectId::of($user->getId()),

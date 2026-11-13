@@ -13,6 +13,7 @@ The Password Policy Bundle dispatches custom Symfony events that allow you to ex
   - [Scalar subject accessors](#scalar-subject-accessors)
   - [PasswordChangeRecordedEvent](#passwordchangerecordedevent)
   - [PasswordReuseDetectedEvent](#passwordreusedetectedevent)
+  - [PasswordExpiryDetectedEvent](#passwordexpirydetectedevent)
   - [PasswordPolicyPersonalDataErasedEvent](#passwordpolicypersonaldataerasedevent)
 - [Listening to Events](#listening-to-events)
   - [Method 1: Using Attributes (Symfony 6.1+)](#method-1-using-attributes-symfony-61)
@@ -83,7 +84,10 @@ class PasswordExpiryNotificationListener
 
 ### PasswordHistoryCreatedEvent
 
-**Dispatched when**: A new password history entry is created after a password change.
+**Dispatched when**: A new password history entry is created after a password change. Since 1.12.0 the Doctrine
+listener dispatches it on `postFlush`, after the flush committed (before 1.12.0: inside `onFlush`, before the commit),
+followed by `PasswordChangedEvent` and `PasswordChangeRecordedEvent` for the same change. A flush that fails
+dispatches none of them. The history entry has its id by then.
 
 **Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent`
 
@@ -124,7 +128,8 @@ class PasswordChangeAuditListener
 
 ### PasswordChangedEvent
 
-**Dispatched when**: A password is changed and the `passwordChangedAt` timestamp is updated.
+**Dispatched when**: A password is changed and the `passwordChangedAt` timestamp is updated. Since 1.12.0 on
+`postFlush`, after the commit, right after `PasswordHistoryCreatedEvent`.
 
 **Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent`
 
@@ -230,6 +235,16 @@ the flush transaction committed; inside an outer transaction of yours, before th
 
 **Available Methods**: `getSubjectClass()`, `getSubjectId()`, `getMatchType()` (`exact`, `current` or `extension`),
 `getUsedAt(): ?DateTimeImmutable`.
+
+### PasswordExpiryDetectedEvent
+
+**Dispatched when** (since 1.12.0): the expiry listener finds an expired password on a locked route — for an entity
+user right after `PasswordExpiredEvent`, and for a non-entity user whose read-only subject comes from
+`CurrentPasswordPolicySubjectProviderInterface` (no `PasswordExpiredEvent` then).
+
+**Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordExpiryDetectedEvent` (scalar values only)
+
+**Available Methods**: `getSubjectClass()`, `getSubjectId()`, `getRoute()`, `willRedirect()`.
 
 ### PasswordPolicyPersonalDataErasedEvent
 

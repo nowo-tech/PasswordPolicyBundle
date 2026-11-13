@@ -30,8 +30,10 @@ final readonly class PasswordExpiryConfiguration
      * @param array<int, string> $excludedRoutes Route patterns or literal names excluded from expiry checks
      * @param string $resetPasswordRouteName Fallback route name for password reset (required for BC)
      * @param string|null $resetPasswordRoutePattern Optional pattern to resolve the reset route name from the router (first match, alphabetical order)
+     * @param bool $anySubjectClass Since 1.12.0: accept a class that implements neither interface (a domain class configured
+     *                              with `history_listener: false`, checked through read-only subjects only)
      *
-     * @throws RuntimeException If the entity class does not implement HasPasswordPolicyInterface
+     * @throws RuntimeException If the class implements neither HasPasswordPolicyInterface nor PasswordPolicySubjectInterface (and $anySubjectClass is false)
      */
     public function __construct(
         string $class,
@@ -40,8 +42,11 @@ final readonly class PasswordExpiryConfiguration
         private array $excludedRoutes = [],
         private string $resetPasswordRouteName = '',
         private ?string $resetPasswordRoutePattern = null,
+        bool $anySubjectClass = false,
     ) {
-        if (!is_a($class, HasPasswordPolicyInterface::class, true)) {
+        if (!$anySubjectClass
+            && !is_a($class, HasPasswordPolicyInterface::class, true)
+            && !is_a($class, PasswordPolicySubjectInterface::class, true)) {
             throw new RuntimeException(sprintf('Entity %s must implement %s interface', $class, HasPasswordPolicyInterface::class));
         }
 

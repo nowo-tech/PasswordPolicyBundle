@@ -6,8 +6,11 @@ namespace Nowo\PasswordPolicyBundle\Service;
 
 use DateTime;
 use DateTimeImmutable;
+use DateTimeInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordExpiryConfiguration;
+use Nowo\PasswordPolicyBundle\Model\PasswordPolicySubjectInterface;
+use Nowo\PasswordPolicyBundle\Subject\CurrentPasswordPolicySubjectProviderInterface;
 use Nowo\PasswordPolicyBundle\Util\RouteNameMatcher;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Clock\ClockInterface;
@@ -31,7 +34,7 @@ use const SORT_STRING;
  * and the configured expiry days. It also manages locked routes that require password
  * changes before access.
  */
-class PasswordExpiryService implements PasswordExpiryServiceInterface
+class PasswordExpiryService implements PasswordExpiryServiceInterface, PasswordExpiryCheckerInterface
 {
     /**
      * Array of password expiry configurations indexed by entity class name.
@@ -64,6 +67,7 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
         private readonly int $cacheTtl = 3600,
         private readonly ?ClockInterface $clock = null,
         private readonly bool $expireWhenNeverChanged = false,
+        private readonly ?CurrentPasswordPolicySubjectProviderInterface $subjectProvider = null,
     ) {
         $this->cacheEnabled = $cacheEnabled && $cache instanceof CacheItemPoolInterface;
     }
@@ -131,7 +135,89 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
             return $isExpired;
         }
 
+        // Since 1.12.0: a security user that is not an entity, through the opt-in subject provider.
+        $subject = $this->getCurrentSubject();
+        if ($subject instanceof PasswordPolicySubjectInterface) {
+            return $this->isSubjectPasswordExpired($subject);
+        }
+
         return false;
+    }
+
+    public function isSubjectPasswordExpired(PasswordPolicySubjectInterface $subject): bool
+    {
+        if ($this->entities === null) {
+            return false;
+        }
+
+        $subjectClass = $subject->getPasswordPolicySubjectClass();
+        $cache        = $this->cacheEnabled ? $this->cache : null;
+        $cacheKey     = $this->getSubjectCacheKey($subject);
+        if ($cache instanceof CacheItemPoolInterface) {
+            $cachedItem = $cache->getItem($cacheKey);
+            if ($cachedItem->isHit()) {
+                return (bool) $cachedItem->get();
+            }
+        }
+
+        // Same rules as the entity check above, keyed by the subject class instead of instanceof.
+        $isExpired = false;
+        $now       = $this->now();
+        foreach ($this->entities as $entityClass => $config) {
+            if ($subjectClass !== $entityClass && !is_a($subjectClass, $entityClass, true)) {
+                continue;
+            }
+            $passwordLastChange = $subject->getPasswordChangedAt();
+            if (!$passwordLastChange instanceof DateTimeInterface) {
+                // expire_when_never_changed: an unknown change date is treated as expired (fail closed).
+                $isExpired = $this->expireWhenNeverChanged;
+                break;
+            }
+            if ($passwordLastChange > $now) {
+                // A change date in the future is a data error: not expired.
+                continue;
+            }
+            $expiresAt = DateTimeImmutable::createFromInterface($passwordLastChange)->modify('+' . $config->getExpiryDays() . ' days');
+
+            $isExpired = $expiresAt <= $now;
+            break;
+        }
+
+        if ($cache instanceof CacheItemPoolInterface) {
+            $cachedItem = $cache->getItem($cacheKey);
+            $cachedItem->set($isExpired);
+            $cachedItem->expiresAfter($this->cacheTtl);
+            $cache->save($cachedItem);
+        }
+
+        return $isExpired;
+    }
+
+    public function invalidateSubjectCache(PasswordPolicySubjectInterface $subject): void
+    {
+        if ($this->cacheEnabled && $this->cache instanceof CacheItemPoolInterface) {
+            $this->cache->deleteItem($this->getSubjectCacheKey($subject));
+        }
+    }
+
+    /**
+     * Same key format as {@see getCacheKey()}, from the subject's class, id and change date.
+     */
+    private function getSubjectCacheKey(PasswordPolicySubjectInterface $subject): string
+    {
+        $changedAt = $subject->getPasswordChangedAt();
+
+        return sprintf(
+            'password_expiry_%s_%s_%s',
+            md5($subject->getPasswordPolicySubjectClass()),
+            $subject->getPasswordPolicySubjectId(),
+            $changedAt instanceof DateTimeInterface ? $changedAt->getTimestamp() : 'no-date',
+        );
+    }
+
+    private function getCurrentSubject(): ?PasswordPolicySubjectInterface
+    {
+        return $this->subjectProvider?->getCurrentSubject();
     }
 
     /**
@@ -322,6 +408,17 @@ class PasswordExpiryService implements PasswordExpiryServiceInterface
     {
         if ($entityClass === null && $user = $this->getCurrentUser()) {
             return $user::class;
+        }
+
+        if ($entityClass === null && ($subject = $this->getCurrentSubject()) instanceof PasswordPolicySubjectInterface) {
+            $subjectClass = $subject->getPasswordPolicySubjectClass();
+            foreach (array_keys($this->entities ?? []) as $configuredClass) {
+                if ($subjectClass === $configuredClass || is_a($subjectClass, $configuredClass, true)) {
+                    return $configuredClass;
+                }
+            }
+
+            return $subjectClass;
         }
 
         return $entityClass;

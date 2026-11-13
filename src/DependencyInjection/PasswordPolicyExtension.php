@@ -26,6 +26,7 @@ use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyConfigurationService;
 use Nowo\PasswordPolicyBundle\Service\PasswordPolicyService;
+use Nowo\PasswordPolicyBundle\Subject\CurrentPasswordPolicySubjectProviderInterface;
 use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
 use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Validator\PasswordPolicyValidator;
@@ -97,6 +98,7 @@ final class PasswordPolicyExtension extends Extension
         $definition->setArgument('$clock', new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE));
         $definition->setArgument('$router', $this->optionalReference('router'));
         $definition->setArgument('$expireWhenNeverChanged', (bool) ($config['expire_when_never_changed'] ?? false));
+        $definition->setArgument('$subjectProvider', new Reference(CurrentPasswordPolicySubjectProviderInterface::class));
 
         $entityListeners = [];
         foreach ($config['entities'] as $entityClass => $settings) {
@@ -153,6 +155,8 @@ final class PasswordPolicyExtension extends Extension
                 $settings['excluded_notified_routes'] ?? [],
                 $settings['reset_password_route_name'],
                 $settings['reset_password_route_pattern'] ?? null,
+                // history_listener: false lets a plain domain class be configured (checked through subjects only).
+                !($settings['history_listener'] ?? true),
             ]);
 
             $definition->addMethodCall('addEntity', [$passwordExpiryConfig]);
@@ -218,6 +222,7 @@ final class PasswordPolicyExtension extends Extension
               $config['log_level'] ?? 'info', // $logLevel
               $this->optionalReference('event_dispatcher'), // $eventDispatcher (optional)
               new Reference(ClockInterface::class, ContainerBuilder::IGNORE_ON_INVALID_REFERENCE), // $clock (optional, REQ-DI-001)
+              new Reference(CurrentPasswordPolicySubjectProviderInterface::class), // $subjectProvider (since 1.12.0)
           ]);
 
         return $definition;

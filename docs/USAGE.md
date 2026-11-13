@@ -193,8 +193,9 @@ otherwise those hashes never match and their reuse is accepted.
 ### Events
 
 Translate the bundle events into your own events in the infrastructure layer; do not pass them into the domain.
-`PasswordChangeRecordedEvent` (dispatched after the Doctrine flush committed, or by the recorder) and
-`PasswordReuseDetectedEvent` carry scalar ids only. The entity events (`PasswordChangedEvent`,
+`PasswordChangeRecordedEvent` (dispatched after the Doctrine flush committed, or by the recorder),
+`PasswordReuseDetectedEvent` and `PasswordExpiryDetectedEvent` (since 1.12.0) carry scalar ids only. Since 1.12.0 the
+Doctrine listener dispatches every event after the commit, never inside `onFlush`. The entity events (`PasswordChangedEvent`,
 `PasswordHistoryCreatedEvent`, `PasswordReuseAttemptedEvent`, `PasswordExpiredEvent`) now also expose
 `getSubjectClass()` and `getSubjectId()`. See [EVENTS.md](EVENTS.md).
 
@@ -208,9 +209,10 @@ use your own id column, not the password hash.
 
 Known limitations (planned improvements):
 
-- **Expiry** still reads the security token user, which must implement `HasPasswordPolicyInterface` (no expiry subject
-  resolver yet). If your security user is a separate adapter class, implement the interface there (delegating to the
-  entity) or call `PasswordExpiryServiceInterface` yourself.
+- **Expiry** reads the security token user. Since 1.12.0 a user that is not a `HasPasswordPolicyInterface` entity is
+  checked too once you alias `Subject\CurrentPasswordPolicySubjectProviderInterface` (to
+  `TokenPasswordPolicySubjectProvider` or your own provider), and `Service\PasswordExpiryCheckerInterface` checks any
+  read-only subject from your own code. See [ARCHITECTURE.md](ARCHITECTURE.md#standard-symfony-and-ddd-hosts).
 - The `PasswordPolicyServiceInterface` / `CurrentPasswordMatcherInterface` / `PasswordHistoryServiceInterface` /
   `PasswordExpiryServiceInterface` signatures still take the entity; for formats `password_verify()` does not
   recognise, the **entity** check still clones the entity or temporarily calls `setPassword()` on it (the read-only
