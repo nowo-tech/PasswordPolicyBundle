@@ -51,6 +51,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Service\PasswordExpiryCheckerInterface` (`isSubjectPasswordExpired()`, `invalidateSubjectCache()`), implemented by `PasswordExpiryService`: password expiry of a read-only `PasswordPolicySubjectInterface`, no entity or token needed; same rules and cache as the entity check (REQ-ARCH-001 rules 1 and 4).
+- `Subject\CurrentPasswordPolicySubjectProviderInterface` SPI with `NullCurrentPasswordPolicySubjectProvider` (default: unchanged, only entity users are checked) and the opt-in `TokenPasswordPolicySubjectProvider`: the expiry listener and `PasswordExpiryService::isPasswordExpired()` / route lookups check a non-entity security user through its read-only subject.
+- `nowo_password_policy.entities` accepts a class that implements `PasswordPolicySubjectInterface` instead of `HasPasswordPolicyInterface`, and, with `history_listener: false`, a plain domain class that implements neither (as CONFIGURATION already documented): the expiry configuration no longer throws for them (`PasswordExpiryConfiguration` takes an optional `$anySubjectClass`).
+- `Event\PasswordExpiryDetectedEvent` (scalar subject class / id, route, redirect flag): dispatched by the expiry listener for entity users (after `PasswordExpiredEvent`) and for provider subjects.
+- Doctrine XML host test: plain-PHP user and history classes mapped in XML (no attribute, base class or trait) with the default history listener, events after commit, nothing on a failed flush.
+- `docs/ARCHITECTURE.md`: public surface, ports and extension points, events and the unit of work, standard Symfony and DDD host wiring.
+
+### Changed
+
+- REQ-ARCH-001 rule 7: the Doctrine history listener no longer dispatches `PasswordHistoryCreatedEvent` and `PasswordChangedEvent` inside `onFlush`; it dispatches them on `postFlush`, after the commit, in order with `PasswordChangeRecordedEvent`. A flush that fails dispatches none of them. Same event classes and payloads; the history entry has its id by then. See UPGRADING.
+
 ### Changed
 
 - Demo uses the UiKit base style and FormKit forms (REQ-DEMO-014/015).

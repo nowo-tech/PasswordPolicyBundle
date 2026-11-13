@@ -6,11 +6,15 @@ namespace Nowo\PasswordPolicyBundle\EventListener;
 
 use Exception;
 use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordExpiryDetectedEvent;
 use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
+use Nowo\PasswordPolicyBundle\Model\PasswordPolicySubjectInterface;
 use Nowo\PasswordPolicyBundle\Service\ExpiryFlash\ExpiryFlashThrottleStorageInterface;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryServiceInterface;
+use Nowo\PasswordPolicyBundle\Subject\CurrentPasswordPolicySubjectProviderInterface;
 use Nowo\PasswordPolicyBundle\Util\LogIdentifier;
+use Nowo\PasswordPolicyBundle\Util\SubjectId;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -70,6 +74,7 @@ class PasswordExpiryListener
      * @param string $logLevel The logging level to use
      * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
      * @param ClockInterface|null $clock Time source for the flash throttle (REQ-DI-001); system time when null
+     * @param CurrentPasswordPolicySubjectProviderInterface|null $subjectProvider Read-only subject of a non-entity user (since 1.12.0)
      */
     public function __construct(
         public PasswordExpiryServiceInterface $passwordExpiryService,
@@ -89,6 +94,7 @@ class PasswordExpiryListener
         private readonly string $logLevel = 'info',
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
         private readonly ?ClockInterface $clock = null,
+        private readonly ?CurrentPasswordPolicySubjectProviderInterface $subjectProvider = null,
     ) {
     }
 
@@ -146,15 +152,27 @@ class PasswordExpiryListener
                 $user = null;
             }
 
-            // Dispatch PasswordExpiredEvent if user is available and event dispatcher is set
-            if ($user instanceof HasPasswordPolicyInterface && $this->eventDispatcher instanceof EventDispatcherInterface) {
-                $event = new PasswordExpiredEvent($user, $route, $this->redirectOnExpiry);
-                $this->eventDispatcher->dispatch($event);
+            // A security user that is not an entity: the read-only subject of the opt-in provider (since 1.12.0).
+            $subject = $user instanceof HasPasswordPolicyInterface ? null : $this->subjectProvider?->getCurrentSubject();
+
+            if ($this->eventDispatcher instanceof EventDispatcherInterface) {
+                if ($user instanceof HasPasswordPolicyInterface) {
+                    $this->eventDispatcher->dispatch(new PasswordExpiredEvent($user, $route, $this->redirectOnExpiry));
+                    $this->eventDispatcher->dispatch(new PasswordExpiryDetectedEvent(SubjectId::classOf($user), SubjectId::of($user->getId()), $route, $this->redirectOnExpiry));
+                } elseif ($subject instanceof PasswordPolicySubjectInterface) {
+                    $this->eventDispatcher->dispatch(new PasswordExpiryDetectedEvent($subject->getPasswordPolicySubjectClass(), $subject->getPasswordPolicySubjectId(), $route, $this->redirectOnExpiry));
+                }
             }
 
-            $userId         = $user instanceof HasPasswordPolicyInterface ? (string) $user->getId() : 'unknown';
+            $userId = match (true) {
+                $user instanceof HasPasswordPolicyInterface        => (string) $user->getId(),
+                $subject instanceof PasswordPolicySubjectInterface => $subject->getPasswordPolicySubjectId(),
+                default                                            => 'unknown',
+            };
             $userIdentifier = LogIdentifier::redact($user instanceof UserInterface ? $user->getUserIdentifier() : 'unknown');
-            $subjectKey     = $this->resolveSubjectKey($user);
+            $subjectKey     = $subject instanceof PasswordPolicySubjectInterface
+                ? $subject->getPasswordPolicySubjectClass() . ':' . $subject->getPasswordPolicySubjectId()
+                : $this->resolveSubjectKey($user);
 
             // Log password expiry detection
             if ($this->enableLogging && $this->logger instanceof LoggerInterface) {

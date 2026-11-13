@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+  - [To 1.12.0](#to-1120)
 - [To 1.11.2](#to-1112)
 - [To 1.11.1](#to-1111)
 - [To 1.11.0](#to-1110)
@@ -52,6 +53,27 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+### To 1.12.0
+
+From **1.11.x**:
+
+- **Event timing (REQ-ARCH-001 rule 7).** `PasswordHistoryCreatedEvent` and `PasswordChangedEvent` are now dispatched
+  on Doctrine `postFlush`, after the flush committed, instead of inside `onFlush`. Same classes and payloads. Review
+  listeners that relied on running inside the flush: changes they make to entities are no longer part of that flush
+  (flush them yourself, or better, do the work in a later unit of work); and they are no longer called for a flush
+  that fails. Do not flush from a `postFlush` listener that runs before the bundle's one.
+- Listeners on these events can no longer veto a password change by throwing: the change is already committed, and
+  the exception only reaches the caller of `flush()`. Validate before the flush (constraint or `preFlush`) instead.
+- New, opt-in: expiry of a non-entity security user. Alias
+  `Nowo\PasswordPolicyBundle\Subject\CurrentPasswordPolicySubjectProviderInterface` to
+  `Nowo\PasswordPolicyBundle\Subject\TokenPasswordPolicySubjectProvider` (or your own provider). Without it nothing
+  changes: only `HasPasswordPolicyInterface` users are checked.
+- New: `Nowo\PasswordPolicyBundle\Service\PasswordExpiryCheckerInterface` and `PasswordExpiryDetectedEvent`. A custom
+  `PasswordExpiryServiceInterface` implementation does not have to implement the new interface; the expiry listener
+  still only needs `PasswordExpiryServiceInterface`.
+- `PasswordExpiryService` and `PasswordExpiryListener` take an optional last constructor argument
+  (`$subjectProvider`); if you build them yourself nothing changes.
 
 ## To 1.11.2
 

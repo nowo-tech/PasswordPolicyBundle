@@ -12,7 +12,9 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use Mockery;
 use Mockery\MockInterface;
+use Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -24,7 +26,6 @@ use Nowo\PasswordPolicyBundle\Tests\UnitTestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
-use Symfony\Contracts\EventDispatcher\Event;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 use function sprintf;
@@ -177,10 +178,9 @@ final class PasswordEntityListenerTest extends UnitTestCase
                           ->once()
                           ->with($this->entityMock);
 
+        // REQ-ARCH-001 rule 7: nothing is dispatched inside the flush (the events wait for postFlush).
         $eventDispatcherMock = Mockery::mock(EventDispatcherInterface::class);
-        $eventDispatcherMock->shouldReceive('dispatch')
-                            ->twice()
-                            ->with(Mockery::type(Event::class));
+        $eventDispatcherMock->shouldNotReceive('dispatch');
 
         $listener = new PasswordEntityListener(
             $this->passwordHistoryServiceMock,
@@ -252,12 +252,16 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $listener = $this->listenerRecordingEvents($events);
 
         $listener->createPasswordHistory($this->emMock, $this->entityMock, 'old_pwd');
-        self::assertCount(2, $events, 'onFlush keeps dispatching only the entity events');
+        self::assertCount(0, $events, 'Nothing is dispatched inside the flush (REQ-ARCH-001 rule 7)');
 
         $listener->postFlush();
         $listener->postFlush();
 
+        // After the commit, in order: the entity events (since 1.12.0, before inside onFlush), then the scalar one.
         self::assertCount(3, $events);
+        self::assertInstanceOf(PasswordHistoryCreatedEvent::class, $events[0]);
+        self::assertSame(1, $events[0]->getRemovedEntriesCount());
+        self::assertInstanceOf(PasswordChangedEvent::class, $events[1]);
         $recorded = $events[2];
         self::assertInstanceOf(PasswordChangeRecordedEvent::class, $recorded);
         self::assertSame($this->entityMock::class, $recorded->getSubjectClass());
@@ -276,7 +280,7 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $listener->reset();
         $listener->postFlush();
 
-        self::assertCount(2, $events);
+        self::assertCount(0, $events, 'No event at all for a flush that never committed');
     }
 
     public function testPostFlushWithoutDispatcherIsANoOp(): void

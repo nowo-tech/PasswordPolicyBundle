@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Mockery;
 use Nowo\PasswordPolicyBundle\Event\PasswordExpiredEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordExpiryDetectedEvent;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Model\ExpiryFlashStrategy;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
@@ -802,6 +803,10 @@ final class PasswordExpiryListenerTest extends UnitTestCase
         $eventDispatcherMock->shouldReceive('dispatch')
                             ->once()
                             ->with(Mockery::type(PasswordExpiredEvent::class));
+        // Since 1.12.0, followed by the scalar twin.
+        $eventDispatcherMock->shouldReceive('dispatch')
+                            ->once()
+                            ->with(Mockery::type(PasswordExpiryDetectedEvent::class));
 
         // Create listener with event dispatcher
         $listener = new PasswordExpiryListener(
