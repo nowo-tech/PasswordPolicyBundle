@@ -63,6 +63,8 @@ From **1.11.x**:
   listeners that relied on running inside the flush: changes they make to entities are no longer part of that flush
   (flush them yourself, or better, do the work in a later unit of work); and they are no longer called for a flush
   that fails. Do not flush from a `postFlush` listener that runs before the bundle's one.
+- Listeners on these events can no longer veto a password change by throwing: the change is already committed, and
+  the exception only reaches the caller of `flush()`. Validate before the flush (constraint or `preFlush`) instead.
 - New, opt-in: expiry of a non-entity security user. Alias
   `Nowo\PasswordPolicyBundle\Subject\CurrentPasswordPolicySubjectProviderInterface` to
   `Nowo\PasswordPolicyBundle\Subject\TokenPasswordPolicySubjectProvider` (or your own provider). Without it nothing
