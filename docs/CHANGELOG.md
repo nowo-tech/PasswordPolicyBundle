@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.12.0] - 2026-11-13](#1120---2026-11-13)
 - [[1.11.2] - 2026-11-12](#1112---2026-11-12)
 - [[1.11.1] - 2026-11-12](#1111---2026-11-12)
 - [[1.11.0] - 2026-11-11](#1110---2026-11-11)
@@ -51,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-13
+
 ### Added
 
 - `Service\PasswordExpiryCheckerInterface` (`isSubjectPasswordExpired()`, `invalidateSubjectCache()`), implemented by `PasswordExpiryService`: password expiry of a read-only `PasswordPolicySubjectInterface`, no entity or token needed; same rules and cache as the entity check (REQ-ARCH-001 rules 1 and 4).
@@ -67,6 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Demo uses the UiKit base style and FormKit forms (REQ-DEMO-014/015).
+
+[1.12.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.12.0
 
 ## [1.11.2] - 2026-11-12
 
