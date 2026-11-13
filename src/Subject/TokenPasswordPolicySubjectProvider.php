@@ -14,9 +14,8 @@ use function is_object;
 /**
  * Opt-in {@see CurrentPasswordPolicySubjectProviderInterface} (since 1.12.0): the security token user when it is a
  * {@see PasswordPolicySubjectInterface}, or the subject it exposes through {@see PasswordPolicySubjectAwareInterface}.
- * An entity user (`HasPasswordPolicyInterface`) is left to the entity check. Enable it by aliasing the interface:
- *
- *     Nowo\PasswordPolicyBundle\Subject\CurrentPasswordPolicySubjectProviderInterface: '@Nowo\PasswordPolicyBundle\Subject\TokenPasswordPolicySubjectProvider'
+ * An entity user (`HasPasswordPolicyInterface`) is left to the entity check. Enable it by aliasing
+ * CurrentPasswordPolicySubjectProviderInterface to this class in your services configuration (see docs/ARCHITECTURE.md).
  *
  * Reads the token on every call; keeps no state (FrankenPHP worker safe).
  */
