@@ -52,6 +52,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Target 1.13.0 (minor: an event is dispatched in one more case and entity accessors are deprecated; no default changes).
+
+### Added
+
+- The `PasswordPolicy` validator also dispatches the scalar `PasswordReuseDetectedEvent` for an **entity** (a
+  `HasPasswordPolicyInterface` object), right after `PasswordReuseAttemptedEvent`: subject class and id, match type
+  (`exact`, `current`, `extension`) and the date the matching password was used. Before, only read-only subjects got
+  it. Every entity event now has a scalar twin dispatched alongside (REQ-ARCH-001 rule 4).
+
+### Deprecated
+
+- Entity accessors of the entity events, removed in 2.0 (REQ-ARCH-001 rules 3 and 4; `HasPasswordPolicyInterface`
+  exposes a Doctrine `Collection`): `getUser()` on `PasswordChangedEvent`, `PasswordHistoryCreatedEvent`,
+  `PasswordReuseAttemptedEvent` and `PasswordExpiredEvent` (use `getSubjectClass()` / `getSubjectId()` or the scalar
+  twin), and `getPasswordHistory()` on `PasswordHistoryCreatedEvent` and `PasswordReuseAttemptedEvent` (use
+  `PasswordChangeRecordedEvent` / `PasswordReuseDetectedEvent`). Docblock deprecations only: no runtime notice, the
+  events and their timing are unchanged.
+
 ## [1.12.0] - 2026-11-13
 
 ### Added

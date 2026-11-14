@@ -6,6 +6,7 @@ namespace Nowo\PasswordPolicyBundle\Tests\Integration;
 
 use DateTime;
 use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordReuseDetectedEvent;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\Service\PasswordExpiryService;
@@ -60,6 +61,10 @@ final class PasswordPolicyKernelWiringTest extends TestCase
         $dispatcher->addListener(PasswordReuseAttemptedEvent::class, static function (PasswordReuseAttemptedEvent $event) use (&$events): void {
             $events[] = $event;
         });
+        $detected = [];
+        $dispatcher->addListener(PasswordReuseDetectedEvent::class, static function (PasswordReuseDetectedEvent $event) use (&$detected): void {
+            $detected[] = $event;
+        });
 
         $user = new KernelUser();
         $user->addPasswordHistory(KernelUser::historyEntry(password_hash('Old-password1', PASSWORD_BCRYPT, ['cost' => 4])));
@@ -71,6 +76,11 @@ final class PasswordPolicyKernelWiringTest extends TestCase
 
         self::assertCount(1, $violations);
         self::assertCount(1, $events);
+        // Standard host (attribute-mapped entity): the scalar twin follows the entity event (1.13.0)
+        self::assertCount(1, $detected);
+        self::assertSame($events[0]->getSubjectId(), $detected[0]->getSubjectId());
+        self::assertSame(KernelUser::class, $detected[0]->getSubjectClass());
+        self::assertSame('exact', $detected[0]->getMatchType());
 
         $logger = $this->container->get('logger');
         self::assertInstanceOf(BufferingLogger::class, $logger);

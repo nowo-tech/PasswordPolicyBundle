@@ -214,6 +214,18 @@ Since 1.10.0 the four events above also expose `getSubjectClass()` (the user cla
 and `getSubjectId()` (the id as a string, `''` when it is neither scalar nor `Stringable`), so a subscriber can
 translate them without touching the entity.
 
+**Deprecated since 1.13.0, removed in 2.0** (REQ-ARCH-001): `getUser()` on the four events above and
+`getPasswordHistory()` on `PasswordHistoryCreatedEvent` / `PasswordReuseAttemptedEvent`. Each of them has a scalar twin
+dispatched alongside:
+
+| Entity event | Scalar twin |
+| --- | --- |
+| `PasswordChangedEvent`, `PasswordHistoryCreatedEvent` | `PasswordChangeRecordedEvent` |
+| `PasswordReuseAttemptedEvent` | `PasswordReuseDetectedEvent` (since 1.13.0 for entities too) |
+| `PasswordExpiredEvent` | `PasswordExpiryDetectedEvent` |
+
+The examples above still use `getUser()` for readability; new listeners should use the subject id or the twin.
+
 ### PasswordChangeRecordedEvent
 
 **Dispatched when**: a password change was recorded in the history — by the Doctrine listener on `postFlush` (after
@@ -228,8 +240,8 @@ the flush transaction committed; inside an outer transaction of yours, before th
 ### PasswordReuseDetectedEvent
 
 **Dispatched when**: the `PasswordPolicy` validator rejects a password of a read-only subject
-(`PasswordPolicySubjectInterface`, e.g. `#[PasswordPolicy]` on a command). Entity validations keep dispatching
-`PasswordReuseAttemptedEvent`.
+(`PasswordPolicySubjectInterface`, e.g. `#[PasswordPolicy]` on a command) and, since 1.13.0, of an entity too, right
+after `PasswordReuseAttemptedEvent`.
 
 **Event Class**: `Nowo\PasswordPolicyBundle\Event\PasswordReuseDetectedEvent` (scalar values only)
 

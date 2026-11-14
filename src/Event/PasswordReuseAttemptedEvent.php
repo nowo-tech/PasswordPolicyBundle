@@ -33,6 +33,9 @@ class PasswordReuseAttemptedEvent extends Event
      * Gets the user attempting to reuse a password.
      *
      * @return HasPasswordPolicyInterface The user entity
+     *
+     * @deprecated since 1.13.0, use {@see getSubjectClass()} / {@see getSubjectId()} or listen to
+     *             {@see PasswordReuseDetectedEvent} (scalar ids, dispatched alongside); removed in 2.0 (REQ-ARCH-001 rule 4)
      */
     public function getUser(): HasPasswordPolicyInterface
     {
@@ -43,6 +46,10 @@ class PasswordReuseAttemptedEvent extends Event
      * Gets the password history entry that matches the attempted password.
      *
      * @return PasswordHistoryInterface The matching password history entry
+     *
+     * @deprecated since 1.13.0, use {@see PasswordReuseDetectedEvent::getMatchType()} /
+     *             {@see PasswordReuseDetectedEvent::getUsedAt()} (dispatched alongside); removed in 2.0
+     *             (REQ-ARCH-001 rule 4)
      */
     public function getPasswordHistory(): PasswordHistoryInterface
     {

@@ -6,11 +6,13 @@ namespace Nowo\PasswordPolicyBundle\Tests\Unit\Validator;
 
 use Carbon\Carbon;
 use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Mockery;
 use Mockery\MockInterface;
 use Nowo\PasswordPolicyBundle\Event\PasswordReuseAttemptedEvent;
+use Nowo\PasswordPolicyBundle\Event\PasswordReuseDetectedEvent;
 use Nowo\PasswordPolicyBundle\Exceptions\ValidationException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -314,6 +316,13 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $eventDispatcherMock->shouldReceive('dispatch')
           ->once()
           ->with(Mockery::type(PasswordReuseAttemptedEvent::class));
+        $eventDispatcherMock->shouldReceive('dispatch')
+          ->once()
+          ->with(Mockery::on(static fn ($event): bool => $event instanceof PasswordReuseDetectedEvent
+              && $event->getSubjectId() === '42'
+              && $event->getMatchType() === 'exact'
+              && $event->getUsedAt() instanceof DateTimeImmutable));
+        $this->entityMock->shouldReceive('getId')->andReturn(42);
 
         $translatorMock = Mockery::mock(TranslatorInterface::class);
         $translatorMock->shouldReceive('getLocale')->andReturn('en');
@@ -582,6 +591,53 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
         $validator->initialize($this->contextMock);
         $validator->validate('pass1', $constraint);
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * Since 1.13.0 the entity path also dispatches the scalar PasswordReuseDetectedEvent (REQ-ARCH-001 rule 4), after
+     * PasswordReuseAttemptedEvent; an extension match keeps its type and a missing date stays null.
+     */
+    public function testEntityExtensionMatchDispatchesScalarTwinAfterEntityEvent(): void
+    {
+        $dispatched = [];
+        $dispatcher = Mockery::mock(EventDispatcherInterface::class);
+        $dispatcher->shouldReceive('dispatch')->twice()->andReturnUsing(static function (object $event) use (&$dispatched): object {
+            $dispatched[] = $event;
+
+            return $event;
+        });
+
+        $translatorMock = Mockery::mock(TranslatorInterface::class);
+        $translatorMock->shouldReceive('getLocale')->andReturn('en');
+        $validator = new PasswordPolicyValidator($this->passwordPolicyServiceMock, $translatorMock, null, false, 'info', $dispatcher);
+
+        $this->entityMock->shouldReceive('getId')->andReturn('u-7');
+        $this->contextMock->shouldReceive('getObject')->once()->andReturn($this->entityMock);
+        $builder = Mockery::mock(ConstraintViolationBuilderInterface::class);
+        $builder->shouldReceive('setParameter')->andReturnSelf();
+        $builder->shouldReceive('setCode')->once()->with(PasswordPolicy::PASSWORD_EXTENSION)->andReturnSelf();
+        $builder->shouldReceive('addViolation')->once();
+        $this->contextMock->shouldReceive('buildViolation')->once()->andReturn($builder);
+
+        $constraint                   = new PasswordPolicy();
+        $constraint->detectExtensions = true;
+
+        $historyMock = Mockery::mock(PasswordHistoryInterface::class);
+        $historyMock->shouldReceive('getCreatedAt')->andReturn(null);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPassword')->andReturn(null);
+        $this->passwordPolicyServiceMock->shouldReceive('getHistoryByPasswordExtension')->andReturn($historyMock);
+
+        $validator->initialize($this->contextMock);
+        $validator->validate('pass1', $constraint);
+
+        self::assertCount(2, $dispatched);
+        self::assertInstanceOf(PasswordReuseAttemptedEvent::class, $dispatched[0]);
+        $twin = $dispatched[1];
+        self::assertInstanceOf(PasswordReuseDetectedEvent::class, $twin);
+        self::assertSame('u-7', $twin->getSubjectId());
+        self::assertSame($dispatched[0]->getSubjectClass(), $twin->getSubjectClass());
+        self::assertSame('extension', $twin->getMatchType());
+        self::assertNull($twin->getUsedAt());
     }
 
     /**
@@ -933,6 +989,13 @@ final class PasswordPolicyValidatorTest extends UnitTestCase
           ->with(Mockery::on(static fn ($event): bool => $event instanceof PasswordReuseAttemptedEvent
               && $event->getPasswordHistory()->getPassword() === 'current-hash'))
           ->andReturnArg(0);
+        $dispatcher->shouldReceive('dispatch')
+          ->once()
+          ->with(Mockery::on(static fn ($event): bool => $event instanceof PasswordReuseDetectedEvent
+              && $event->getMatchType() === 'current'
+              && $event->getSubjectId() === ''))
+          ->andReturnArg(0);
+        $this->entityMock->shouldReceive('getId')->andReturn(null);
 
         $translator = Mockery::mock(TranslatorInterface::class);
         $translator->shouldReceive('getLocale')->andReturn('en');

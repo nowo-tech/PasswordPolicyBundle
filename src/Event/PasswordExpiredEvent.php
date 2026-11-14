@@ -34,6 +34,9 @@ class PasswordExpiredEvent extends Event
      * Gets the user whose password has expired.
      *
      * @return HasPasswordPolicyInterface The user entity
+     *
+     * @deprecated since 1.13.0, use {@see getSubjectClass()} / {@see getSubjectId()} or listen to
+     *             {@see PasswordExpiryDetectedEvent} (scalar ids, dispatched alongside); removed in 2.0 (REQ-ARCH-001 rule 4)
      */
     public function getUser(): HasPasswordPolicyInterface
     {

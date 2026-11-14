@@ -9,8 +9,10 @@ use Nowo\PasswordPolicyBundle\Model\PasswordReuseMatch;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * The PasswordPolicy validator rejected a reused password of a read-only subject (a command/DTO validated through
- * the subject resolver); carries scalar ids only. Entity validations keep dispatching PasswordReuseAttemptedEvent.
+ * The PasswordPolicy validator rejected a reused password; carries scalar ids only.
+ *
+ * Dispatched for a read-only subject (a command/DTO validated through the subject resolver) and, since 1.13.0, for an
+ * entity too, right after PasswordReuseAttemptedEvent (whose entity accessors are deprecated in its favour).
  */
 final class PasswordReuseDetectedEvent extends Event
 {
