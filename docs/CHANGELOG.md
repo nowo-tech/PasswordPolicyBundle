@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.13.0] - 2026-11-14](#1130---2026-11-14)
 - [[1.12.0] - 2026-11-13](#1120---2026-11-13)
 - [[1.11.2] - 2026-11-12](#1112---2026-11-12)
 - [[1.11.1] - 2026-11-12](#1111---2026-11-12)
@@ -52,6 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-14
+
 Target 1.13.0 (minor: an event is dispatched in one more case and entity accessors are deprecated; no default changes).
 
 ### Added
@@ -69,6 +72,8 @@ Target 1.13.0 (minor: an event is dispatched in one more case and entity accesso
   twin), and `getPasswordHistory()` on `PasswordHistoryCreatedEvent` and `PasswordReuseAttemptedEvent` (use
   `PasswordChangeRecordedEvent` / `PasswordReuseDetectedEvent`). Docblock deprecations only: no runtime notice, the
   events and their timing are unchanged.
+
+[1.13.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.13.0
 
 ## [1.12.0] - 2026-11-13
 
