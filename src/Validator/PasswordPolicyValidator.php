@@ -21,6 +21,7 @@ use Nowo\PasswordPolicyBundle\Service\PasswordPolicyServiceInterface;
 use Nowo\PasswordPolicyBundle\Subject\PasswordPolicySubjectResolverInterface;
 use Nowo\PasswordPolicyBundle\Subject\PasswordReuseCheckerInterface;
 use Nowo\PasswordPolicyBundle\Util\LogIdentifier;
+use Nowo\PasswordPolicyBundle\Util\SubjectId;
 use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -231,10 +232,19 @@ class PasswordPolicyValidator extends ConstraintValidator
         PasswordPolicy $constraint,
         string $type
     ): void {
-        // Dispatch PasswordReuseAttemptedEvent
+        // Dispatch PasswordReuseAttemptedEvent, then its scalar twin PasswordReuseDetectedEvent (since 1.13.0, as the
+        // read-only subject path does; REQ-ARCH-001 rule 4)
         if ($this->eventDispatcher instanceof EventDispatcherInterface) {
             $event = new PasswordReuseAttemptedEvent($entity, $history);
             $this->eventDispatcher->dispatch($event);
+
+            $usedAt = $history->getCreatedAt();
+            $this->eventDispatcher->dispatch(new PasswordReuseDetectedEvent(
+                SubjectId::classOf($entity),
+                SubjectId::of($entity->getId()),
+                $this->matchType($type),
+                $usedAt instanceof DateTimeInterface ? DateTimeImmutable::createFromInterface($usedAt) : null,
+            ));
         }
 
         // Log password reuse attempt
@@ -272,6 +282,20 @@ class PasswordPolicyValidator extends ConstraintValidator
                       ->setParameter('{{ days }}', $days)
                       ->setCode($type === 'extension' ? PasswordPolicy::PASSWORD_EXTENSION : PasswordPolicy::PASSWORD_IN_HISTORY)
                       ->addViolation();
+    }
+
+    /**
+     * The {@see PasswordReuseMatch} type of an entity-path match.
+     *
+     * @return PasswordReuseMatch::TYPE_*
+     */
+    private function matchType(string $type): string
+    {
+        return match ($type) {
+            PasswordReuseMatch::TYPE_CURRENT   => PasswordReuseMatch::TYPE_CURRENT,
+            PasswordReuseMatch::TYPE_EXTENSION => PasswordReuseMatch::TYPE_EXTENSION,
+            default                            => PasswordReuseMatch::TYPE_EXACT,
+        };
     }
 
     /**

@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+  - [To 1.13.0](#to-1130)
 - [To 1.12.0](#to-1120)
   - [To 1.12.0](#to-1120-1)
 - [To 1.11.2](#to-1112)
@@ -54,6 +55,25 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+### To 1.13.0
+
+From **1.12.x**: `composer update nowo-tech/password-policy-bundle`. Target 1.13.0. Nothing to change: same defaults,
+same validation results, same events at the same moments.
+
+- **`PasswordReuseDetectedEvent` for entities.** It is now dispatched for entity validations too, right after
+  `PasswordReuseAttemptedEvent`. If you listen to **both** events for the same purpose (e.g. counting reuse attempts),
+  keep only one listener, or skip `PasswordReuseDetectedEvent` when you already handled the entity event.
+- **Deprecated entity accessors (removed in 2.0).** Replace, in your listeners:
+
+  | Deprecated | Use |
+  | --- | --- |
+  | `PasswordChangedEvent::getUser()` | `getSubjectClass()` / `getSubjectId()`, or listen to `PasswordChangeRecordedEvent` |
+  | `PasswordHistoryCreatedEvent::getUser()`, `::getPasswordHistory()` | `PasswordChangeRecordedEvent` (`getChangedAt()`, `getRemovedEntriesCount()`); entries through `PasswordHistoryRepositoryInterface::findRecent()` |
+  | `PasswordReuseAttemptedEvent::getUser()`, `::getPasswordHistory()` | `PasswordReuseDetectedEvent` (`getMatchType()`, `getUsedAt()`) |
+  | `PasswordExpiredEvent::getUser()` | `getSubjectClass()` / `getSubjectId()`, or listen to `PasswordExpiryDetectedEvent` |
+
+  Load the user from your own repository by the subject id when you need it.
 
 ## To 1.12.0
 

@@ -56,7 +56,9 @@ yours, `postFlush` runs before that transaction commits: dispatch your own follo
 
 Every event carries ids: the scalar events (`PasswordChangeRecordedEvent`, `PasswordReuseDetectedEvent`,
 `PasswordExpiryDetectedEvent`) carry only the subject class and id; the entity events also expose
-`getSubjectClass()` / `getSubjectId()`.
+`getSubjectClass()` / `getSubjectId()`, and their entity accessors are deprecated since 1.13.0 (removed in 2.0). Each
+entity event has a scalar twin dispatched alongside, for entities as well as read-only subjects (since 1.13.0
+`PasswordReuseDetectedEvent` follows `PasswordReuseAttemptedEvent`).
 
 ## Standard Symfony and DDD hosts
 

@@ -177,7 +177,7 @@ $command = new ChangePassword(
 Returning `null` is an error: the validator throws `ValidationException` (fail closed). Or alias
 `PasswordPolicySubjectResolverInterface` to a resolver that looks the subject up from the authenticated user.
 Violations, codes (`PASSWORD_IN_HISTORY`, `PASSWORD_EXTENSION`) and messages are the same as on the entity; the event is
-`PasswordReuseDetectedEvent` (scalar) instead of `PasswordReuseAttemptedEvent`. An object the resolver does not
+`PasswordReuseDetectedEvent` (scalar) only, without `PasswordReuseAttemptedEvent` (entities get both since 1.13.0). An object the resolver does not
 support still throws `ValidationException`.
 
 The subject class must match a `nowo_password_policy.entities` key (exactly, without a Doctrine proxy prefix, or as a
@@ -197,7 +197,9 @@ Translate the bundle events into your own events in the infrastructure layer; do
 `PasswordReuseDetectedEvent` and `PasswordExpiryDetectedEvent` (since 1.12.0) carry scalar ids only. Since 1.12.0 the
 Doctrine listener dispatches every event after the commit, never inside `onFlush`. The entity events (`PasswordChangedEvent`,
 `PasswordHistoryCreatedEvent`, `PasswordReuseAttemptedEvent`, `PasswordExpiredEvent`) now also expose
-`getSubjectClass()` and `getSubjectId()`. See [EVENTS.md](EVENTS.md).
+`getSubjectClass()` and `getSubjectId()`; since 1.13.0 their `getUser()` / `getPasswordHistory()` accessors are
+deprecated (removed in 2.0) and each has a scalar twin dispatched alongside, so a listener never needs the entity.
+See [EVENTS.md](EVENTS.md).
 
 ### Mapping the history entity
 

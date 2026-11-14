@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Event;
 
+use Nowo\PasswordPolicyBundle\History\PasswordHistoryRepositoryInterface;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
 use Nowo\PasswordPolicyBundle\Util\SubjectId;
@@ -35,6 +36,9 @@ class PasswordHistoryCreatedEvent extends Event
      * Gets the user whose password was changed.
      *
      * @return HasPasswordPolicyInterface The user entity
+     *
+     * @deprecated since 1.13.0, use {@see getSubjectClass()} / {@see getSubjectId()} or listen to
+     *             {@see PasswordChangeRecordedEvent} (scalar ids, dispatched alongside); removed in 2.0 (REQ-ARCH-001 rule 4)
      */
     public function getUser(): HasPasswordPolicyInterface
     {
@@ -45,6 +49,11 @@ class PasswordHistoryCreatedEvent extends Event
      * Gets the created password history entry.
      *
      * @return PasswordHistoryInterface The password history entry
+     *
+     * @deprecated since 1.13.0, use {@see PasswordChangeRecordedEvent::getChangedAt()} /
+     *             {@see PasswordChangeRecordedEvent::getRemovedEntriesCount()}, or read the history through
+     *             {@see PasswordHistoryRepositoryInterface::findRecent()};
+     *             removed in 2.0 (REQ-ARCH-001 rule 4)
      */
     public function getPasswordHistory(): PasswordHistoryInterface
     {
