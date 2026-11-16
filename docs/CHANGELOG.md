@@ -53,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Demo `.gitignore` ignores `/.pnpm-store` (REQ-GITIGNORE-003)
+- Dependabot watches the demo Playwright `e2e/` npm manifest (REQ-GH-002)
+- Spec Kit: the 43 `src/` files added since the baseline review are mapped in `code-inventory.md`, with four new area requirements in `spec.md` (REQ-SPECKIT-001 / REQ-SPECKIT-003)
+
 ## [1.13.0] - 2026-11-14
 
 Target 1.13.0 (minor: an event is dispatched in one more case and entity accessors are deprecated; no default changes).

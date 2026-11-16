@@ -162,6 +162,15 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 
 ---
 
+### Requirements added by the inventory sweep (2026-11-16)
+
+Areas introduced by releases after the baseline review; each requirement names the area and what its main source does (class docblock).
+
+- **FR-HISTORY-001** `src/History/`: Default PasswordHistoryRepositoryInterface adapter: the history association of a HasPasswordPolicyInterface Doctrine entity (the rows the onFlush listener writes).
+- **FR-PERSONALDATA-001** `src/PersonalData/`: Default PasswordPolicyPersonalDataSubjectResolverInterface: the subject the bundle's PasswordPolicySubjectResolverInterface finds for the user object (a HasPasswordPolicyInterface entity, a PasswordPolicySubjectInterface or a PasswordPolicySubjectAwareInter.
+- **FR-SUBJECT-001** `src/Subject/`: SPI (since 1.12.0): the read-only subject of the current request, for the expiry check when the security user is not a `HasPasswordPolicyInterface` entity (a DDD host's security adapter).
+- **FR-WORKER-001** `src/Worker/`: Tracks which unit of work runs in this process, so a boundary listener acts only at the OUTERMOST request, Messenger message or console command (REQ-RUNTIME-002; audits NM and NL2-v, same design as PageBuilderKitBundle `UnitOfWorkBoundaries`).
+
 ## Success Criteria
 
 - **SC-001**: **72/72** production files under `src/` mapped (audited 2026-10-20) in [`code-inventory.md`](code-inventory.md).
