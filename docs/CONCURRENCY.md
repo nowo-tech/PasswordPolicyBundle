@@ -17,7 +17,8 @@ request). Worker mode with the kernel not reset is covered in [FRANKENPHP-WORKER
 
 - The bundle has **no write route, controller or Messenger handler of its own**. It writes inside the host's own unit
   of work. The password history rows join the host's flush (Doctrine `onFlush`), so they commit or roll back with the
-  password change itself (rule 1). The bundle never flushes, clears or resets the host's EntityManager (rule 2).
+  password change itself (rule 1). The bundle never flushes, clears or resets an open host EntityManager (rule 2).
+  It only replaces, at the next worker boundary, one that a failed password-changing flush closed.
 - **Read-modify-write of the password** (rule 4): since 1.14.0 the history listener locks the subject's row inside the
   host's flush and checks that the stored password is still the one the request loaded (`password_change_lock`, on by
   default). Two concurrent changes of one user no longer overwrite each other. The later one fails with
@@ -56,7 +57,12 @@ With `password_change_lock: true`:
    wraps and commits nothing, and it never wraps another connection.
 3. If the stored value differs, or the row is gone, it throws `PasswordChangeConflictException`. The ORM rolls the
    whole flush back: no new password and no history row. As after any failed flush, the ORM closes that
-   EntityManager. The host replaces it (transaction-doctrine's write units and Symfony's `doctrine` registry do).
+   EntityManager. Symfony's `doctrine` registry replaces a closed manager only on `kernel.reset`, so in FrankenPHP
+   worker mode with kernel reset off it would stay closed and every later request of that worker would fail. The
+   bundle's worker boundary listener therefore replaces it at the next boundary (request, Messenger message,
+   outermost command). It replaces only a manager that a failed password-changing flush closed, through
+   `ManagerRegistry::resetManager()`, and never touches an open one. transaction-doctrine's worker hygiene does the
+   same for every closed manager. The request that failed still runs on the closed manager until it ends.
 4. Otherwise the lock is held until the host's commit. An overlapping change of the same user waits for it, then
    sees the new password and fails as in step 3.
 
@@ -113,9 +119,27 @@ and client-safe: no id, no hash. `$subjectClass` names the subject class for log
   the subject before it validates the new password. For example, use `$entityManager->lock($user,
   LockMode::PESSIMISTIC_WRITE)` inside its transaction, or a `version` column. Otherwise two concurrent changes can
   still lose a history entry.
+- **Worker mode without the boundary listener.** A host that drives `http_kernel` itself and disables the bundle's
+  event subscribers gets no boundary: register `NowoTransactionDoctrineBundle` (its worker hygiene resets closed
+  managers), reset closed managers yourself, or set `password_change_lock: false`.
 - **Writes outside the ORM.** A password changed with DQL `UPDATE` or plain DBAL bypasses the listener: no history
   and no lock. A managed entity changed after such a write fails with the conflict, as intended.
 - **SQLite** has no row lock. The comparison still runs, and SQLite's database write lock serialises writers.
 - **Other platforms** (SQL Server, Oracle) use DBAL's `FOR UPDATE` translation. They are not covered by CI.
+- **Concurrent logins that rehash the password.** Symfony's `PasswordMigratingListener` calls the host's
+  `upgradePassword()`, which changes the password and flushes. Two logins of one user that both rehash now race like
+  two password changes: the second one's flush fails with `PasswordChangeConflictException` and its manager closes.
+  The host's `upgradePassword()` may catch the exception and treat it as "already upgraded" (the first login stored a
+  fresh hash). The closed manager still needs replacing: the bundle's worker boundary does it at the next unit, or
+  the host resets it at once with `ManagerRegistry::resetManager()` if the same request keeps using Doctrine.
+- **Write-unit replays on MySQL / MariaDB.** There, two interleaved changes usually end as deadlock 1213 rather than
+  the conflict exception. A transaction-doctrine write unit replays a deadlock. If the host validated the new password
+  outside that unit (for example the form was validated before the unit started), the replay writes it again without
+  running the reuse check on the fresh history. Validate inside the replayed unit, or do not mark password changes
+  as auto-replayed write units.
+- **Lock order in bulk flushes.** When one flush changes several users' passwords, the rows are locked in the ORM's
+  update order, which this release does not change. Two bulk flushes that touch the same users in different orders,
+  or a PostgreSQL flush that also changes a unique column of the user row (`FOR NO KEY UPDATE` then conflicts with
+  the key-share lock), can deadlock. That is a transient failure: 409 + `CONFLICT_001`, and nothing is written.
 - **Stale history pruning.** `passwords_to_remember` is applied per flush. With the lock, the flushes of one user are
   serialised, so two changes never prune the same rows at once.

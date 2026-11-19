@@ -49,6 +49,9 @@ final class PasswordChangeRaceDoctrineTest extends UnitTestCase
     /** @var list<EntityManagerInterface> */
     private array $managers = [];
 
+    /** @var list<PasswordEntityListener> listener of each manager, same index */
+    private array $listeners = [];
+
     private string $url = '';
 
     protected function setUp(): void
@@ -75,7 +78,8 @@ final class PasswordChangeRaceDoctrineTest extends UnitTestCase
         foreach ($this->managers as $manager) {
             $manager->getConnection()->close();
         }
-        $this->managers = [];
+        $this->managers  = [];
+        $this->listeners = [];
         parent::tearDown();
     }
 
@@ -103,6 +107,9 @@ final class PasswordChangeRaceDoctrineTest extends UnitTestCase
         self::assertSame('hash-1', $this->storedPassword());
         self::assertSame(['hash-0'], $this->historyHashes(), 'The failed flush wrote no history row');
         $this->assertConnectionUsable($second);
+        // UK-PP-1: the closed manager is handed to the worker boundary; the committed one is not.
+        self::assertSame([$second], $this->listeners[2]->takeFailedFlushManagers());
+        self::assertSame([], $this->listeners[1]->takeFailedFlushManagers());
 
         // The retry loads the current state: its change is validated against, and recorded after, hash-1.
         $retry = $this->manager(true);
@@ -240,6 +247,7 @@ final class PasswordChangeRaceDoctrineTest extends UnitTestCase
             storedPasswordLock: $lock ? new StoredPasswordLock() : null,
         );
         $manager->getEventManager()->addEventListener([Events::onFlush, Events::postFlush, Events::preUpdate], $listener);
+        $this->listeners[] = $listener;
 
         return $this->managers[] = $manager;
     }

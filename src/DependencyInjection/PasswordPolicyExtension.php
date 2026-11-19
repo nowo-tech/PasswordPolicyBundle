@@ -167,6 +167,7 @@ final class PasswordPolicyExtension extends Extension
         // iterator of IGNORE_ON_UNINITIALIZED references: a boundary never builds a listener.
         $containerBuilder->register(PasswordPolicyWorkerBoundaryListener::class, PasswordPolicyWorkerBoundaryListener::class)
             ->setArgument('$flushState', new IteratorArgument($entityListeners))
+            ->setArgument('$managerRegistry', $this->optionalReference('doctrine'))
             ->addTag('kernel.event_subscriber');
 
         $this->configurePorts($containerBuilder, $config);

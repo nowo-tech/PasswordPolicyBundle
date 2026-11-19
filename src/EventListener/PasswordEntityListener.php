@@ -30,6 +30,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Service\ResetInterface;
 
 use function array_key_exists;
+use function array_values;
 use function count;
 use function is_array;
 use function spl_object_id;
@@ -84,6 +85,20 @@ class PasswordEntityListener implements ResetInterface
     private array $expectedPasswords = [];
 
     /**
+     * Entity managers whose flush changed a password and never reached postFlush (it failed: a conflict, a deadlock,
+     * a lock-wait timeout). A failed flush closes the manager; {@see PasswordPolicyWorkerBoundaryListener} replaces
+     * the closed ones at the next boundary, so one failed password change cannot break a worker that runs without
+     * kernel reset. Kept across flushes (only a successful postFlush or {@see self::takeFailedFlushManagers()} drops
+     * an entry); cleared by {@see self::reset()}.
+     *
+     * @var array<int, EntityManagerInterface>
+     */
+    private array $failedFlushManagers = [];
+
+    /** Manager of the flush in progress when it changed a password (moved out on postFlush). */
+    private ?EntityManagerInterface $flushingManager = null;
+
+    /**
      * PasswordEntityListener constructor.
      *
      * @param PasswordHistoryServiceInterface $passwordHistoryService The service for managing password history cleanup
@@ -126,7 +141,7 @@ class PasswordEntityListener implements ResetInterface
      */
     public function onFlush(OnFlushEventArgs $onFlushEventArgs): void
     {
-        $this->reset();
+        $this->resetFlushState();
 
         $em         = $onFlushEventArgs->getObjectManager();
         $unitOfWork = $em->getUnitOfWork();
@@ -147,6 +162,8 @@ class PasswordEntityListener implements ResetInterface
                     $changeSet      = $unitOfWork->getEntityChangeSet($entity);
                     $passwordChange = $changeSet[$this->passwordField] ?? null;
                     if (is_array($passwordChange) && isset($passwordChange[0])) {
+                        $this->flushingManager                         = $em;
+                        $this->failedFlushManagers[spl_object_id($em)] = $em;
                         if ($this->storedPasswordLock instanceof StoredPasswordLock) {
                             $this->expectedPasswords[spl_object_id($entity)] = [$entity, $passwordChange[0]];
                         }
@@ -284,6 +301,11 @@ class PasswordEntityListener implements ResetInterface
         $pendingChanges          = $this->pendingChanges;
         $this->pendingChanges    = [];
         $this->expectedPasswords = [];
+        if ($this->flushingManager instanceof EntityManagerInterface) {
+            // The flush committed: its manager is open.
+            unset($this->failedFlushManagers[spl_object_id($this->flushingManager)]);
+            $this->flushingManager = null;
+        }
 
         if (!$this->eventDispatcher instanceof EventDispatcherInterface) {
             return;
@@ -303,9 +325,34 @@ class PasswordEntityListener implements ResetInterface
 
     public function reset(): void
     {
+        // Every property spelled out (Igor checks reset() itself); resetFlushState() keeps $failedFlushManagers.
+        $this->processedPasswords  = [];
+        $this->pendingChanges      = [];
+        $this->expectedPasswords   = [];
+        $this->flushingManager     = null;
+        $this->failedFlushManagers = [];
+    }
+
+    /**
+     * Returns and forgets the entity managers whose password-changing flush failed since the last call (closed ones
+     * need replacing; see {@see PasswordPolicyWorkerBoundaryListener}).
+     *
+     * @return list<EntityManagerInterface>
+     */
+    public function takeFailedFlushManagers(): array
+    {
+        $managers                  = array_values($this->failedFlushManagers);
+        $this->failedFlushManagers = [];
+
+        return $managers;
+    }
+
+    private function resetFlushState(): void
+    {
         $this->processedPasswords = [];
         $this->pendingChanges     = [];
         $this->expectedPasswords  = [];
+        $this->flushingManager    = null;
     }
 
     /**

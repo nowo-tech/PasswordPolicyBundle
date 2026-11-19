@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `password_change_lock` (per entity, default `true`, REQ-RUNTIME-003): the history listener locks the subject's row inside the host's flush (`preUpdate`; `FOR NO KEY UPDATE` on PostgreSQL, `FOR UPDATE` on MySQL / MariaDB) and fails the flush with the new `PasswordChangeConflictException` when another request changed the stored password after this one loaded it. The exception implements transaction-doctrine's `LockConflictExceptionInterface`: with its Symfony bundle the host answers 409 + `Retry-After` + `X-Conflict-Code: CONFLICT_001` (`CONFLICT_002` when the request already committed something)
+- The worker boundary listener replaces, through the Doctrine registry, an entity manager that a failed password-changing flush closed (conflict, deadlock, lock-wait timeout), so a double-submitted password change cannot break a FrankenPHP worker running without kernel reset; open managers are never touched (audit UK-PP-1)
 - `docs/CONCURRENCY.md`: write-path table, conflict codes, host options and residual risks (REQ-RUNTIME-003)
 - Two-connection race tests on MySQL 8.4, MariaDB 11.4 and PostgreSQL 16 (`PasswordChangeRaceDoctrineTest`); CI "Doctrine integration - mariadb" cell and the "Dependency floor (nowo-tech/transaction-* lowest, demo lock)" job with `.scripts/check-demo-lock.py`
 
