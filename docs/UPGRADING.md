@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 1.14.0](#to-1140)
 - [To 1.13.0](#to-1130)
   - [To 1.13.0](#to-1130-1)
 - [To 1.12.0](#to-1120)
@@ -56,6 +57,14 @@
 - [Notes](#notes)
 
 ## Unreleased
+
+## To 1.14.0
+
+From **1.13.0**:
+
+```bash
+composer update nowo-tech/password-policy-bundle
+```
 
 Target 1.14.0 (minor). `composer update nowo-tech/password-policy-bundle` also installs `nowo-tech/transaction-doctrine` ^1.6 (and `nowo-tech/transaction-contract`); nothing of it is registered or wired by this bundle.
 

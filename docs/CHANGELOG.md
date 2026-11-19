@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[1.14.0] - 2026-11-19](#1140---2026-11-19)
 - [[1.13.0] - 2026-11-14](#1130---2026-11-14)
 - [[1.12.0] - 2026-11-13](#1120---2026-11-13)
 - [[1.11.2] - 2026-11-12](#1112---2026-11-12)
@@ -53,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-19
+
 ### Added
 
 - `password_change_lock` (per entity, default `true`, REQ-RUNTIME-003): the history listener locks the subject's row inside the host's flush (`preUpdate`; `FOR NO KEY UPDATE` on PostgreSQL, `FOR UPDATE` on MySQL / MariaDB) and fails the flush with the new `PasswordChangeConflictException` when another request changed the stored password after this one loaded it. The exception implements transaction-doctrine's `LockConflictExceptionInterface`: with its Symfony bundle the host answers 409 + `Retry-After` + `X-Conflict-Code: CONFLICT_001` (`CONFLICT_002` when the request already committed something)
@@ -72,6 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Two concurrent password changes of one user: the later commit overwrote the earlier one, whose new password never reached the history (it could be set again at once, and both changes recorded the same old hash, pushing an older password out of the `passwords_to_remember` window early). The later flush now fails with `PasswordChangeConflictException` and writes nothing (REQ-RUNTIME-003)
+
+[1.14.0]: https://github.com/nowo-tech/PasswordPolicyBundle/releases/tag/v1.14.0
 
 ## [1.13.0] - 2026-11-14
 
