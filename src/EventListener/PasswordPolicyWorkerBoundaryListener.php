@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\EventListener;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\ManagerRegistry;
 use Nowo\PasswordPolicyBundle\Worker\UnitOfWorkFrames;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
@@ -20,6 +22,7 @@ use Symfony\Component\Messenger\Event\WorkerMessageSkipEvent;
 use Symfony\Component\Messenger\Event\WorkerStoppedEvent;
 use Symfony\Contracts\Service\ResetInterface;
 
+use function array_keys;
 use function class_exists;
 
 use const PHP_INT_MAX;
@@ -48,6 +51,10 @@ use const PHP_INT_MAX;
  * run: a host that removes or bypasses `services_resetter` (or drives `http_kernel` directly), Messenger consumers
  * started with `--no-reset`, and long-running console commands.
  *
+ * At each clear it also replaces, through the Doctrine registry, every entity manager that a failed password-changing
+ * flush closed (a PasswordChangeConflictException, a deadlock, a lock-wait timeout): without kernel reset, Symfony's
+ * registry would never replace it. Open managers are never touched.
+ *
  * The listeners arrive as a lazy iterator of `IGNORE_ON_UNINITIALIZED_REFERENCE` references: a boundary only clears
  * instances that already exist and never builds one.
  *
@@ -63,9 +70,11 @@ final readonly class PasswordPolicyWorkerBoundaryListener implements EventSubscr
 
     /**
      * @param iterable<ResetInterface> $flushState the per-entity {@see PasswordEntityListener} services
+     * @param ManagerRegistry|null $managerRegistry replaces, at a boundary, a manager a failed password change closed
      */
     public function __construct(
         private iterable $flushState,
+        private ?ManagerRegistry $managerRegistry = null,
     ) {
         $this->frames = new UnitOfWorkFrames();
     }
@@ -224,12 +233,40 @@ final readonly class PasswordPolicyWorkerBoundaryListener implements EventSubscr
     }
 
     /**
-     * Drops the per-flush state of every password listener already built.
+     * Drops the per-flush state of every password listener already built, then replaces each entity manager that a
+     * failed password-changing flush closed (REQ-RUNTIME-003 rule 2: only a closed manager is replaced; an open one
+     * is never reset or cleared). Without kernel reset nothing else would replace it, and every later unit of the
+     * worker would fail on it.
      */
     public function clear(): void
     {
+        $failed = [];
         foreach ($this->flushState as $state) {
+            if ($state instanceof PasswordEntityListener) {
+                $failed = [...$failed, ...$state->takeFailedFlushManagers()];
+            }
             $state->reset();
+        }
+
+        foreach ($failed as $manager) {
+            if (!$manager->isOpen()) {
+                $this->resetClosedManager($manager);
+            }
+        }
+    }
+
+    private function resetClosedManager(EntityManagerInterface $manager): void
+    {
+        if (!$this->managerRegistry instanceof ManagerRegistry) {
+            return;
+        }
+
+        foreach (array_keys($this->managerRegistry->getManagerNames()) as $name) {
+            if ($this->managerRegistry->getManager($name) === $manager) {
+                $this->managerRegistry->resetManager($name);
+
+                return;
+            }
         }
     }
 

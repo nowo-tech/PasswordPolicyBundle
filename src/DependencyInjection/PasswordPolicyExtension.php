@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\PasswordPolicyBundle\DependencyInjection;
 
 use Exception;
+use Nowo\PasswordPolicyBundle\Concurrency\StoredPasswordLock;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordEntityListener;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordPolicyWorkerBoundaryListener;
@@ -166,6 +167,7 @@ final class PasswordPolicyExtension extends Extension
         // iterator of IGNORE_ON_UNINITIALIZED references: a boundary never builds a listener.
         $containerBuilder->register(PasswordPolicyWorkerBoundaryListener::class, PasswordPolicyWorkerBoundaryListener::class)
             ->setArgument('$flushState', new IteratorArgument($entityListeners))
+            ->setArgument('$managerRegistry', $this->optionalReference('doctrine'))
             ->addTag('kernel.event_subscriber');
 
         $this->configurePorts($containerBuilder, $config);
@@ -339,6 +341,11 @@ final class PasswordPolicyExtension extends Extension
         $definition->addTag('doctrine.event_listener', ['event' => 'onFlush']);
         $definition->addTag('doctrine.event_listener', ['event' => 'postFlush']);
         $definition->addTag('kernel.reset', ['method' => 'reset']);
+        if ($settings['password_change_lock'] ?? true) {
+            // REQ-RUNTIME-003: compare-and-set of the password change inside the host's flush.
+            $definition->addTag('doctrine.event_listener', ['event' => 'preUpdate']);
+            $definition->setArgument('$storedPasswordLock', new Definition(StoredPasswordLock::class));
+        }
 
         $definition->setArgument('$passwordField', $settings['password_field']);
         $definition->setArgument('$passwordHistoryField', $settings['password_history_field']);

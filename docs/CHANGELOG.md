@@ -53,11 +53,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `password_change_lock` (per entity, default `true`, REQ-RUNTIME-003): the history listener locks the subject's row inside the host's flush (`preUpdate`; `FOR NO KEY UPDATE` on PostgreSQL, `FOR UPDATE` on MySQL / MariaDB) and fails the flush with the new `PasswordChangeConflictException` when another request changed the stored password after this one loaded it. The exception implements transaction-doctrine's `LockConflictExceptionInterface`: with its Symfony bundle the host answers 409 + `Retry-After` + `X-Conflict-Code: CONFLICT_001` (`CONFLICT_002` when the request already committed something)
+- The worker boundary listener replaces, through the Doctrine registry, an entity manager that a failed password-changing flush closed (conflict, deadlock, lock-wait timeout), so a double-submitted password change cannot break a FrankenPHP worker running without kernel reset; open managers are never touched (audit UK-PP-1)
+- `docs/CONCURRENCY.md`: write-path table, conflict codes, host options and residual risks (REQ-RUNTIME-003)
+- Two-connection race tests on MySQL 8.4, MariaDB 11.4 and PostgreSQL 16 (`PasswordChangeRaceDoctrineTest`); CI "Doctrine integration - mariadb" cell and the "Dependency floor (nowo-tech/transaction-* lowest, demo lock)" job with `.scripts/check-demo-lock.py`
+
 ### Changed
+
+- Requires `nowo-tech/transaction-doctrine` ^1.6 (for `LockConflictExceptionInterface`; no runner, middleware or connection wrapping is registered)
+- CI "Doctrine integration - postgres" runs PostgreSQL 16 (was 17), the REQ-RUNTIME-003 baseline
 
 - Demo `.gitignore` ignores `/.pnpm-store` (REQ-GITIGNORE-003)
 - Dependabot watches the demo Playwright `e2e/` npm manifest (REQ-GH-002)
 - Spec Kit: the 43 `src/` files added since the baseline review are mapped in `code-inventory.md`, with four new area requirements in `spec.md` (REQ-SPECKIT-001 / REQ-SPECKIT-003)
+
+### Fixed
+
+- Two concurrent password changes of one user: the later commit overwrote the earlier one, whose new password never reached the history (it could be set again at once, and both changes recorded the same old hash, pushing an older password out of the `passwords_to_remember` window early). The later flush now fails with `PasswordChangeConflictException` and writes nothing (REQ-RUNTIME-003)
 
 ## [1.13.0] - 2026-11-14
 

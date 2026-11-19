@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\PasswordPolicyBundle\Tests\Unit\DependencyInjection;
 
+use Nowo\PasswordPolicyBundle\Concurrency\StoredPasswordLock;
 use Nowo\PasswordPolicyBundle\DependencyInjection\Configuration;
 use Nowo\PasswordPolicyBundle\DependencyInjection\PasswordPolicyExtension;
 use Nowo\PasswordPolicyBundle\EventListener\PasswordExpiryListener;
@@ -28,6 +29,7 @@ use ReflectionClass;
 use stdClass;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 
 /**
  * Tests for PasswordPolicyExtension.
@@ -584,7 +586,21 @@ final class PasswordPolicyExtensionTest extends UnitTestCase
         $this->extension->load([['entities' => [$mockEntityClass => ['reset_password_route_name' => 'reset']]]], $container);
 
         $listener = $container->getDefinition('nowo_password_policy.entity_listener.' . strtolower(str_replace('\\', '_', $mockEntityClass)));
+        $this->assertSame([['event' => 'onFlush'], ['event' => 'postFlush'], ['event' => 'preUpdate']], $listener->getTag('doctrine.event_listener'));
+        $lock = $listener->getArgument('$storedPasswordLock');
+        $this->assertInstanceOf(Definition::class, $lock);
+        $this->assertSame(StoredPasswordLock::class, $lock->getClass());
+    }
+
+    public function testPasswordChangeLockFalseKeepsTheListenerWithoutPreUpdate(): void
+    {
+        $container       = new ContainerBuilder();
+        $mockEntityClass = $this->createMock(HasPasswordPolicyInterface::class)::class;
+        $this->extension->load([['entities' => [$mockEntityClass => ['reset_password_route_name' => 'reset', 'password_change_lock' => false]]]], $container);
+
+        $listener = $container->getDefinition('nowo_password_policy.entity_listener.' . strtolower(str_replace('\\', '_', $mockEntityClass)));
         $this->assertSame([['event' => 'onFlush'], ['event' => 'postFlush']], $listener->getTag('doctrine.event_listener'));
+        $this->assertArrayNotHasKey('$storedPasswordLock', $listener->getArguments());
     }
 
     public function testHistoryListenerFalseSkipsTheListenerAndAcceptsAnySubjectClass(): void

@@ -10,10 +10,13 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
+use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Events;
+use Nowo\PasswordPolicyBundle\Concurrency\StoredPasswordLock;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent;
+use Nowo\PasswordPolicyBundle\Exceptions\PasswordChangeConflictException;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -27,6 +30,7 @@ use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Service\ResetInterface;
 
 use function array_key_exists;
+use function array_values;
 use function count;
 use function is_array;
 use function spl_object_id;
@@ -45,6 +49,11 @@ use function sprintf;
  *
  * It is the default history adapter; set history_listener: false on an entity to record the history yourself
  * through PasswordHistoryRecorderInterface.
+ *
+ * Concurrency (REQ-RUNTIME-003): the history rows join the host's own flush, so they commit or roll back with the
+ * password change. With a {@see StoredPasswordLock} (`password_change_lock`, on by default), preUpdate locks the
+ * subject's row inside that flush and fails it with {@see PasswordChangeConflictException} when another request
+ * changed the stored password after this one loaded it (the reuse check ran against a stale history).
  */
 class PasswordEntityListener implements ResetInterface
 {
@@ -68,6 +77,28 @@ class PasswordEntityListener implements ResetInterface
     private array $pendingChanges = [];
 
     /**
+     * Password value each changed subject had when it was loaded, checked against the stored row in preUpdate.
+     * Keyed by object id, cleared like {@see self::$pendingChanges}.
+     *
+     * @var array<int, array{HasPasswordPolicyInterface, mixed}>
+     */
+    private array $expectedPasswords = [];
+
+    /**
+     * Entity managers whose flush changed a password and never reached postFlush (it failed: a conflict, a deadlock,
+     * a lock-wait timeout). A failed flush closes the manager; {@see PasswordPolicyWorkerBoundaryListener} replaces
+     * the closed ones at the next boundary, so one failed password change cannot break a worker that runs without
+     * kernel reset. Kept across flushes (only a successful postFlush or {@see self::takeFailedFlushManagers()} drops
+     * an entry); cleared by {@see self::reset()}.
+     *
+     * @var array<int, EntityManagerInterface>
+     */
+    private array $failedFlushManagers = [];
+
+    /** Manager of the flush in progress when it changed a password (moved out on postFlush). */
+    private ?EntityManagerInterface $flushingManager = null;
+
+    /**
      * PasswordEntityListener constructor.
      *
      * @param PasswordHistoryServiceInterface $passwordHistoryService The service for managing password history cleanup
@@ -80,6 +111,7 @@ class PasswordEntityListener implements ResetInterface
      * @param string $logLevel The logging level to use
      * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
      * @param PasswordExpiryServiceInterface|null $passwordExpiryService The password expiry service for cache invalidation (optional)
+     * @param StoredPasswordLock|null $storedPasswordLock Compare-and-set of the password change in preUpdate (null = off)
      */
     public function __construct(
         public PasswordHistoryServiceInterface $passwordHistoryService,
@@ -93,6 +125,7 @@ class PasswordEntityListener implements ResetInterface
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
         private readonly ?PasswordExpiryServiceInterface $passwordExpiryService = null,
         private readonly ?ClockInterface $clock = null,
+        private readonly ?StoredPasswordLock $storedPasswordLock = null,
     ) {
     }
 
@@ -108,7 +141,7 @@ class PasswordEntityListener implements ResetInterface
      */
     public function onFlush(OnFlushEventArgs $onFlushEventArgs): void
     {
-        $this->reset();
+        $this->resetFlushState();
 
         $em         = $onFlushEventArgs->getObjectManager();
         $unitOfWork = $em->getUnitOfWork();
@@ -129,6 +162,11 @@ class PasswordEntityListener implements ResetInterface
                     $changeSet      = $unitOfWork->getEntityChangeSet($entity);
                     $passwordChange = $changeSet[$this->passwordField] ?? null;
                     if (is_array($passwordChange) && isset($passwordChange[0])) {
+                        $this->flushingManager                         = $em;
+                        $this->failedFlushManagers[spl_object_id($em)] = $em;
+                        if ($this->storedPasswordLock instanceof StoredPasswordLock) {
+                            $this->expectedPasswords[spl_object_id($entity)] = [$entity, $passwordChange[0]];
+                        }
                         $this->createPasswordHistory($em, $entity, $passwordChange[0]);
                     }
                 }
@@ -234,13 +272,40 @@ class PasswordEntityListener implements ResetInterface
     }
 
     /**
+     * Inside the flush transaction, right before the host's UPDATE of a subject whose password changed: locks its row
+     * and checks that the stored password is still the one this request loaded.
+     *
+     * @throws PasswordChangeConflictException When another request changed it first (the flush rolls back)
+     */
+    public function preUpdate(PreUpdateEventArgs $preUpdateEventArgs): void
+    {
+        $entity = $preUpdateEventArgs->getObject();
+        $key    = spl_object_id($entity);
+        if (!$this->storedPasswordLock instanceof StoredPasswordLock || !isset($this->expectedPasswords[$key])
+            || $this->expectedPasswords[$key][0] !== $entity) {
+            return;
+        }
+
+        $expected = $this->expectedPasswords[$key][1];
+        unset($this->expectedPasswords[$key]);
+
+        $this->storedPasswordLock->assertUnchanged($preUpdateEventArgs->getObjectManager(), $entity, $this->passwordField, $expected);
+    }
+
+    /**
      * Dispatches, for each change of the flush that just committed and in order: PasswordHistoryCreatedEvent,
      * PasswordChangedEvent, then PasswordChangeRecordedEvent (scalar ids).
      */
     public function postFlush(): void
     {
-        $pendingChanges       = $this->pendingChanges;
-        $this->pendingChanges = [];
+        $pendingChanges          = $this->pendingChanges;
+        $this->pendingChanges    = [];
+        $this->expectedPasswords = [];
+        if ($this->flushingManager instanceof EntityManagerInterface) {
+            // The flush committed: its manager is open.
+            unset($this->failedFlushManagers[spl_object_id($this->flushingManager)]);
+            $this->flushingManager = null;
+        }
 
         if (!$this->eventDispatcher instanceof EventDispatcherInterface) {
             return;
@@ -260,8 +325,34 @@ class PasswordEntityListener implements ResetInterface
 
     public function reset(): void
     {
+        // Every property spelled out (Igor checks reset() itself); resetFlushState() keeps $failedFlushManagers.
+        $this->processedPasswords  = [];
+        $this->pendingChanges      = [];
+        $this->expectedPasswords   = [];
+        $this->flushingManager     = null;
+        $this->failedFlushManagers = [];
+    }
+
+    /**
+     * Returns and forgets the entity managers whose password-changing flush failed since the last call (closed ones
+     * need replacing; see {@see PasswordPolicyWorkerBoundaryListener}).
+     *
+     * @return list<EntityManagerInterface>
+     */
+    public function takeFailedFlushManagers(): array
+    {
+        $managers                  = array_values($this->failedFlushManagers);
+        $this->failedFlushManagers = [];
+
+        return $managers;
+    }
+
+    private function resetFlushState(): void
+    {
         $this->processedPasswords = [];
         $this->pendingChanges     = [];
+        $this->expectedPasswords  = [];
+        $this->flushingManager    = null;
     }
 
     /**
