@@ -155,8 +155,10 @@ jobs:
         include:
           - db: mysql
             url: mysql://root@127.0.0.1:3306/pp_test?serverVersion=8.4
+          - db: mariadb
+            url: mysql://root@127.0.0.1:3307/pp_test?serverVersion=11.4.0-MariaDB
           - db: postgres
-            url: postgresql://postgres@127.0.0.1:5432/pp_test?serverVersion=17
+            url: postgresql://postgres@127.0.0.1:5432/pp_test?serverVersion=16
 
     # Passwordless services: no credential in the workflow.
     services:
@@ -167,8 +169,15 @@ jobs:
           MYSQL_DATABASE: pp_test
         ports: ['3306:3306']
         options: --health-cmd="mysqladmin ping -h127.0.0.1" --health-interval=5s --health-timeout=5s --health-retries=20
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          MARIADB_DATABASE: pp_test
+        ports: ['3307:3306']
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=5s --health-retries=20
       postgres:
-        image: postgres:17
+        image: postgres:16
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: pp_test
@@ -190,10 +199,60 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Doctrine integration tests (GDPR ports, exact matching)
+      # REQ-RUNTIME-003: the password-change race tests open two sessions; every session sets a 1 s lock timeout.
+      - name: Doctrine integration tests (GDPR ports, exact matching, two-connection password-change races)
+        timeout-minutes: 10
         env:
           DATABASE_URL: ${{ matrix.url }}
         run: vendor/bin/phpunit --no-coverage tests/Integration/Doctrine
+
+      - name: Doctrine integration tests on DBAL 4
+        timeout-minutes: 10
+        env:
+          DATABASE_URL: ${{ matrix.url }}
+        run: |
+          composer require --dev 'doctrine/dbal:^4.0' --no-update --no-interaction
+          composer update --prefer-dist --no-interaction --no-progress
+          composer show doctrine/dbal | grep -E '^versions'
+          vendor/bin/phpunit --no-coverage tests/Integration/Doctrine
+
+  # Dependency floor: the code must work with the LOWEST nowo-tech/transaction-* versions composer.json allows (a host
+  # can run `composer update nowo-tech/password-policy-bundle` without updating them), and the demo lock must install
+  # what the bundle requires (the demo installs from its lock, so a requirement added later is never installed and the
+  # demo fails with "class not found").
+  deps-floor:
+    name: Dependency floor (nowo-tech/transaction-* lowest, demo lock)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Demo lock satisfies the bundle's nowo-tech requirements
+        run: python3 .scripts/check-demo-lock.py . --only 'nowo-tech/*'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: |
+          composer config platform.php 8.4.1
+          composer update --prefer-dist --no-progress --no-interaction
+
+      - name: Downgrade nowo-tech/transaction-* to the lowest allowed versions
+        run: |
+          composer update 'nowo-tech/transaction-*' --prefer-lowest --prefer-dist --no-progress --no-interaction
+          composer show 'nowo-tech/transaction-*'
+
+      - name: PHPStan at the floor
+        run: composer phpstan
+
+      - name: Test suite at the floor
+        timeout-minutes: 10
+        run: vendor/bin/phpunit --no-coverage
 
   code-style:
     name: Code Style

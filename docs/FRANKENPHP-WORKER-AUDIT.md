@@ -12,6 +12,8 @@
 | Remediation (2026-11-12, audit NM) | **1.11.2**: unit-of-work bookkeeping in `Worker\UnitOfWorkFrames` at `PHP_INT_MAX` (console frames keyed by Command + input that save / restore the outer state, failing frames healed at the next unit, main-request depth): no leak when another console listener throws or stops propagation (audits NM, NL2-v) |
 | Worker tests | [Worker tests](#worker-tests-req-runtime-002): `PasswordPolicyKernelWorkerBoundaryTest` (1,000 requests through `http_kernel`, 2 users) and `PasswordPolicyPersonalDataDoctrineTest::testWorkerModeAlternatingSubjectsDoNotLeakState` (1,000 runs, 2 subjects) |
 
+Concurrent writes (REQ-RUNTIME-003: transactions, the password-change lock, conflict codes) are covered in [CONCURRENCY.md](CONCURRENCY.md).
+
 ## Table of contents
 
 - [Execution model assumed](#execution-model-assumed)
@@ -47,7 +49,7 @@ in Messenger consumers started with `--no-reset`, and in long-running console co
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Mutable state in shared services | ✅ (resolved) | `PasswordEntityListener::$processedPasswords` / `$pendingChanges` are cleared at the start of every `onFlush`, after `postFlush`, and at every request / message / console boundary (W-06); other services only hold compile-time config |
+| Mutable state in shared services | ✅ (resolved) | `PasswordEntityListener::$processedPasswords` / `$pendingChanges` / `$expectedPasswords` (1.14.0, the password-change lock) are cleared at the start of every `onFlush`, after `postFlush`, and at every request / message / console boundary (W-06); other services only hold compile-time config |
 | Static properties / `static` locals | ✅ | None in `src/`; `RouteNameMatcher::matches()` is a pure static function |
 | `ResetInterface` / `kernel.reset` coverage | ✅ | `PasswordEntityListener` implements `ResetInterface` and is tagged `kernel.reset` (safety net; it also clears itself per flush and the boundary listener clears it per unit of work); `testResetClearsProcessedPasswords` |
 | Request / user / locale captured in services | ✅ (resolved) | Nothing captured in constructors; `PasswordExpiryListener` only trusts the token storage when the main request matched a firewall (`_firewall_context`) |

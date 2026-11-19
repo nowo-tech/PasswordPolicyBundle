@@ -126,6 +126,7 @@ As an integrator, I map multiple entity classes under `entities` with distinct f
 - **FR-HIST-001**: `PasswordHistoryService` MUST sort history by `createdAt` descending and remove entries beyond configured limit via entity `removePasswordHistory()`.
 - **FR-LIST-001**: `PasswordEntityListener` on `onFlush` MUST detect password field changes, create history entries, dispatch `PasswordChangedEvent` / `PasswordHistoryCreatedEvent`, deduplicate via a per-flush processed map keyed by entity identity + old hash (store only a flag, never the history entity), clear that map at the start of every flush, and implement `ResetInterface` (`kernel.reset`) for worker safety.
 - **FR-LIST-001a**: Under FrankenPHP worker mode without kernel reset, a retried password change or a second entity with the same stored hash MUST still create history (no cross-request / cross-user skip).
+- **FR-LIST-003**: With `password_change_lock` (default `true`), the history listener MUST lock the subject's row inside the host's flush (`preUpdate`) and fail the flush with `PasswordChangeConflictException` (a transaction-doctrine `LockConflictExceptionInterface`) when the stored password differs from the one the request loaded, so the later of two concurrent password changes writes nothing (REQ-RUNTIME-003; see `docs/CONCURRENCY.md`).
 
 ### Password reuse policy
 

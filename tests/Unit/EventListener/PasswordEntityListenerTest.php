@@ -8,10 +8,12 @@ use ArrayObject;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
+use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use Mockery;
 use Mockery\MockInterface;
+use Nowo\PasswordPolicyBundle\Concurrency\StoredPasswordLock;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent;
@@ -677,5 +679,19 @@ final class PasswordEntityListenerTest extends UnitTestCase
         $listener = new PasswordEntityListener($this->passwordHistoryServiceMock, 'password', 'passwordHistory', 3, HasPasswordPolicyInterface::class);
         $listener->onFlush(new OnFlushEventArgs($this->emMock));
         $this->addToAssertionCount(Mockery::getContainer()->mockery_getExpectationCount());
+    }
+
+    public function testPreUpdateIgnoresSubjectsItDidNotTrack(): void
+    {
+        $untracked = Mockery::mock(HasPasswordPolicyInterface::class);
+        $changeSet = [];
+        $args      = new PreUpdateEventArgs($untracked, $this->emMock, $changeSet);
+
+        // Without a lock nothing is checked; with one, an entity whose password this flush did not change is not either.
+        (new PasswordEntityListener($this->passwordHistoryServiceMock, 'password', 'passwordHistory', 3, HasPasswordPolicyInterface::class))->preUpdate($args);
+        (new PasswordEntityListener($this->passwordHistoryServiceMock, 'password', 'passwordHistory', 3, HasPasswordPolicyInterface::class, storedPasswordLock: new StoredPasswordLock()))->preUpdate($args);
+
+        $this->emMock->shouldNotHaveReceived('getConnection');
+        $this->addToAssertionCount(1);
     }
 }

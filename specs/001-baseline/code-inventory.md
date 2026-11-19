@@ -31,7 +31,7 @@ This file proves that **every production source artifact** under `src/` is refer
 | `Service/ExpiryFlash/CacheExpiryFlashThrottleStorage.php` | Cache-backed throttle | FR-FLASH-003 |
 | `Validator/PasswordPolicy.php` | Constraint definition | FR-VAL-001 |
 | `Validator/PasswordPolicyValidator.php` | Reuse validation (local Carbon locale) | FR-VAL-002 |
-| `EventListener/PasswordEntityListener.php` | Doctrine onFlush history + ResetInterface | FR-LIST-001, FR-LIST-001a |
+| `EventListener/PasswordEntityListener.php` | Doctrine onFlush history + preUpdate password-change lock + ResetInterface | FR-LIST-001, FR-LIST-001a, FR-LIST-003 |
 | `EventListener/PasswordExpiryListener.php` | Request expiry enforcement + firewall gate | FR-LIST-002, FR-LIST-002a |
 | `Event/PasswordChangedEvent.php` | Domain event | FR-EVT-001 |
 | `Event/PasswordExpiredEvent.php` | Domain event | FR-EVT-002 |
@@ -42,6 +42,8 @@ This file proves that **every production source artifact** under `src/` is refer
 | `Exceptions/ConfigurationException.php` | Config errors | FR-ERR-001 |
 | `Exceptions/RuntimeException.php` | Runtime errors | FR-ERR-002 |
 | `Exceptions/ValidationException.php` | Validator errors | FR-ERR-003 |
+| `Exceptions/PasswordChangeConflictException.php` | Concurrent password change (lock conflict, REQ-RUNTIME-003) | FR-LIST-003 |
+| `Concurrency/StoredPasswordLock.php` | Row lock + stored-vs-loaded password check inside the host flush | FR-LIST-003 |
 | `Model/CurrentPasswordHistory.php` | Transient history entry for the current password (reuse of the active password) | FR-MODEL-006, FR-VAL-002 |
 | `Service/CurrentPasswordMatcherInterface.php` | Optional capability: plain password matches the current hash | FR-VAL-003 |
 

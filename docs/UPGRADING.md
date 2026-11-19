@@ -57,6 +57,13 @@
 
 ## Unreleased
 
+Target 1.14.0 (minor). `composer update nowo-tech/password-policy-bundle` also installs `nowo-tech/transaction-doctrine` ^1.6 (and `nowo-tech/transaction-contract`); nothing of it is registered or wired by this bundle.
+
+- **Behaviour change (on by default):** with the history listener, a password change now locks the subject's row inside your flush and fails with `Nowo\PasswordPolicyBundle\Exceptions\PasswordChangeConflictException` when another request changed the stored password after this one loaded the user. The whole flush rolls back and the ORM closes that EntityManager (as after any failed flush). Answer it like any lock conflict: with `NowoTransactionDoctrineBundle` registered it becomes 409 + `CONFLICT_001` by itself; otherwise catch it on your change-password action and ask the user to retry (reload the user first). See [CONCURRENCY.md](CONCURRENCY.md).
+- A password written with DQL or plain DBAL while a managed copy of the user is changed in the same request now fails that copy's flush with the conflict: reload the user after such a write.
+- To keep the old behaviour (no lock, lost updates possible) set `password_change_lock: false` on the entity.
+- With `history_listener: false` nothing changes; lock the subject yourself before validating (see [CONCURRENCY.md — Residual risks](CONCURRENCY.md#residual-risks)).
+
 ## To 1.13.0
 
 From **1.12.0**:

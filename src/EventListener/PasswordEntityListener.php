@@ -10,10 +10,13 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
+use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Events;
+use Nowo\PasswordPolicyBundle\Concurrency\StoredPasswordLock;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordChangeRecordedEvent;
 use Nowo\PasswordPolicyBundle\Event\PasswordHistoryCreatedEvent;
+use Nowo\PasswordPolicyBundle\Exceptions\PasswordChangeConflictException;
 use Nowo\PasswordPolicyBundle\Exceptions\RuntimeException;
 use Nowo\PasswordPolicyBundle\Model\HasPasswordPolicyInterface;
 use Nowo\PasswordPolicyBundle\Model\PasswordHistoryInterface;
@@ -45,6 +48,11 @@ use function sprintf;
  *
  * It is the default history adapter; set history_listener: false on an entity to record the history yourself
  * through PasswordHistoryRecorderInterface.
+ *
+ * Concurrency (REQ-RUNTIME-003): the history rows join the host's own flush, so they commit or roll back with the
+ * password change. With a {@see StoredPasswordLock} (`password_change_lock`, on by default), preUpdate locks the
+ * subject's row inside that flush and fails it with {@see PasswordChangeConflictException} when another request
+ * changed the stored password after this one loaded it (the reuse check ran against a stale history).
  */
 class PasswordEntityListener implements ResetInterface
 {
@@ -68,6 +76,14 @@ class PasswordEntityListener implements ResetInterface
     private array $pendingChanges = [];
 
     /**
+     * Password value each changed subject had when it was loaded, checked against the stored row in preUpdate.
+     * Keyed by object id, cleared like {@see self::$pendingChanges}.
+     *
+     * @var array<int, array{HasPasswordPolicyInterface, mixed}>
+     */
+    private array $expectedPasswords = [];
+
+    /**
      * PasswordEntityListener constructor.
      *
      * @param PasswordHistoryServiceInterface $passwordHistoryService The service for managing password history cleanup
@@ -80,6 +96,7 @@ class PasswordEntityListener implements ResetInterface
      * @param string $logLevel The logging level to use
      * @param EventDispatcherInterface|null $eventDispatcher The event dispatcher (optional)
      * @param PasswordExpiryServiceInterface|null $passwordExpiryService The password expiry service for cache invalidation (optional)
+     * @param StoredPasswordLock|null $storedPasswordLock Compare-and-set of the password change in preUpdate (null = off)
      */
     public function __construct(
         public PasswordHistoryServiceInterface $passwordHistoryService,
@@ -93,6 +110,7 @@ class PasswordEntityListener implements ResetInterface
         private readonly ?EventDispatcherInterface $eventDispatcher = null,
         private readonly ?PasswordExpiryServiceInterface $passwordExpiryService = null,
         private readonly ?ClockInterface $clock = null,
+        private readonly ?StoredPasswordLock $storedPasswordLock = null,
     ) {
     }
 
@@ -129,6 +147,9 @@ class PasswordEntityListener implements ResetInterface
                     $changeSet      = $unitOfWork->getEntityChangeSet($entity);
                     $passwordChange = $changeSet[$this->passwordField] ?? null;
                     if (is_array($passwordChange) && isset($passwordChange[0])) {
+                        if ($this->storedPasswordLock instanceof StoredPasswordLock) {
+                            $this->expectedPasswords[spl_object_id($entity)] = [$entity, $passwordChange[0]];
+                        }
                         $this->createPasswordHistory($em, $entity, $passwordChange[0]);
                     }
                 }
@@ -234,13 +255,35 @@ class PasswordEntityListener implements ResetInterface
     }
 
     /**
+     * Inside the flush transaction, right before the host's UPDATE of a subject whose password changed: locks its row
+     * and checks that the stored password is still the one this request loaded.
+     *
+     * @throws PasswordChangeConflictException When another request changed it first (the flush rolls back)
+     */
+    public function preUpdate(PreUpdateEventArgs $preUpdateEventArgs): void
+    {
+        $entity = $preUpdateEventArgs->getObject();
+        $key    = spl_object_id($entity);
+        if (!$this->storedPasswordLock instanceof StoredPasswordLock || !isset($this->expectedPasswords[$key])
+            || $this->expectedPasswords[$key][0] !== $entity) {
+            return;
+        }
+
+        $expected = $this->expectedPasswords[$key][1];
+        unset($this->expectedPasswords[$key]);
+
+        $this->storedPasswordLock->assertUnchanged($preUpdateEventArgs->getObjectManager(), $entity, $this->passwordField, $expected);
+    }
+
+    /**
      * Dispatches, for each change of the flush that just committed and in order: PasswordHistoryCreatedEvent,
      * PasswordChangedEvent, then PasswordChangeRecordedEvent (scalar ids).
      */
     public function postFlush(): void
     {
-        $pendingChanges       = $this->pendingChanges;
-        $this->pendingChanges = [];
+        $pendingChanges          = $this->pendingChanges;
+        $this->pendingChanges    = [];
+        $this->expectedPasswords = [];
 
         if (!$this->eventDispatcher instanceof EventDispatcherInterface) {
             return;
@@ -262,6 +305,7 @@ class PasswordEntityListener implements ResetInterface
     {
         $this->processedPasswords = [];
         $this->pendingChanges     = [];
+        $this->expectedPasswords  = [];
     }
 
     /**
