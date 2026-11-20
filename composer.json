@@ -38,7 +38,7 @@
         "doctrine/collections": "^1.8 || ^2.0",
         "doctrine/orm": "^2.15 || ^3.0",
         "nesbot/carbon": "^3.9",
-        "nowo-tech/transaction-doctrine": "^1.6",
+        "nowo-tech/transaction-doctrine": "^1.8.1",
         "psr/clock": "^1.0",
         "symfony/framework-bundle": "^6.4 || ^7.0 || ^8.0",
         "symfony/password-hasher": "^6.4 || ^7.0 || ^8.0",
