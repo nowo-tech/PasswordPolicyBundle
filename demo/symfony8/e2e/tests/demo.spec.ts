@@ -19,7 +19,7 @@ test.describe('PasswordPolicy demo', () => {
 
   test('expired user sees the expiry flash on the home page', async ({ page }) => {
     await login(page, 'expired@example.com', 'expired123');
-    await expect(page.locator('.alert, .flash, [class*="alert"]').filter({ hasText: /expired|caducad/i }).first()).toBeVisible();
+    await expect(page.locator('.nowo-ui-flash').filter({ hasText: /expired|caducad/i }).first()).toBeVisible();
   });
 
   test('users management shows password status badges', async ({ page }) => {

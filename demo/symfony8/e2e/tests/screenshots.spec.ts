@@ -24,7 +24,8 @@ test.describe('PasswordPolicy screenshots', () => {
 
   test('password-expired-flash — expired user gets the expiry notice', async ({ page }) => {
     await login(page, 'expired@example.com', 'expired123');
-    await expect(page.locator('.alert, .flash, [class*="alert"]').filter({ hasText: /expired|caducad/i }).first()).toBeVisible();
+    await expect(page.locator('.nowo-ui-flash').filter({ hasText: /expired|caducad/i }).first()).toBeVisible();
+    await page.addStyleTag({ content: '.sf-toolbar,.sf-minitoolbar,[id^="sfwdt"]{display:none!important}' });
     await page.screenshot({ path: resolve(outDir, 'password-expired-flash.png'), fullPage: true });
   });
 
@@ -32,6 +33,7 @@ test.describe('PasswordPolicy screenshots', () => {
     await login(page, 'admin@example.com', 'admin123');
     await page.goto('/user/');
     await expect(page.locator('table').getByText(/Expiring Soon/i).first()).toBeVisible();
+    await page.addStyleTag({ content: '.sf-toolbar,.sf-minitoolbar,[id^="sfwdt"]{display:none!important}' });
     await page.screenshot({ path: resolve(outDir, 'demo-users-management.png'), fullPage: true });
   });
 });

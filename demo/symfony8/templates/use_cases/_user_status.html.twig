@@ -1,22 +1,19 @@
 {% if user %}
-    <div class="nowo-ui-flash nowo-ui-flash--{% if isExpired %}error{% else %}success{% endif %}" role="note">
-        <h3>Current User: {{ user.email }}</h3>
-        <p><strong>Password Status:</strong> 
-            {% if isExpired %}
-                <span class="nowo-ui-badge nowo-ui-badge--danger">EXPIRED</span>
-                {% if daysSinceExpiry is defined and daysSinceExpiry %}
-                    <span>Expired {{ daysSinceExpiry }} day(s) ago</span>
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Current user: ' ~ user.email, kind: 'detail'} %}
+        {% block section_actions %}
+            {% if isExpired %}<span class="nowo-ui-badge nowo-ui-badge--danger">EXPIRED</span>{% else %}<span class="nowo-ui-badge nowo-ui-badge--success">ACTIVE</span>{% endif %}
+        {% endblock %}
+        {% block section_body %}
+            <p><strong>Password status:</strong>
+                {% if isExpired %}
+                    {% if daysSinceExpiry is defined and daysSinceExpiry %}Expired {{ daysSinceExpiry }} day(s) ago{% else %}Expired{% endif %}
+                {% else %}
+                    {% if daysRemaining is defined and daysRemaining %}Expires in {{ daysRemaining }} day(s){% else %}Active{% endif %}
                 {% endif %}
-            {% else %}
-                <span class="nowo-ui-badge nowo-ui-badge--success">ACTIVE</span>
-                {% if daysRemaining is defined and daysRemaining %}
-                    <span>Expires in {{ daysRemaining }} day(s)</span>
-                {% endif %}
+            </p>
+            {% if user.passwordChangedAt %}
+                <p><strong>Password changed:</strong> <time datetime="{{ user.passwordChangedAt|date('c') }}">{{ user.passwordChangedAt|date('Y-m-d H:i:s') }}</time></p>
             {% endif %}
-        </p>
-        {% if user.passwordChangedAt %}
-            <p><strong>Password Changed:</strong> {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}</p>
-        {% endif %}
-    </div>
+        {% endblock %}
+    {% endembed %}
 {% endif %}
-

@@ -45,7 +45,7 @@ class SecurityController extends AbstractController
             $session->set('login_info_shown', true);
             $this->addFlash('info', [
                 'title'   => '🔐 Demo Login Credentials',
-                'message' => 'Use these credentials to test password expiry: <strong>expired@example.com</strong> / <strong>expired123</strong> (expired - will trigger listener), <strong>demo@example.com</strong> / <strong>demo123</strong> (expires soon), <strong>admin@example.com</strong> / <strong>admin123</strong> (active).',
+                'message' => 'Use these credentials to test password expiry: expired@example.com / expired123 (expired - will trigger listener), demo@example.com / demo123 (expires soon), admin@example.com / admin123 (active).',
             ]);
         }
 

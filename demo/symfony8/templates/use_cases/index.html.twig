@@ -3,44 +3,31 @@
 {% block title %}Use Cases - Password Policy Bundle Demo{% endblock %}
 
 {% block nowo_ui_page_header %}
-    {{ include(nowo_ui_partial('page_header'), {title: 'Password Policy Bundle - Use Cases', intro: "This page demonstrates all the features and use cases of the Password Policy Bundle. Each use case shows a different aspect of the bundle's functionality."}) }}
+    {% set _toolbar %}
+        <a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('user_index') }}">Users management</a>
+        <a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('demo_home') }}">Back to home</a>
+    {% endset %}
+    {{ include(nowo_ui_partial('page_header'), {title: 'Password Policy Bundle - Use Cases', intro: "This page demonstrates all the features and use cases of the Password Policy Bundle. Each use case shows a different aspect of the bundle's functionality.", toolbar: _toolbar}) }}
 {% endblock %}
 
 {% block body %}
-    <div class="nowo-ui-flash nowo-ui-flash--info" role="note">
-        <strong>💡 Note:</strong> To fully test these use cases, you should be authenticated.
-        <a class="nowo-ui-link" href="{{ path('login') }}">Login here</a> with one of the demo users:
-        <ul>
-            <li><strong>expired@example.com</strong> / <strong>expired123</strong> - Password expired</li>
-            <li><strong>demo@example.com</strong> / <strong>demo123</strong> - Expiring soon</li>
-            <li><strong>admin@example.com</strong> / <strong>admin123</strong> - Active</li>
-        </ul>
-    </div>
-
-    <h2>Available Use Cases</h2>
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Before you start', intro: 'To fully test these use cases, you should be authenticated: use one of the demo users (expired@example.com / expired123, demo@example.com / demo123, admin@example.com / admin123).', kind: 'content'} %}
+        {% block section_footer %}<a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('login') }}">Login / logout</a>{% endblock %}
+    {% endembed %}
 
     <div class="nowo-ui-cards">
         {% for useCase in use_cases %}
-            <section class="nowo-ui-card">
-                <div class="nowo-ui-card__body">
-                    <h3 class="nowo-ui-card__title">{{ useCase.name }}</h3>
-                    <p>{{ useCase.description }}</p>
-                    <strong>Features demonstrated:</strong>
+            {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: useCase.name, intro: useCase.description, kind: 'list', useCase: useCase} %}
+                {% block section_body %}
+                    <p><strong>Features demonstrated:</strong></p>
                     <ul>
                         {% for feature in useCase.features %}
                             <li>{{ feature }}</li>
                         {% endfor %}
                     </ul>
-                    <a href="{{ path(useCase.route) }}" class="nowo-ui-btn nowo-ui-btn--primary">View Use Case →</a>
-                </div>
-            </section>
+                {% endblock %}
+                {% block section_footer %}<a href="{{ path(useCase.route) }}" class="nowo-ui-btn nowo-ui-btn--outline">View use case</a>{% endblock %}
+            {% endembed %}
         {% endfor %}
     </div>
-
-    <h2>Additional Resources</h2>
-    <p>
-        <a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('demo_home') }}">← Back to Home</a>
-        <a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('user_index') }}">Users Management</a>
-        <a class="nowo-ui-btn nowo-ui-btn--outline" href="{{ path('login') }}">Login / Logout</a>
-    </p>
 {% endblock %}
