@@ -5,73 +5,75 @@
 {% block use_case_title %}Redirect on Password Expiry{% endblock %}
 
 {% block use_case_content %}
-    <div class="nowo-ui-flash nowo-ui-flash--{% if redirectEnabled %}success{% else %}warning{% endif %}" role="note">
-        <h3>Current Status</h3>
-        <p><strong>Redirect on Expiry:</strong> 
-            {% if redirectEnabled %}
-                <span class="nowo-ui-badge nowo-ui-badge--success">ENABLED</span>
-            {% else %}
-                <span class="nowo-ui-badge nowo-ui-badge--warning">DISABLED</span> (default behavior)
-            {% endif %}
-        </p>
-        <p><strong>Reset Password Route:</strong> <code class="nowo-ui-code">{{ resetPasswordRoute ?: 'Not configured' }}</code></p>
-    </div>
-    
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Current status', kind: 'detail'} %}
+        {% block section_actions %}
+            {% if redirectEnabled %}<span class="nowo-ui-badge nowo-ui-badge--success">ENABLED</span>{% else %}<span class="nowo-ui-badge nowo-ui-badge--warning">DISABLED</span>{% endif %}
+        {% endblock %}
+        {% block section_body %}
+            <p><strong>Redirect on expiry:</strong> {{ redirectEnabled ? 'enabled' : 'disabled (default behavior)' }}</p>
+            <p><strong>Reset password route:</strong> <code class="nowo-ui-code">{{ resetPasswordRoute ?: 'Not configured' }}</code></p>
+        {% endblock %}
+    {% endembed %}
+
     {% if user %}
         {% include 'use_cases/_user_status.html.twig' with {
-            'user': user, 
+            'user': user,
             'isExpired': isExpired,
             'daysRemaining': null,
             'daysSinceExpiry': null
         } %}
         {% if isExpired %}
-            <p>
-                {% if redirectEnabled %}
-                    <strong>(Would be redirected to reset password route)</strong>
-                {% else %}
-                    <strong>(Only flash message shown - no redirect)</strong>
-                {% endif %}
-            </p>
+            {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Effect for this user', kind: 'content'} %}
+                {% block section_body %}
+                    <p><strong>{{ redirectEnabled ? '(Would be redirected to reset password route)' : '(Only flash message shown - no redirect)' }}</strong></p>
+                {% endblock %}
+            {% endembed %}
         {% endif %}
     {% endif %}
-    
-    <h2>How It Works</h2>
-    <p>When <code class="nowo-ui-code">redirect_on_expiry: true</code> is enabled in configuration:</p>
-    <ol>
-        <li>User with expired password accesses a route in <code class="nowo-ui-code">notified_routes</code></li>
-        <li><code class="nowo-ui-code">PasswordExpiryListener</code> detects the expired password</li>
-        <li>Instead of just showing a flash message, it automatically redirects to <code class="nowo-ui-code">reset_password_route_name</code></li>
-        <li>Flash message is still shown before redirect</li>
-        <li>If the reset password route doesn't exist, it gracefully falls back to just showing the flash message</li>
-    </ol>
-    
-    <h2>Configuration</h2>
-    <pre class="nowo-ui-code-block"><code>nowo_password_policy:
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'How it works', intro: 'When redirect_on_expiry: true is enabled in configuration:', kind: 'content'} %}
+        {% block section_body %}
+            <ol>
+                <li>User with expired password accesses a route in <code class="nowo-ui-code">notified_routes</code></li>
+                <li><code class="nowo-ui-code">PasswordExpiryListener</code> detects the expired password</li>
+                <li>Instead of just showing a flash message, it automatically redirects to <code class="nowo-ui-code">reset_password_route_name</code></li>
+                <li>Flash message is still shown before redirect</li>
+                <li>If the reset password route doesn't exist, it gracefully falls back to just showing the flash message</li>
+            </ol>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Configuration', kind: 'content'} %}
+        {% block section_body %}
+            <pre class="nowo-ui-code-block" tabindex="0" role="region" aria-label="Code example"><code>nowo_password_policy:
     entities:
         App\Entity\User:
             reset_password_route_name: user_reset_password
     expiry_listener:
         redirect_on_expiry: true  # Enable automatic redirection</code></pre>
-    
-    <h2>Default Behavior (redirect_on_expiry: false)</h2>
-    <p>By default, the bundle only shows a flash message when password expires. This is less intrusive and allows users to:</p>
-    <ul>
-        <li>See the warning message</li>
-        <li>Continue using the application (with warnings)</li>
-        <li>Change password when convenient</li>
-    </ul>
-    
-    <h2>When to Enable Redirect</h2>
-    <p>Enable <code class="nowo-ui-code">redirect_on_expiry: true</code> when:</p>
-    <ul>
-        <li>Security policy requires immediate password change</li>
-        <li>Users should be forced to change password before continuing</li>
-        <li>You want a more strict enforcement of password expiry</li>
-    </ul>
-    
-    <div class="nowo-ui-flash nowo-ui-flash--warning" role="note">
-        <strong>⚠️ Note:</strong> In this demo, redirect is disabled to allow you to explore all features. 
-        Enable it in <code class="nowo-ui-code">config/packages/nowo_password_policy.yaml</code> to test automatic redirection.
-    </div>
-{% endblock %}
+        {% endblock %}
+        {% block section_footer %}
+            <p class="nowo-ui-muted">In this demo, redirect is disabled to allow you to explore all features. Enable it in <code class="nowo-ui-code">config/packages/nowo_password_policy.yaml</code> to test automatic redirection.</p>
+        {% endblock %}
+    {% endembed %}
 
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Default behavior (redirect_on_expiry: false)', intro: 'By default, the bundle only shows a flash message when password expires. This is less intrusive and allows users to:', kind: 'content'} %}
+        {% block section_body %}
+            <ul>
+                <li>See the warning message</li>
+                <li>Continue using the application (with warnings)</li>
+                <li>Change password when convenient</li>
+            </ul>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'When to enable redirect', intro: 'Enable redirect_on_expiry: true when:', kind: 'content'} %}
+        {% block section_body %}
+            <ul>
+                <li>Security policy requires immediate password change</li>
+                <li>Users should be forced to change password before continuing</li>
+                <li>You want a more strict enforcement of password expiry</li>
+            </ul>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

@@ -3,66 +3,74 @@
 {% block title %}User Details - Password Policy Demo{% endblock %}
 
 {% block nowo_ui_page_header %}
-    {{ include(nowo_ui_partial('page_header'), {title: 'User Details'}) }}
+    {% set _toolbar %}
+        <a href="{{ path('user_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">Back to list</a>
+        <a href="{{ path('user_edit', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--outline">Edit</a>
+        <a href="{{ path('user_change_password', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--primary">Change password</a>
+    {% endset %}
+    {{ include(nowo_ui_partial('page_header'), {title: 'User Details', toolbar: _toolbar}) }}
 {% endblock %}
 
 {% block body %}
-    <a href="{{ path('user_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">← Back to List</a>
-    <a href="{{ path('user_edit', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--outline">Edit</a>
-    <a href="{{ path('user_change_password', {'id': user.id}) }}" class="nowo-ui-btn nowo-ui-btn--primary">Change Password</a>
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'User information', kind: 'detail', user: user} %}
+        {% block section_body %}
+            <table class="nowo-ui-data-table">
+                <tbody>
+                    <tr><th scope="row">ID</th><td>{{ user.id }}</td></tr>
+                    <tr><th scope="row">Email</th><td>{{ user.email }}</td></tr>
+                    <tr>
+                        <th scope="row">Password changed at</th>
+                        <td>
+                            {% if user.passwordChangedAt %}
+                                <time datetime="{{ user.passwordChangedAt|date('c') }}">{{ user.passwordChangedAt|date('Y-m-d H:i:s') }}</time>
+                                {% set diff = date('now').timestamp - user.passwordChangedAt.timestamp %}
+                                {% set days = (diff / 86400)|round %}
+                                <span class="nowo-ui-muted">({{ days }} day{{ days != 1 ? 's' : '' }} ago)</span>
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Status</th>
+                        <td>
+                            {% if user.passwordChangedAt %}
+                                {% set daysSince = (date().timestamp - user.passwordChangedAt.timestamp) / 86400 %}
+                                {% if daysSince >= 90 %}
+                                    <span class="nowo-ui-badge nowo-ui-badge--danger">Expired ({{ daysSince|round }} days old)</span>
+                                {% elseif daysSince >= 85 %}
+                                    <span class="nowo-ui-badge nowo-ui-badge--warning">Expiring Soon ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
+                                {% else %}
+                                    <span class="nowo-ui-badge nowo-ui-badge--success">Active ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="nowo-ui-badge nowo-ui-badge--warning">No Password Set</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        {% endblock %}
+    {% endembed %}
 
-    <div class="nowo-ui-card"><div class="nowo-ui-card__body">
-        <h3>User Information</h3>
-        <p><strong>ID:</strong> {{ user.id }}</p>
-        <p><strong>Email:</strong> {{ user.email }}</p>
-        <p><strong>Password Changed At:</strong>
-            {% if user.passwordChangedAt %}
-                {{ user.passwordChangedAt|date('Y-m-d H:i:s') }}
-                <br>
-                {% set diff = date('now').timestamp - user.passwordChangedAt.timestamp %}
-                {% set days = (diff / 86400)|round %}
-                <small>({{ days }} day{{ days != 1 ? 's' : '' }} ago)</small>
-            {% else %}
-                <em>Never</em>
-            {% endif %}
-        </p>
-        <p><strong>Status:</strong>
-            {% if user.passwordChangedAt %}
-                {% set daysSince = (date().timestamp - user.passwordChangedAt.timestamp) / 86400 %}
-                {% if daysSince >= 90 %}
-                    <span class="nowo-ui-badge nowo-ui-badge--danger">Expired ({{ daysSince|round }} days old)</span>
-                {% elseif daysSince >= 85 %}
-                    <span class="nowo-ui-badge nowo-ui-badge--warning">Expiring Soon ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
-                {% else %}
-                    <span class="nowo-ui-badge nowo-ui-badge--success">Active ({{ daysSince|round }} days old, {{ (90 - daysSince)|round }} days remaining)</span>
-                {% endif %}
-            {% else %}
-                <span class="nowo-ui-badge nowo-ui-badge--warning">No Password Set</span>
-            {% endif %}
-        </p>
-    </div></div>
-
-    <div class="nowo-ui-card"><div class="nowo-ui-card__body">
-        <h3>Password History ({{ user.passwordHistory|length }} entries)</h3>
-        {% if user.passwordHistory|length > 0 %}
-            <div class="nowo-ui-table-wrap"><table class="nowo-ui-table nowo-ui-table--striped">
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Password history (' ~ user.passwordHistory|length ~ ' entries)', kind: 'table', empty: user.passwordHistory|length == 0, state_message: 'No password history available.', user: user} %}
+        {% block section_body %}
+            <table class="nowo-ui-data-table">
                 <thead>
                     <tr>
-                        <th>Created At</th>
-                        <th>Password Hash</th>
+                        <th scope="col" class="nowo-ui-cell--date">Created at</th>
+                        <th scope="col">Password hash</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for history in user.passwordHistory %}
                         <tr>
-                            <td>{{ history.createdAt|date('Y-m-d H:i:s') }}</td>
+                            <td class="nowo-ui-cell--date"><time datetime="{{ history.createdAt|date('c') }}">{{ history.createdAt|date('Y-m-d H:i:s') }}</time></td>
                             <td><code class="nowo-ui-code">{{ history.password|slice(0, 20) }}...</code></td>
                         </tr>
                     {% endfor %}
                 </tbody>
-            </table></div>
-        {% else %}
-            <p><em>No password history available.</em></p>
-        {% endif %}
-    </div></div>
+            </table>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

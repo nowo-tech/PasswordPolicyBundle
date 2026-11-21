@@ -2,39 +2,38 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-
 {% block nowo_ui_page_header %}
-    {{ include(nowo_ui_partial('page_header'), {title: title, intro: message}) }}
+    {% set _toolbar %}
+        <a href="{{ path('user_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">Users management</a>
+        <a href="{{ useCasesUrl ?? path('use_cases_index') }}" class="nowo-ui-btn nowo-ui-btn--primary">View all use cases</a>
+    {% endset %}
+    {{ include(nowo_ui_partial('page_header'), {title: title, intro: message, toolbar: _toolbar}) }}
 {% endblock %}
 
 {% block body %}
-    <h2>Features:</h2>
-    <ul>
-        {% for feature in features %}
-            <li>{{ feature }}</li>
-        {% endfor %}
-    </ul>
-    
-    <div class="nowo-ui-flash nowo-ui-flash--info" role="note">
-        <strong>🔐 Password Expiry Testing:</strong>
-        <p>This demo includes pre-configured users with different password expiry states:</p>
-        <ul>
-            <li><strong>expired@example.com</strong> - Password: <code class="nowo-ui-code">expired123</code> - Password expired 100 days ago (will show as <span class="nowo-ui-badge nowo-ui-badge--danger">Expired</span>)</li>
-            <li><strong>demo@example.com</strong> - Password: <code class="nowo-ui-code">demo123</code> - Password changed 85 days ago (will show as <span class="nowo-ui-badge nowo-ui-badge--warning">Expiring Soon</span> - expires in 5 days)</li>
-            <li><strong>admin@example.com</strong> - Password: <code class="nowo-ui-code">admin123</code> - Password changed today (will show as <span class="nowo-ui-badge nowo-ui-badge--success">Active</span>)</li>
-        </ul>
-        <p><strong>Note:</strong> Passwords expire after <strong>90 days</strong>. The system will show warnings when passwords are about to expire or have already expired.</p>
-        <p><strong>💡 Testing Password Expiry Listener:</strong> To see the password expiry listener in action, authenticate with <strong>expired@example.com</strong> (password: <code class="nowo-ui-code">expired123</code>) and access this page. The listener will show a flash message warning about the expired password when accessing routes configured in <code class="nowo-ui-code">notified_routes</code>.</p>
-    </div>
-    
-    <h2>Try It Out:</h2>
-    <p>Explore all the features of the Password Policy Bundle:</p>
-    <div>
-        <a href="{{ useCasesUrl ?? path('use_cases_index') }}" class="nowo-ui-btn nowo-ui-btn--primary">
-            📚 View All Use Cases →
-        </a>
-        <a href="{{ path('user_index') }}" class="nowo-ui-btn nowo-ui-btn--primary">
-            👥 Users Management →
-        </a>
-    </div>
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Features', kind: 'list', features: features} %}
+        {% block section_body %}
+            <ul>
+                {% for feature in features %}
+                    <li>{{ feature }}</li>
+                {% endfor %}
+            </ul>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Password expiry testing', intro: 'The demo ships users with different password expiry states. Passwords expire after 90 days; the system warns when they are about to expire or already expired.', kind: 'table'} %}
+        {% block section_body %}
+            <table class="nowo-ui-data-table">
+                <thead><tr><th scope="col">User</th><th scope="col">Password</th><th scope="col">State</th><th scope="col" class="nowo-ui-cell--wrap">Details</th></tr></thead>
+                <tbody>
+                    <tr><th scope="row">expired@example.com</th><td><code class="nowo-ui-code">expired123</code></td><td><span class="nowo-ui-badge nowo-ui-badge--danger">Expired</span></td><td class="nowo-ui-cell--wrap">Password expired 100 days ago.</td></tr>
+                    <tr><th scope="row">demo@example.com</th><td><code class="nowo-ui-code">demo123</code></td><td><span class="nowo-ui-badge nowo-ui-badge--warning">Expiring Soon</span></td><td class="nowo-ui-cell--wrap">Password changed 85 days ago, expires in 5 days.</td></tr>
+                    <tr><th scope="row">admin@example.com</th><td><code class="nowo-ui-code">admin123</code></td><td><span class="nowo-ui-badge nowo-ui-badge--success">Active</span></td><td class="nowo-ui-cell--wrap">Password changed today.</td></tr>
+                </tbody>
+            </table>
+        {% endblock %}
+        {% block section_footer %}
+            <p class="nowo-ui-muted">To see the password expiry listener in action, authenticate with <strong>expired@example.com</strong> and access this page: the listener shows a flash message about the expired password on the routes configured in <code class="nowo-ui-code">notified_routes</code>.</p>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

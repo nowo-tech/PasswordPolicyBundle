@@ -5,47 +5,45 @@
 {% block use_case_title %}Excluded Routes{% endblock %}
 
 {% block use_case_content %}
-    <div class="nowo-ui-flash nowo-ui-flash--info" role="note">
-        <h3>Understanding Excluded Routes</h3>
-        <p>{{ note }}</p>
-    </div>
-    
-    <h2>Current Configuration</h2>
-    
-    <div class="nowo-ui-card"><div class="nowo-ui-card__body">
-        <h3>Locked Routes (notified_routes)</h3>
-        <p>These routes trigger password expiry checks:</p>
-        <ul>
-            {% for route in lockedRoutes %}
-                <li><code class="nowo-ui-code">{{ route }}</code></li>
-            {% else %}
-                <li><em>No locked routes configured</em></li>
-            {% endfor %}
-        </ul>
-    </div></div>
-    
-    <div class="nowo-ui-flash nowo-ui-flash--warning" role="note">
-        <h3>Excluded Routes (excluded_notified_routes)</h3>
-        <p>These routes are <strong>excluded</strong> from expiry checks, even if they're in notified_routes:</p>
-        <ul>
-            {% for route in excludedRoutes %}
-                <li><code class="nowo-ui-code">{{ route }}</code> - <strong>EXCLUDED</strong></li>
-            {% else %}
-                <li><em>No excluded routes configured</em></li>
-            {% endfor %}
-        </ul>
-    </div>
-    
-    <h2>Why Exclude Routes?</h2>
-    <p>Excluded routes are essential to prevent redirect loops and allow users to:</p>
-    <ul>
-        <li><strong>Logout</strong> - Users should be able to logout even with expired passwords</li>
-        <li><strong>Reset Password</strong> - Users need to access the password reset page</li>
-        <li><strong>Login</strong> - New login attempts should not be blocked</li>
-    </ul>
-    
-    <h2>Configuration Example</h2>
-    <pre class="nowo-ui-code-block"><code>nowo_password_policy:
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Understanding excluded routes', intro: note, kind: 'content'} %}{% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Locked routes (notified_routes)', intro: 'These routes trigger password expiry checks.', kind: 'list'} %}
+        {% block section_body %}
+            <ul>
+                {% for route in lockedRoutes %}
+                    <li><code class="nowo-ui-code">{{ route }}</code></li>
+                {% else %}
+                    <li>No locked routes configured</li>
+                {% endfor %}
+            </ul>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Excluded routes (excluded_notified_routes)', intro: "These routes are excluded from expiry checks, even if they're in notified_routes.", kind: 'list'} %}
+        {% block section_body %}
+            <ul>
+                {% for route in excludedRoutes %}
+                    <li><code class="nowo-ui-code">{{ route }}</code> <span class="nowo-ui-badge nowo-ui-badge--warning">Excluded</span></li>
+                {% else %}
+                    <li>No excluded routes configured</li>
+                {% endfor %}
+            </ul>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Why exclude routes?', intro: 'Excluded routes are essential to prevent redirect loops and allow users to:', kind: 'content'} %}
+        {% block section_body %}
+            <ul>
+                <li><strong>Logout</strong> - Users should be able to logout even with expired passwords</li>
+                <li><strong>Reset Password</strong> - Users need to access the password reset page</li>
+                <li><strong>Login</strong> - New login attempts should not be blocked</li>
+            </ul>
+        {% endblock %}
+    {% endembed %}
+
+    {% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Configuration example', intro: 'Best practice: always exclude login, logout and password reset routes to prevent redirect loops.', kind: 'content'} %}
+        {% block section_body %}
+            <pre class="nowo-ui-code-block" tabindex="0" role="region" aria-label="Code example"><code>nowo_password_policy:
     entities:
         App\Entity\User:
             notified_routes:
@@ -55,9 +53,6 @@
                 - login
                 - logout
                 - user_change_password</code></pre>
-    
-    <div class="nowo-ui-flash nowo-ui-flash--success" role="note">
-        <strong>✅ Best Practice:</strong> Always exclude login, logout, and password reset routes to prevent redirect loops.
-    </div>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}
-

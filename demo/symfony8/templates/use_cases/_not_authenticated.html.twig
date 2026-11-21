@@ -1,5 +1,3 @@
-<div class="nowo-ui-flash nowo-ui-flash--warning" role="note">
-    <strong>⚠️ Not Authenticated</strong>
-    <p>Please <a href="{{ path('login') }}">login</a> to see this information for your user.</p>
-</div>
-
+{% embed '@NowoUiKit/demo_platform/_section.html.twig' with {title: 'Not authenticated', kind: 'content'} %}
+    {% block section_body %}<p>Please <a href="{{ path('login') }}">login</a> to see this information for your user.</p>{% endblock %}
+{% endembed %}

@@ -22,12 +22,12 @@ class DemoController extends AbstractController
             $session->set('demo_info_shown', true);
             $this->addFlash('info', [
                 'title'   => '🧪 Testing Password Expiry Listener',
-                'message' => 'To test the password expiry listener, authenticate with <strong>expired@example.com</strong> / <strong>expired123</strong> (password expired 100 days ago). When accessing routes in <code>notified_routes</code> (like this home page), the listener will display a flash message warning about the expired password.',
+                'message' => 'To test the password expiry listener, authenticate with expired@example.com / expired123 (password expired 100 days ago). When accessing routes in notified_routes (like this home page), the listener will display a flash message warning about the expired password.',
             ]);
 
             $this->addFlash('warning', [
                 'title'   => '⚠️ Demo User Credentials',
-                'message' => 'Available test users: <strong>demo@example.com</strong> / <strong>demo123</strong> (expires in 5 days), <strong>admin@example.com</strong> / <strong>admin123</strong> (active), <strong>expired@example.com</strong> / <strong>expired123</strong> (expired). View all users in <a href="' . $this->generateUrl('user_index') . '">Users Management</a>.',
+                'message' => 'Available test users: demo@example.com / demo123 (expires in 5 days), admin@example.com / admin123 (active), expired@example.com / expired123 (expired). View all users in Users Management.',
             ]);
         }
 

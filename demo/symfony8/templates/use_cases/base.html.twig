@@ -1,11 +1,10 @@
 {% extends 'base.html.twig' %}
 
 {% block nowo_ui_page_header %}
-    {{ include(nowo_ui_partial('page_header'), {title: block('use_case_title')}) }}
+    {% set _toolbar %}<a href="{{ path('use_cases_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">Back to use cases</a>{% endset %}
+    {{ include(nowo_ui_partial('page_header'), {title: block('use_case_title'), toolbar: _toolbar}) }}
 {% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('use_cases_index') }}" class="nowo-ui-btn nowo-ui-btn--outline">← Back to Use Cases</a></p>
-
     {% block use_case_content %}{% endblock %}
 {% endblock %}
