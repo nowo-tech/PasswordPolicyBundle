@@ -84,7 +84,7 @@ return [
 
 ## Requirements
 
-- PHP >= 8.2, < 8.6
+- PHP >= 8.2, < 8.7
 - Symfony >= 6.4 || >= 7.0 || >= 8.0
 - **Doctrine ORM** — `doctrine/orm` and `doctrine/collections` are declared by this package; the app must also enable `doctrine/doctrine-bundle` so the bundle’s Doctrine listeners are registered.
 - **Symfony Security** — `symfony/security-core` and `symfony/password-hasher` are declared by this package (token storage and password hasher services come from SecurityBundle).
